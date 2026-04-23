@@ -112,6 +112,13 @@ def _validate_patient(patient: dict[str, Any], report: FileReport) -> None:
             )
 
 
+def _validate_condition(condition: dict[str, Any], report: FileReport) -> None:
+    # US Core Condition (Problems & Health Concerns) required elements.
+    for required in ("clinicalStatus", "verificationStatus", "category", "code", "subject"):
+        if not condition.get(required):
+            report.errors.append(f"Condition.{required}: required by US Core.")
+
+
 def _validate_bundle(bundle: dict[str, Any], report: FileReport) -> None:
     try:
         _Bundle.model_validate(bundle)
@@ -125,13 +132,14 @@ def _validate_bundle(bundle: dict[str, Any], report: FileReport) -> None:
         rtype = resource.get("resourceType")
         if rtype == "Patient":
             _validate_patient(resource, report)
+        elif rtype == "Condition":
+            _validate_condition(resource, report)
         elif rtype is None:
             report.errors.append(f"entry[{i}]: missing resourceType")
         else:
-            # Other resource types aren't produced by Atlas yet.
-            report.warnings.append(
-                f"entry[{i}]: resourceType {rtype!r} — structural check not implemented yet"
-            )
+            # Other resource types aren't produced by Atlas yet. Schema is
+            # still enforced via Bundle.model_validate above; skip reporting.
+            pass
 
 
 def validate_file(path: Path) -> FileReport:

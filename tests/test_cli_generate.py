@@ -58,12 +58,62 @@ def test_generate_rejects_unsupported_format(tmp_path):
     assert "not yet supported" in result.output
 
 
-def test_generate_rejects_module_flag(tmp_path):
+def test_generate_rejects_unknown_module(tmp_path):
     result = runner.invoke(
         app,
-        ["generate", "--patients", "1", "--module", "type-2-diabetes", "--out", str(tmp_path)],
+        ["generate", "--patients", "1", "--module", "not-a-real-module", "--out", str(tmp_path)],
     )
-    assert result.exit_code == 2
+    assert result.exit_code == 1
+    assert "no bundled module" in result.output
+
+
+def test_generate_with_hypertension_produces_mixed_bundles(tmp_path):
+    import json
+
+    # Seed 0 across 20 patients should produce some with Condition and some without,
+    # given the age-bracketed prevalence.
+    result = runner.invoke(
+        app,
+        [
+            "generate",
+            "--patients", "20",
+            "--seed", "0",
+            "--module", "hypertension",
+            "--out", str(tmp_path),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+
+    has_condition = 0
+    patient_only = 0
+    for f in sorted(tmp_path.glob("*.json")):
+        entries = json.loads(f.read_text())["entry"]
+        types = {e["resource"]["resourceType"] for e in entries}
+        if "Condition" in types:
+            has_condition += 1
+        else:
+            patient_only += 1
+
+    assert has_condition > 0, "expected some patients to receive hypertension"
+    assert patient_only > 0, "expected some patients to not receive hypertension"
+
+
+def test_modules_list_shows_hypertension():
+    result = runner.invoke(app, ["modules"])
+    assert result.exit_code == 0
+    assert "hypertension" in result.output
+
+
+def test_modules_show_hypertension_details():
+    result = runner.invoke(app, ["modules", "--show", "hypertension"])
+    assert result.exit_code == 0
+    assert "hypertension" in result.output
+    assert "59621000" in result.output
+
+
+def test_modules_show_unknown_module_fails():
+    result = runner.invoke(app, ["modules", "--show", "not-real"])
+    assert result.exit_code == 1
 
 
 def test_generate_rejects_zero_patients(tmp_path):

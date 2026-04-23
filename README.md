@@ -42,9 +42,10 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | FHIR Patient builder       | ✅ Implemented   | US Core 6.1 Patient with race/ethnicity/birthsex extensions + HTEST tag  |
 | FHIR Bundle assembly       | ✅ Implemented   | Transaction Bundle, one file per patient                                 |
 | `atlas generate`           | ✅ Implemented   | `atlas generate --patients N --seed S --out DIR` → N FHIR R4 Bundles     |
-| `atlas validate`           | ✅ Structural    | Schema validation + US Core Patient minimums; full profile check is TBD  |
-| Clinical module runtime    | ⏳ Not started   | Milestone 2                                                              |
-| Module library (10+)       | ⏳ Not started   | Milestone 2                                                              |
+| `atlas validate`           | ✅ Structural    | Schema validation + US Core Patient/Condition minimums                   |
+| `atlas modules`            | ✅ Implemented   | List bundled modules, show details (`atlas modules --show NAME`)         |
+| Clinical module runtime    | 🟡 Probability  | Probability-module flavor only; state machines in a later milestone      |
+| Module library             | 🟡 1 module     | `hypertension` (placeholder prevalence, pending NHANES ingestion)        |
 | Statistical validation     | ⏳ Not started   | Milestone 2                                                              |
 | LLM-assisted authoring     | ⏳ Not started   | Milestone 3                                                              |
 | Clinical note generation   | ⏳ Not started   | Milestone 4                                                              |
@@ -76,10 +77,19 @@ atlas status
 pytest
 ```
 
-Planned once later milestones land:
+Run with the hypertension module so each patient is sampled against
+age-bracketed prevalence — Bundles with a positive draw include a
+Condition resource referencing the Patient:
 
 ```bash
-atlas generate --module type-2-diabetes --out ./t2d  # (Milestone 2)
+atlas generate --patients 20 --seed 0 --module hypertension --out ./out
+atlas modules --show hypertension
+```
+
+Planned:
+
+```bash
+atlas generate --module type-2-diabetes --out ./t2d  # (more modules)
 ```
 
 ## Architecture

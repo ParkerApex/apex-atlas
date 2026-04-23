@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import random
+from datetime import date
 from enum import Enum
 from pathlib import Path
 from typing import Annotated
@@ -22,9 +23,16 @@ from rich.table import Table
 
 from parker_atlas import __version__
 from parker_atlas.core.demographics import sample_demographics
-from parker_atlas.fhir.bundle import patient_bundle
+from parker_atlas.fhir.bundle import build_bundle, fullurl_for_gpx
+from parker_atlas.fhir.condition import build_condition_resource
 from parker_atlas.fhir.patient import build_patient_resource
 from parker_atlas.gpx import Allocator, Category
+from parker_atlas.modules import (
+    ModuleError,
+    list_bundled_modules,
+    load_module,
+    run_module,
+)
 from parker_atlas.validation.structural import validate_path
 
 app = typer.Typer(
@@ -84,23 +92,41 @@ def generate(
             f"Milestone 1 implements only us-core-6.1."
         )
         raise typer.Exit(code=2)
+    active_modules = []
     if module is not None:
-        err_console.print(
-            "[yellow]--module[/yellow] is not yet supported. "
-            "Clinical modules arrive in Milestone 2."
-        )
-        raise typer.Exit(code=2)
+        try:
+            active_modules.append(load_module(module))
+        except ModuleError as exc:
+            err_console.print(f"[red]{exc}[/red]")
+            raise typer.Exit(code=1) from exc
 
     out.mkdir(parents=True, exist_ok=True)
     rng = random.Random(seed)
     allocator = Allocator(Category.SYNTHETIC)
 
+    today = date.today()
+
     description = f"Generating {patients} patient{'s' if patients != 1 else ''}"
     for _ in track(range(patients), description=description, console=console):
-        demo = sample_demographics(rng)
+        demo = sample_demographics(rng, today=today)
         gpx = allocator.allocate()
         patient = build_patient_resource(gpx, demo)
-        bundle = patient_bundle(gpx, patient)
+        patient_url = fullurl_for_gpx(gpx)
+
+        extras: list[dict] = []
+        age_years = (today - demo.birth_date).days // 365
+        for mod in active_modules:
+            for dx in run_module(mod, age_years=age_years, sex=demo.gender.value, rng=rng):
+                extras.append(
+                    build_condition_resource(
+                        gpx=gpx,
+                        patient_fullurl=patient_url,
+                        condition_spec_id=dx.condition.id,
+                        code=dx.condition.code,
+                    )
+                )
+
+        bundle = build_bundle(gpx, patient, extras)
         (out / f"{gpx}.json").write_text(json.dumps(bundle, indent=2))
 
     console.print(
@@ -164,7 +190,44 @@ def modules(
     show: Annotated[str | None, typer.Option(help="Show details for a module by name.")] = None,
 ) -> None:
     """Inspect the clinical module library."""
-    _not_implemented("modules", "Milestone 2")
+    if show:
+        try:
+            mod = load_module(show)
+        except ModuleError as exc:
+            err_console.print(f"[red]{exc}[/red]")
+            raise typer.Exit(code=1) from exc
+        console.print(f"[bold]{mod.name}[/bold] v{mod.version}")
+        if mod.description:
+            console.print(mod.description.strip())
+        if mod.cites:
+            console.print("\n[bold]Cites[/bold]")
+            for c in mod.cites:
+                console.print(f"  - {c.source}: {c.url}")
+                if c.summary:
+                    console.print(f"    {c.summary.strip()}")
+        console.print("\n[bold]Conditions[/bold]")
+        for cond in mod.conditions:
+            console.print(f"  - {cond.id} ({cond.code.system} {cond.code.code}: {cond.code.display})")
+        return
+
+    # Default behavior (including --list): show the catalog.
+    names = list_bundled_modules()
+    if not names:
+        console.print("No bundled modules.")
+        return
+    table = Table(title="Bundled Parker Atlas modules")
+    table.add_column("Name", style="bold")
+    table.add_column("Version")
+    table.add_column("Conditions")
+    for name in names:
+        try:
+            mod = load_module(name)
+            table.add_row(mod.name, mod.version, str(len(mod.conditions)))
+        except ModuleError as exc:  # pragma: no cover — defensive
+            table.add_row(name, "[red]load error[/red]", str(exc))
+    console.print(table)
+    if not list_:
+        console.print("\nUse [bold]atlas modules --show NAME[/bold] for details.")
 
 
 @app.command()
@@ -183,11 +246,14 @@ def status() -> None:
 
     rows = [
         ("GPX identifier",        "[green]implemented[/green]",    "M0"),
-        ("CLI scaffolding",       "[yellow]stub[/yellow]",         "M0"),
-        ("Simulation core",       "[dim]not started[/dim]",        "M1"),
-        ("FHIR builders",         "[dim]not started[/dim]",        "M1"),
-        ("Module runtime",        "[dim]not started[/dim]",        "M2"),
-        ("Module library",        "[dim]not started[/dim]",        "M2"),
+        ("CLI scaffolding",       "[green]implemented[/green]",    "M0"),
+        ("Demographic sampling",  "[yellow]placeholder[/yellow]",  "M1"),
+        ("FHIR Patient builder",  "[green]implemented[/green]",    "M1"),
+        ("FHIR Condition builder","[green]implemented[/green]",    "M1"),
+        ("atlas generate",        "[green]implemented[/green]",    "M1"),
+        ("atlas validate",        "[green]structural[/green]",     "M1"),
+        ("Module runtime",        "[yellow]probability[/yellow]",  "M2"),
+        ("Module library",        "[yellow]1 module[/yellow]",     "M2"),
         ("Statistical validation","[dim]not started[/dim]",        "M2"),
         ("LLM authoring",         "[dim]not started[/dim]",        "M3"),
         ("Clinical notes",        "[dim]not started[/dim]",        "M4"),

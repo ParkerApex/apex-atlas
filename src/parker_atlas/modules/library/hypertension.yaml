@@ -1,0 +1,26 @@
+module: hypertension
+version: 0.1.0
+description: >
+  Essential hypertension prevalence by age bracket. Probability-module
+  flavor — each bracket maps to a Bernoulli rate. Rates are placeholder
+  approximations pending NHANES ingestion; see docs/roadmap.md for the
+  fidelity-harness follow-up.
+cites:
+  - source: CDC National Center for Health Statistics, FastStats
+    url: https://www.cdc.gov/nchs/fastats/hypertension.htm
+    summary: >
+      US adults aged 18+ hypertension prevalence was approximately 48%
+      (age-adjusted, 2017-2020 NHANES). Prevalence climbs steeply with
+      age; published brackets used here as rough anchors.
+conditions:
+  - id: essential_hypertension
+    code:
+      system: http://snomed.info/sct
+      code: "59621000"
+      display: Essential hypertension (disorder)
+    prevalence:
+      "0-17": 0.04
+      "18-34": 0.22
+      "35-54": 0.47
+      "55-74": 0.74
+      "75-95": 0.80
