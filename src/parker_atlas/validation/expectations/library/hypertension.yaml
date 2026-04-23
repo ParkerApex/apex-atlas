@@ -13,8 +13,10 @@ source:
     are ingested from the citations below, raise `provenance` to
     `sourced` (or `verified` once the project independently reproduces
     them) and update the targets accordingly.
-    Tolerance is Wilson 95%; at small bracket N, per-metric false-positive
-    rate is ~5% — run cohorts of 20k+ patients for robust passage.
+    Tolerance is Wilson 99%. The per-metric false-positive rate is ~1%,
+    chosen to absorb the multiple-comparisons problem across the 11
+    bracket × sex cells below while still catching real drift. Run
+    cohorts of 20k+ patients for robust passage.
   citations:
     - source: CDC National Center for Health Statistics, FastStats
       url: https://www.cdc.gov/nchs/fastats/hypertension.htm
@@ -41,10 +43,32 @@ metrics:
     stratify_by: age_bracket
     tolerance:
       kind: wilson
-      confidence: 95
+      confidence: 99
     targets:
       "0-17": 0.04
       "18-34": 0.22
       "35-54": 0.47
       "55-74": 0.74
       "75-95": 0.80
+
+  # Sex-stratified check. The current module does not differentiate by
+  # sex, so male/female targets here are equal. When a future module
+  # revision introduces the documented sex crossover (male-higher in
+  # middle age, female-higher in old age), these targets diverge.
+  - id: essential_hypertension_prevalence_by_sex_and_age
+    kind: conditional_prevalence
+    condition_code: "59621000"
+    condition_system: http://snomed.info/sct
+    stratify_by: sex_and_age
+    tolerance:
+      kind: wilson
+      confidence: 99
+    targets:
+      female:
+        "18-34": 0.22
+        "35-54": 0.47
+        "55-74": 0.74
+      male:
+        "18-34": 0.22
+        "35-54": 0.47
+        "55-74": 0.74

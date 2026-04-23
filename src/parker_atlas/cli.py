@@ -109,6 +109,7 @@ def _validate_cohort(
     table = Table(title=title)
     table.add_column("Metric", style="bold")
     table.add_column("Bracket")
+    table.add_column("Sex")
     table.add_column("N", justify="right")
     table.add_column("Actual", justify="right")
     table.add_column("Target", justify="right")
@@ -119,6 +120,7 @@ def _validate_cohort(
         table.add_row(
             r.metric_id,
             f"{r.bracket[0]}-{r.bracket[1]}",
+            r.sex or "—",
             str(r.n),
             f"{r.actual:.3f}",
             f"{r.target:.3f}",

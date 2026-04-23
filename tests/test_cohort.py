@@ -133,6 +133,25 @@ class TestEvaluateCohort:
         # All computed actuals should be 0 (no Conditions anywhere).
         assert all(r.actual == 0 for r in report.results)
 
+    def test_sex_stratified_metric_produces_per_sex_results(self, tmp_path):
+        _generate(tmp_path, patients=20000, seed=42, module="hypertension")
+        exp = load_bundled_expectation("hypertension")
+        report = evaluate_cohort(
+            tmp_path, exp, min_samples=100, reference_date=date(2026, 4, 23)
+        )
+        # The bundled expectation now has both an age_bracket metric and
+        # a sex_and_age metric. Ensure the sex column is populated for
+        # only the latter.
+        age_only = [r for r in report.results if r.sex is None]
+        sex_stratified = [r for r in report.results if r.sex is not None]
+        assert age_only, "age_bracket metric should produce results"
+        assert sex_stratified, "sex_and_age metric should produce results"
+        assert {r.sex for r in sex_stratified} == {"female", "male"}
+        assert report.passed, (
+            f"bundled hypertension expectation unexpectedly failed:\n"
+            f"  {[(r.metric_id, r.bracket, r.sex, r.actual, r.target) for r in report.failing_metrics]}"
+        )
+
     def test_handles_malformed_json(self, tmp_path):
         _generate(tmp_path, patients=3, seed=0)
         (tmp_path / "oops.json").write_text("{not valid")
