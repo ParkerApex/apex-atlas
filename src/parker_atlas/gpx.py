@@ -23,8 +23,12 @@ Example:
 
 from __future__ import annotations
 
+import fcntl
+import os
 import re
 import threading
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
@@ -279,19 +283,61 @@ class Allocator:
 
 class FileAllocator(Allocator):
     """
-    Allocator that persists the counter to a local file between runs.
+    Allocator that persists the counter to a local state file and coordinates
+    across concurrent processes using an advisory file lock (`fcntl.flock`).
 
-    Suitable for single-host Atlas generation. Not intended for distributed
-    or highly concurrent workloads; for those, implement a backend using a
-    database sequence or a consensus-backed counter.
+    Durability guarantees (POSIX):
+    - On each allocation, the counter is re-read from disk under an exclusive
+      lock, incremented, written to a temp file, fsynced, atomically renamed
+      over the state file, and the parent directory is fsynced. A crash after
+      a successful allocate leaves the state file containing the allocated
+      value.
+    - An OS-level exclusive flock on a sibling `.lock` file serializes
+      allocators running in different processes on the same host, so two
+      processes cannot mint the same GPX.
+
+    Not safe across hosts (NFS flock semantics are unreliable) or against
+    distributed workloads; use a centralized sequence service in that case.
+
+    Requires a POSIX-like platform. Windows is not supported.
     """
 
     def __init__(self, category: Category, state_path: Path) -> None:
+        if category is Category.PRODUCTION:
+            raise GPXError(
+                "Parker Atlas allocator must not mint production GPX values. "
+                "Use a category with a non-empty prefix (SYN, TST, DEM, DEV)."
+            )
+        self._category = category
         self._state_path = Path(state_path)
-        start = self._load()
-        super().__init__(category, start=start)
+        self._state_path.parent.mkdir(parents=True, exist_ok=True)
+        # Lock file lives alongside the state file and is never renamed, so
+        # its inode is stable for the lifetime of concurrent allocators.
+        self._lock_path = self._state_path.with_name(self._state_path.name + ".lock")
+        self._thread_lock = threading.Lock()
 
-    def _load(self) -> int:
+    @property
+    def category(self) -> Category:
+        return self._category
+
+    @property
+    def current(self) -> int:
+        with self._thread_lock, self._file_lock():
+            return self._read_counter()
+
+    @contextmanager
+    def _file_lock(self) -> Iterator[None]:
+        fd = os.open(self._lock_path, os.O_WRONLY | os.O_CREAT, 0o644)
+        try:
+            fcntl.flock(fd, fcntl.LOCK_EX)
+            try:
+                yield
+            finally:
+                fcntl.flock(fd, fcntl.LOCK_UN)
+        finally:
+            os.close(fd)
+
+    def _read_counter(self) -> int:
         if not self._state_path.exists():
             return 0
         try:
@@ -301,17 +347,46 @@ class FileAllocator(Allocator):
                 f"cannot read allocator state from {self._state_path}: {exc}"
             ) from exc
 
-    def _persist(self) -> None:
-        tmp = self._state_path.with_suffix(".tmp")
-        tmp.write_text(str(self._counter))
-        tmp.replace(self._state_path)
+    def _write_counter(self, value: int) -> None:
+        tmp_path = self._state_path.with_name(self._state_path.name + ".tmp")
+        fd = os.open(tmp_path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o644)
+        try:
+            os.write(fd, str(value).encode("ascii"))
+            os.fsync(fd)
+        finally:
+            os.close(fd)
+        os.replace(tmp_path, self._state_path)
+        # fsync the directory so the rename itself is durable on crash.
+        dir_fd = os.open(self._state_path.parent, os.O_RDONLY)
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
 
     def allocate(self) -> GPX:
-        gpx = super().allocate()
-        self._persist()
-        return gpx
+        with self._thread_lock, self._file_lock():
+            current = self._read_counter()
+            new_value = current + 1
+            if new_value > MAX_NUMERIC:
+                raise GPXError(
+                    f"{self._category.display} GPX counter exhausted "
+                    f"(reached {MAX_NUMERIC}). Specification revision required."
+                )
+            self._write_counter(new_value)
+            return GPX.mint(self._category, new_value)
 
     def allocate_batch(self, n: int) -> list[GPX]:
-        batch = super().allocate_batch(n)
-        self._persist()
-        return batch
+        if n < 1:
+            raise ValueError("batch size must be >= 1")
+        with self._thread_lock, self._file_lock():
+            current = self._read_counter()
+            if current + n > MAX_NUMERIC:
+                raise GPXError(
+                    f"batch of {n} would exceed counter ceiling "
+                    f"({current} + {n} > {MAX_NUMERIC})"
+                )
+            batch = [
+                GPX.mint(self._category, current + i + 1) for i in range(n)
+            ]
+            self._write_counter(current + n)
+            return batch

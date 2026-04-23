@@ -224,3 +224,119 @@ class TestFileAllocator:
         assert g1.numeric == "0000000001"
         assert g2.numeric == "0000000002"
         assert g3.numeric == "0000000003"
+
+    def test_creates_parent_directory(self, tmp_path):
+        from parker_atlas.gpx import FileAllocator
+
+        # Point at a nested path that does not exist yet.
+        state = tmp_path / "nested" / "deeper" / "counter.state"
+        alloc = FileAllocator(Category.SYNTHETIC, state)
+        alloc.allocate()
+        assert state.exists()
+
+    def test_rejects_production(self, tmp_path):
+        from parker_atlas.gpx import FileAllocator
+
+        with pytest.raises(GPXError, match="must not mint production"):
+            FileAllocator(Category.PRODUCTION, tmp_path / "counter.state")
+
+    def test_current_reads_live_value(self, tmp_path):
+        from parker_atlas.gpx import FileAllocator
+
+        state = tmp_path / "counter.state"
+        a = FileAllocator(Category.SYNTHETIC, state)
+        assert a.current == 0
+        a.allocate()
+        a.allocate()
+        assert a.current == 2
+
+    def test_recovers_from_pre_existing_state(self, tmp_path):
+        from parker_atlas.gpx import FileAllocator
+
+        state = tmp_path / "counter.state"
+        state.write_text("42\n")
+        alloc = FileAllocator(Category.SYNTHETIC, state)
+        g = alloc.allocate()
+        assert g.numeric == "0000000043"
+
+
+class TestAllocatorConcurrency:
+    """Stress-test the allocator under thread and process contention."""
+
+    def test_threaded_allocation_is_unique(self):
+        """N threads × K allocations each should yield N*K distinct IDs."""
+        from concurrent.futures import ThreadPoolExecutor
+
+        alloc = Allocator(Category.SYNTHETIC)
+
+        def worker(k: int) -> list[str]:
+            return [str(alloc.allocate()) for _ in range(k)]
+
+        n_threads, per_thread = 10, 100
+        with ThreadPoolExecutor(max_workers=n_threads) as pool:
+            futures = [pool.submit(worker, per_thread) for _ in range(n_threads)]
+            ids: list[str] = []
+            for f in futures:
+                ids.extend(f.result())
+
+        assert len(ids) == n_threads * per_thread
+        assert len(set(ids)) == n_threads * per_thread
+
+    def test_file_allocator_threaded_is_unique(self, tmp_path):
+        """File-backed allocator must also be safe across threads."""
+        from concurrent.futures import ThreadPoolExecutor
+
+        from parker_atlas.gpx import FileAllocator
+
+        state = tmp_path / "counter.state"
+        alloc = FileAllocator(Category.SYNTHETIC, state)
+
+        def worker(k: int) -> list[str]:
+            return [str(alloc.allocate()) for _ in range(k)]
+
+        n_threads, per_thread = 8, 50
+        with ThreadPoolExecutor(max_workers=n_threads) as pool:
+            futures = [pool.submit(worker, per_thread) for _ in range(n_threads)]
+            ids: list[str] = []
+            for f in futures:
+                ids.extend(f.result())
+
+        assert len(set(ids)) == n_threads * per_thread
+        # Final counter matches total allocations.
+        assert int(state.read_text()) == n_threads * per_thread
+
+    def test_file_allocator_multiprocess_is_unique(self, tmp_path):
+        """Two processes sharing a state file must not mint duplicate IDs."""
+        import subprocess
+        import sys
+        import textwrap
+
+        state = tmp_path / "counter.state"
+        script = textwrap.dedent(
+            """
+            import sys
+            from parker_atlas.gpx import FileAllocator, Category
+            alloc = FileAllocator(Category.SYNTHETIC, sys.argv[1])
+            for _ in range(int(sys.argv[2])):
+                print(str(alloc.allocate()))
+            """
+        )
+
+        per_proc = 50
+        procs = [
+            subprocess.Popen(
+                [sys.executable, "-c", script, str(state), str(per_proc)],
+                stdout=subprocess.PIPE,
+                text=True,
+            )
+            for _ in range(4)
+        ]
+        all_ids: list[str] = []
+        for p in procs:
+            out, _ = p.communicate(timeout=30)
+            assert p.returncode == 0, out
+            all_ids.extend(out.strip().splitlines())
+
+        assert len(all_ids) == 4 * per_proc
+        assert len(set(all_ids)) == 4 * per_proc
+        assert int(state.read_text()) == 4 * per_proc
