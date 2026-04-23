@@ -1,22 +1,30 @@
 """
 Parker Atlas command-line interface.
 
-This module is the entry point for the `atlas` command. The subcommands
-are scaffolded as stubs; implementations arrive over the milestones
-described in docs/roadmap.md.
+This module is the entry point for the `atlas` command. The `generate`
+subcommand is functional for the Milestone 1 vertical slice (FHIR R4
+Patient bundles, US Core 6.1); other subcommands remain stubs pending
+later milestones. See docs/roadmap.md.
 """
 
 from __future__ import annotations
 
+import json
+import random
 from enum import Enum
 from pathlib import Path
 from typing import Annotated
 
 import typer
 from rich.console import Console
+from rich.progress import track
 from rich.table import Table
 
 from parker_atlas import __version__
+from parker_atlas.core.demographics import sample_demographics
+from parker_atlas.fhir.bundle import patient_bundle
+from parker_atlas.fhir.patient import build_patient_resource
+from parker_atlas.gpx import Allocator, Category
 
 app = typer.Typer(
     name="atlas",
@@ -59,7 +67,45 @@ def generate(
     seed: Annotated[int | None, typer.Option(help="RNG seed for reproducibility.")] = None,
 ) -> None:
     """Generate a synthetic FHIR patient population."""
-    _not_implemented("generate", "Milestone 1")
+    if patients < 1:
+        err_console.print("[red]--patients must be >= 1[/red]")
+        raise typer.Exit(code=1)
+    if format is not OutputFormat.FHIR_R4:
+        err_console.print(
+            f"[yellow]--format={format.value}[/yellow] is not yet supported. "
+            f"Milestone 1 implements only fhir-r4; ndjson and parquet land in Milestone 5, "
+            f"fhir-r5 after."
+        )
+        raise typer.Exit(code=2)
+    if profile is not Profile.US_CORE_6_1:
+        err_console.print(
+            f"[yellow]--profile={profile.value}[/yellow] is not yet supported. "
+            f"Milestone 1 implements only us-core-6.1."
+        )
+        raise typer.Exit(code=2)
+    if module is not None:
+        err_console.print(
+            "[yellow]--module[/yellow] is not yet supported. "
+            "Clinical modules arrive in Milestone 2."
+        )
+        raise typer.Exit(code=2)
+
+    out.mkdir(parents=True, exist_ok=True)
+    rng = random.Random(seed)
+    allocator = Allocator(Category.SYNTHETIC)
+
+    description = f"Generating {patients} patient{'s' if patients != 1 else ''}"
+    for _ in track(range(patients), description=description, console=console):
+        demo = sample_demographics(rng)
+        gpx = allocator.allocate()
+        patient = build_patient_resource(gpx, demo)
+        bundle = patient_bundle(gpx, patient)
+        (out / f"{gpx}.json").write_text(json.dumps(bundle, indent=2))
+
+    console.print(
+        f"[green]✓[/green] Wrote {patients} patient bundle"
+        f"{'s' if patients != 1 else ''} to [bold]{out}[/bold]"
+    )
 
 
 @app.command()
