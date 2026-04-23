@@ -33,6 +33,11 @@ from parker_atlas.modules import (
     load_module,
     run_module,
 )
+from parker_atlas.validation.cohort import evaluate_cohort
+from parker_atlas.validation.expectations import (
+    ExpectationError,
+    load_bundled_expectation,
+)
 from parker_atlas.validation.structural import validate_path
 
 app = typer.Typer(
@@ -64,6 +69,69 @@ def _not_implemented(command: str, milestone: str) -> None:
         f"Ships in [bold]{milestone}[/bold] — see docs/roadmap.md."
     )
     raise typer.Exit(code=2)
+
+
+def _validate_cohort(
+    path: Path, *, module: str | None, min_samples: int, as_of: str | None
+) -> None:
+    if module is None:
+        err_console.print(
+            "[red]--cohort requires --module NAME[/red] so the harness knows "
+            "which expectation to load. See `atlas modules` for available names."
+        )
+        raise typer.Exit(code=1)
+
+    try:
+        expectation = load_bundled_expectation(module)
+    except ExpectationError as exc:
+        err_console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+
+    reference_date = date.fromisoformat(as_of) if as_of else None
+    report = evaluate_cohort(
+        path, expectation, min_samples=min_samples, reference_date=reference_date
+    )
+
+    if report.bundles_scanned == 0:
+        err_console.print(f"[yellow]No FHIR Bundles found under[/yellow] {path}")
+        raise typer.Exit(code=1)
+
+    table = Table(title=f"Cohort fidelity: {expectation.module} v{expectation.version}")
+    table.add_column("Metric", style="bold")
+    table.add_column("Bracket")
+    table.add_column("N", justify="right")
+    table.add_column("Actual", justify="right")
+    table.add_column("Target", justify="right")
+    table.add_column("±", justify="right")
+    table.add_column("Status")
+    for r in report.results:
+        status = "[green]OK[/green]" if r.within_tolerance else "[red]FAIL[/red]"
+        table.add_row(
+            r.metric_id,
+            f"{r.bracket[0]}-{r.bracket[1]}",
+            str(r.n),
+            f"{r.actual:.3f}",
+            f"{r.target:.3f}",
+            f"{r.tolerance:.3f}",
+            status,
+        )
+    console.print(table)
+
+    for note in report.skipped:
+        console.print(f"[yellow]skipped:[/yellow] {note}")
+    for p, err in report.parse_errors:
+        console.print(f"[red]parse error:[/red] {p}: {err}")
+
+    passed = len([r for r in report.results if r.within_tolerance])
+    failed = len(report.failing_metrics)
+    console.print(
+        f"\n[bold]{report.total_patients}[/bold] patients across "
+        f"[bold]{report.bundles_scanned}[/bold] bundles — "
+        f"[green]{passed} metric(s) passed[/green], "
+        f"[red]{failed} failed[/red], "
+        f"[yellow]{len(report.skipped)} skipped[/yellow]"
+    )
+    raise typer.Exit(code=0 if report.passed else 1)
 
 
 @app.command()
@@ -141,12 +209,20 @@ def validate(
     profile: Annotated[Profile, typer.Option(help="FHIR profile to validate against.")] = Profile.US_CORE_6_1,
     verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show per-file errors and warnings.")] = False,
     strict: Annotated[bool, typer.Option("--strict", help="Treat warnings as errors.")] = False,
+    cohort: Annotated[bool, typer.Option("--cohort", help="Run cohort fidelity harness instead of per-file structural.")] = False,
+    module: Annotated[str | None, typer.Option(help="Module whose bundled expectation to run under --cohort.")] = None,
+    min_samples: Annotated[int, typer.Option(help="Minimum bracket N under --cohort; smaller brackets are skipped.")] = 30,
+    as_of: Annotated[str | None, typer.Option(help="ISO date used as the reference for age computation under --cohort.")] = None,
 ) -> None:
-    """Validate generated FHIR resources structurally.
+    """Validate generated FHIR resources.
 
-    Performs schema validation via fhir.resources and checks US Core 6.1
-    Patient minimum elements. This is not a full profile conformance check
-    — that requires an external FHIR validator.
+    Default mode is structural: schema validation via fhir.resources plus US
+    Core 6.1 Patient/Condition minimum elements, per file. This is not a full
+    profile conformance check — that requires an external FHIR validator.
+
+    `--cohort --module NAME` runs the cohort fidelity harness instead: load the
+    bundled expectation for `NAME`, compute aggregate metrics over the cohort,
+    and compare each target within tolerance.
     """
     if not path.exists():
         err_console.print(f"[red]path does not exist:[/red] {path}")
@@ -157,6 +233,10 @@ def validate(
             "Milestone 1 implements only us-core-6.1."
         )
         raise typer.Exit(code=2)
+
+    if cohort:
+        _validate_cohort(path, module=module, min_samples=min_samples, as_of=as_of)
+        return
 
     summary = validate_path(path)
 
@@ -252,9 +332,10 @@ def status() -> None:
         ("FHIR Condition builder","[green]implemented[/green]",    "M1"),
         ("atlas generate",        "[green]implemented[/green]",    "M1"),
         ("atlas validate",        "[green]structural[/green]",     "M1"),
+        ("atlas validate --cohort","[green]first cut[/green]",      "M2"),
         ("Module runtime",        "[yellow]probability[/yellow]",  "M2"),
         ("Module library",        "[yellow]1 module[/yellow]",     "M2"),
-        ("Statistical validation","[dim]not started[/dim]",        "M2"),
+        ("Fidelity harness",      "[yellow]1 module[/yellow]",     "M2"),
         ("LLM authoring",         "[dim]not started[/dim]",        "M3"),
         ("Clinical notes",        "[dim]not started[/dim]",        "M4"),
     ]

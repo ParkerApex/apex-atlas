@@ -1,0 +1,26 @@
+module: hypertension
+version: 0.1.0
+source:
+  name: Parker Atlas internal — placeholder
+  note: >
+    First-cut harness target. Mirrors the module's own declared
+    prevalence by age bracket; the harness therefore catches pipeline
+    bugs (bucketing, bundle parsing, sampling) rather than calibration
+    drift. Replace with externally-cited targets (CDC NCHS FastStats,
+    NHANES 2017-2020) when those numbers are ingested.
+
+metrics:
+  - id: essential_hypertension_prevalence_by_age
+    kind: conditional_prevalence
+    condition_code: "59621000"
+    condition_system: http://snomed.info/sct
+    stratify_by: age_bracket
+    tolerance:
+      kind: absolute
+      value: 0.05
+    targets:
+      "0-17": 0.04
+      "18-34": 0.22
+      "35-54": 0.47
+      "55-74": 0.74
+      "75-95": 0.80
