@@ -1,7 +1,7 @@
 """
 Parker Atlas — a next-generation synthetic FHIR patient population generator.
 
-See https://github.com/parker-health/parker-atlas for documentation.
+See https://github.com/ParkerApex/parker-atlas for documentation.
 """
 
 from parker_atlas.gpx import (
