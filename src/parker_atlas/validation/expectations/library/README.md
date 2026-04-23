@@ -31,12 +31,27 @@ metrics:
     condition_system: <terminology system URL>
     stratify_by: age_bracket       # Only stratification supported today
     tolerance:
-      kind: absolute               # Only tolerance kind supported today
-      value: <float>               # e.g. 0.05 = ±5 percentage points
+      kind: absolute | normal | wilson
+      value: <float>               # required only for kind=absolute
+      confidence: 90 | 95 | 99 | 99.9   # optional, default 95; normal/wilson only
     targets:
       "<LOW>-<HIGH>": <float>      # Prevalence rate in [0, 1]
       ...
 ```
+
+### Tolerance kinds
+
+| Kind       | Check                                                                                                  | When to use                                               |
+| ---------- | ------------------------------------------------------------------------------------------------------ | --------------------------------------------------------- |
+| `absolute` | `\|actual - target\| <= value`                                                                         | Simple, coarse; ignores sampling variance.                |
+| `normal`   | Two-sided z-test under H0: true prop = target. Half-width = `z * sqrt(target*(1-target)/n)`.           | Principled for proportions well away from 0 or 1.         |
+| `wilson`   | Wilson score CI *around the observed* proportion; passes if target is inside.                          | Robust at extreme p (near 0 or 1). Preferred modern default. |
+
+`z` is chosen from `confidence`:
+- 90% → 1.6449
+- 95% → 1.9600   (default)
+- 99% → 2.5758
+- 99.9% → 3.2905
 
 ## Adding an expectation
 
@@ -51,16 +66,28 @@ metrics:
 
 ## Tolerance selection
 
-`absolute` tolerance compares `|actual - target| ≤ value`. It is simple
-but ignores sampling variance — pick generous tolerances until the
-harness grows confidence-interval-aware comparisons. A rough rule for
-Bernoulli rates at cohort size N:
+Prefer `wilson` 95% as the default. Wilson-score CIs are well-behaved
+across the full [0, 1] range — including observed proportions near 0
+or 1, where `normal` degenerates and `absolute` is either too tight
+or too loose.
 
-```
-2 * sqrt(p * (1 - p) / N)
-```
+### False-positive rate under CI tolerance
 
-is the ~95% normal CI half-width for a proportion. Tolerances should
-comfortably exceed that at the cohort sizes you run, or you'll get
-false failures on small brackets. The harness also respects
-`--min-samples` and skips brackets with too few patients.
+A CI-based tolerance at confidence `c%` has, by construction, a per-metric
+false-failure rate of `(100 - c)%`. For 95% CIs that's ~5% per bracket per
+run; a 5-bracket expectation has ~23% chance of flagging at least one
+false positive in any given cohort. Mitigations:
+
+- Run with larger cohorts so CIs are narrow relative to any *real* drift.
+- Raise `confidence` to 99% or 99.9% if you want tighter gating without
+  changing cohort size.
+- Run the harness over multiple seeds in CI and require a majority to
+  pass (not yet supported by the CLI — pending feature).
+
+### Choosing `min_samples`
+
+At cohort size N with a bracket holding `f * N` patients, the
+~95% Wilson half-width around observed proportion `p` is roughly
+`1.96 * sqrt(p*(1-p)/(f*N))`. Under `--min-samples`, brackets with
+fewer than the threshold patients are skipped with a notice rather
+than evaluated on too-noisy data.

@@ -8,6 +8,8 @@ source:
     bugs (bucketing, bundle parsing, sampling) rather than calibration
     drift. Replace with externally-cited targets (CDC NCHS FastStats,
     NHANES 2017-2020) when those numbers are ingested.
+    Tolerance is Wilson 95%; at small bracket N, per-metric false-positive
+    rate is ~5% — run cohorts of 20k+ patients for robust passage.
 
 metrics:
   - id: essential_hypertension_prevalence_by_age
@@ -16,8 +18,8 @@ metrics:
     condition_system: http://snomed.info/sct
     stratify_by: age_bracket
     tolerance:
-      kind: absolute
-      value: 0.05
+      kind: wilson
+      confidence: 95
     targets:
       "0-17": 0.04
       "18-34": 0.22
