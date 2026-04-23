@@ -25,6 +25,7 @@ from parker_atlas.core.demographics import sample_demographics
 from parker_atlas.fhir.bundle import patient_bundle
 from parker_atlas.fhir.patient import build_patient_resource
 from parker_atlas.gpx import Allocator, Category
+from parker_atlas.validation.structural import validate_path
 
 app = typer.Typer(
     name="atlas",
@@ -112,9 +113,49 @@ def generate(
 def validate(
     path: Annotated[Path, typer.Argument(help="Path to FHIR resources to validate.")],
     profile: Annotated[Profile, typer.Option(help="FHIR profile to validate against.")] = Profile.US_CORE_6_1,
+    verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show per-file errors and warnings.")] = False,
+    strict: Annotated[bool, typer.Option("--strict", help="Treat warnings as errors.")] = False,
 ) -> None:
-    """Validate FHIR resources against a profile."""
-    _not_implemented("validate", "Milestone 1")
+    """Validate generated FHIR resources structurally.
+
+    Performs schema validation via fhir.resources and checks US Core 6.1
+    Patient minimum elements. This is not a full profile conformance check
+    — that requires an external FHIR validator.
+    """
+    if not path.exists():
+        err_console.print(f"[red]path does not exist:[/red] {path}")
+        raise typer.Exit(code=1)
+    if profile is not Profile.US_CORE_6_1:
+        err_console.print(
+            f"[yellow]--profile={profile.value}[/yellow] is not yet supported. "
+            "Milestone 1 implements only us-core-6.1."
+        )
+        raise typer.Exit(code=2)
+
+    summary = validate_path(path)
+
+    if summary.total == 0:
+        err_console.print(f"[yellow]No JSON files found under[/yellow] {path}")
+        raise typer.Exit(code=1)
+
+    if verbose:
+        for f in summary.files:
+            status = "[green]OK[/green]" if f.ok else "[red]FAIL[/red]"
+            console.print(f"{status} {f.path}")
+            for err in f.errors:
+                console.print(f"  [red]error:[/red] {err}")
+            for warn in f.warnings:
+                console.print(f"  [yellow]warning:[/yellow] {warn}")
+
+    console.print(
+        f"Validated [bold]{summary.total}[/bold] file(s): "
+        f"[green]{summary.passed} passed[/green], "
+        f"[red]{summary.failed} failed[/red], "
+        f"[yellow]{summary.warnings} warning(s)[/yellow]"
+    )
+
+    failed = summary.failed > 0 or (strict and summary.warnings > 0)
+    raise typer.Exit(code=1 if failed else 0)
 
 
 @app.command()
