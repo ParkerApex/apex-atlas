@@ -67,11 +67,35 @@ class Metric:
     targets: dict[tuple[int, int], float]
 
 
+PROVENANCE_LEVELS = ("placeholder", "sourced", "verified")
+
+
+@dataclass(frozen=True, slots=True)
+class SourceCitation:
+    """One external publication / dataset backing an expectation."""
+
+    source: str
+    url: str = ""
+    table: str = ""      # e.g. "Table 4" or a PUMS query description
+    version: str = ""    # e.g. "NHANES 2017-2020 age-adjusted"
+    accessed: str = ""   # ISO date string when the number was last verified
+    note: str = ""
+
+
 @dataclass(frozen=True, slots=True)
 class ExpectationSource:
     name: str
     url: str = ""
     note: str = ""
+    # Provenance tiers:
+    #   placeholder → curated approximation, NOT sourced from a public dataset;
+    #                 output must not be cited as reflecting that dataset.
+    #   sourced     → targets come from publicly-cited data, but numbers
+    #                 haven't been independently re-verified by the project.
+    #   verified    → numbers re-computed from public microdata by the
+    #                 project and matched against the citation within tolerance.
+    provenance: str = "placeholder"
+    citations: tuple[SourceCitation, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -152,10 +176,30 @@ def load_expectation_from_str(yaml_text: str) -> Expectation:
             raise ExpectationError(f"missing required key: {required}")
 
     src_raw = data.get("source") or {}
+    provenance = str(src_raw.get("provenance", "placeholder"))
+    if provenance not in PROVENANCE_LEVELS:
+        raise ExpectationError(
+            f"unsupported provenance {provenance!r}; "
+            f"choices: {list(PROVENANCE_LEVELS)}"
+        )
+    citations_raw = src_raw.get("citations") or []
+    citations = tuple(
+        SourceCitation(
+            source=str(c.get("source", "")),
+            url=str(c.get("url", "")),
+            table=str(c.get("table", "")),
+            version=str(c.get("version", "")),
+            accessed=str(c.get("accessed", "")),
+            note=str(c.get("note", "")),
+        )
+        for c in citations_raw
+    )
     source = ExpectationSource(
         name=str(src_raw.get("name", "")),
         url=str(src_raw.get("url", "")),
         note=str(src_raw.get("note", "")),
+        provenance=provenance,
+        citations=citations,
     )
 
     metrics = tuple(_parse_metric(m) for m in data["metrics"])
