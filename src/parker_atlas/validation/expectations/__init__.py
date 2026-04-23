@@ -1,0 +1,153 @@
+"""
+Fidelity expectations — reference targets for the cohort-validation harness.
+
+Each expectation file declares metrics (e.g. "essential_hypertension
+prevalence by age bracket"), target values, and tolerances. The cohort
+harness computes the corresponding aggregate statistics from generated
+output and fails if any metric breaches its tolerance.
+
+Expectations are independent of modules: a module declares *what rates
+it samples at*, an expectation declares *what rates the output should
+match in aggregate*. For first-cut modules these coincide (the
+expectation mirrors the module's declared prevalence) — the harness is
+therefore catching pipeline bugs, not calibration drift. When an
+expectation cites an external source (NHANES, CDC BRFSS) and diverges
+from the module's declared rates, the harness begins testing
+calibration too.
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from importlib import resources
+from typing import Any
+
+import yaml
+
+
+class ExpectationError(ValueError):
+    """Raised when an expectation file is malformed or invalid."""
+
+
+@dataclass(frozen=True, slots=True)
+class Tolerance:
+    kind: str        # "absolute" is the only kind supported today
+    value: float
+
+
+@dataclass(frozen=True, slots=True)
+class Metric:
+    id: str
+    kind: str                     # "conditional_prevalence"
+    condition_code: str           # terminology code (SNOMED/ICD-10/etc.)
+    condition_system: str
+    stratify_by: str              # "age_bracket"
+    tolerance: Tolerance
+    targets: dict[tuple[int, int], float]
+
+
+@dataclass(frozen=True, slots=True)
+class ExpectationSource:
+    name: str
+    url: str = ""
+    note: str = ""
+
+
+@dataclass(frozen=True, slots=True)
+class Expectation:
+    module: str
+    version: str
+    source: ExpectationSource
+    metrics: tuple[Metric, ...]
+
+
+def _parse_bracket(s: str) -> tuple[int, int]:
+    try:
+        lo_str, hi_str = s.split("-")
+        return int(lo_str), int(hi_str)
+    except ValueError as exc:
+        raise ExpectationError(f"invalid bracket {s!r}; expected 'LOW-HIGH'") from exc
+
+
+def _parse_metric(raw: dict[str, Any]) -> Metric:
+    for required in ("id", "kind", "condition_code", "stratify_by", "tolerance", "targets"):
+        if required not in raw:
+            raise ExpectationError(f"metric missing required key: {required}")
+
+    tol_raw = raw["tolerance"]
+    if "kind" not in tol_raw or "value" not in tol_raw:
+        raise ExpectationError("tolerance requires 'kind' and 'value'")
+    if tol_raw["kind"] != "absolute":
+        raise ExpectationError(
+            f"unsupported tolerance kind {tol_raw['kind']!r}; only 'absolute' is implemented"
+        )
+    tolerance = Tolerance(kind=str(tol_raw["kind"]), value=float(tol_raw["value"]))
+
+    if raw["kind"] != "conditional_prevalence":
+        raise ExpectationError(
+            f"unsupported metric kind {raw['kind']!r}; only 'conditional_prevalence' is implemented"
+        )
+    if raw["stratify_by"] != "age_bracket":
+        raise ExpectationError(
+            f"unsupported stratification {raw['stratify_by']!r}; only 'age_bracket' is implemented"
+        )
+
+    targets = {_parse_bracket(k): float(v) for k, v in raw["targets"].items()}
+
+    return Metric(
+        id=str(raw["id"]),
+        kind=str(raw["kind"]),
+        condition_code=str(raw["condition_code"]),
+        condition_system=str(raw.get("condition_system", "")),
+        stratify_by=str(raw["stratify_by"]),
+        tolerance=tolerance,
+        targets=targets,
+    )
+
+
+def load_expectation_from_str(yaml_text: str) -> Expectation:
+    try:
+        data = yaml.safe_load(yaml_text)
+    except yaml.YAMLError as exc:
+        raise ExpectationError(f"invalid YAML: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ExpectationError("expectation must be a mapping at the top level")
+    for required in ("module", "version", "metrics"):
+        if required not in data:
+            raise ExpectationError(f"missing required key: {required}")
+
+    src_raw = data.get("source") or {}
+    source = ExpectationSource(
+        name=str(src_raw.get("name", "")),
+        url=str(src_raw.get("url", "")),
+        note=str(src_raw.get("note", "")),
+    )
+
+    metrics = tuple(_parse_metric(m) for m in data["metrics"])
+    return Expectation(
+        module=str(data["module"]),
+        version=str(data["version"]),
+        source=source,
+        metrics=metrics,
+    )
+
+
+def load_bundled_expectation(module: str) -> Expectation:
+    """Load a bundled expectation by module name."""
+    pkg = resources.files("parker_atlas.validation.expectations.library")
+    target = pkg.joinpath(f"{module}.yaml")
+    if not target.is_file():
+        available = ", ".join(list_bundled_expectations()) or "(none)"
+        raise ExpectationError(
+            f"no bundled expectation for module {module!r}. Available: {available}"
+        )
+    return load_expectation_from_str(target.read_text(encoding="utf-8"))
+
+
+def list_bundled_expectations() -> list[str]:
+    pkg = resources.files("parker_atlas.validation.expectations.library")
+    return sorted(
+        f.name.removesuffix(".yaml")
+        for f in pkg.iterdir()
+        if f.name.endswith(".yaml")
+    )

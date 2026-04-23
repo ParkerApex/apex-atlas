@@ -43,10 +43,11 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | FHIR Bundle assembly       | ✅ Implemented   | Transaction Bundle, one file per patient                                 |
 | `atlas generate`           | ✅ Implemented   | `atlas generate --patients N --seed S --out DIR` → N FHIR R4 Bundles     |
 | `atlas validate`           | ✅ Structural    | Schema validation + US Core Patient/Condition minimums                   |
+| `atlas validate --cohort`  | ✅ First cut     | Fidelity harness: aggregate metrics vs. declared expectation w/ tolerance |
 | `atlas modules`            | ✅ Implemented   | List bundled modules, show details (`atlas modules --show NAME`)         |
 | Clinical module runtime    | 🟡 Probability  | Probability-module flavor only; state machines in a later milestone      |
 | Module library             | 🟡 1 module     | `hypertension` (placeholder prevalence, pending NHANES ingestion)        |
-| Statistical validation     | ⏳ Not started   | Milestone 2                                                              |
+| Fidelity expectations      | 🟡 1 module     | `hypertension` (placeholder targets; external-source ingestion TBD)       |
 | LLM-assisted authoring     | ⏳ Not started   | Milestone 3                                                              |
 | Clinical note generation   | ⏳ Not started   | Milestone 4                                                              |
 
@@ -84,6 +85,14 @@ Condition resource referencing the Patient:
 ```bash
 atlas generate --patients 20 --seed 0 --module hypertension --out ./out
 atlas modules --show hypertension
+```
+
+Check that a cohort's aggregate statistics match the module's declared
+fidelity targets (larger N keeps sampling variance inside the tolerance):
+
+```bash
+atlas generate --patients 5000 --seed 42 --module hypertension --out ./cohort
+atlas validate ./cohort --cohort --module hypertension
 ```
 
 Planned:
