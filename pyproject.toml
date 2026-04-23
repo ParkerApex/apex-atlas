@@ -8,7 +8,8 @@ version = "0.1.0"
 description = "A next-generation synthetic FHIR patient population generator."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Apache-2.0 OR Parker-Atlas-Commercial" }
+license = "Apache-2.0"
+license-files = ["LICENSE"]
 authors = [
     { name = "Parker Health, Inc.", email = "atlas@parkerapex.com" },
 ]
@@ -21,33 +22,49 @@ classifiers = [
     "Intended Audience :: Developers",
     "Intended Audience :: Healthcare Industry",
     "Intended Audience :: Science/Research",
-    "License :: OSI Approved :: Apache Software License",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Scientific/Engineering :: Medical Science Apps.",
 ]
 
+# Only deps actually imported today live here. As subsystems land,
+# promote them from the extras groups below into the base set.
 dependencies = [
-    "fhir.resources>=7.1.0",      # Pydantic-based FHIR R4/R5 models
-    "pydantic>=2.6.0",
-    "typer>=0.12.0",               # CLI framework
-    "rich>=13.7.0",                # Pretty terminal output
-    "pyyaml>=6.0",                 # Module authoring format
-    "numpy>=1.26.0",
-    "scipy>=1.12.0",               # Statistical distributions for generation
-    "pandas>=2.2.0",
-    "pyarrow>=15.0.0",             # Parquet output
-    "httpx>=0.27.0",                # LLM API client
-    "jinja2>=3.1.0",                # Template rendering for notes
-    "orjson>=3.9.0",                # Fast JSON for bulk output
-    "structlog>=24.1.0",            # Structured logging
+    "typer>=0.12.0",
+    "rich>=13.7.0",
 ]
 
 [project.optional-dependencies]
+fhir = [
+    "fhir.resources>=7.1.0",
+    "pydantic>=2.6.0",
+]
+data = [
+    "numpy>=1.26.0",
+    "scipy>=1.12.0",
+    "pandas>=2.2.0",
+    "pyarrow>=15.0.0",
+]
+modules = [
+    "pyyaml>=6.0",
+]
+notes = [
+    "jinja2>=3.1.0",
+    "httpx>=0.27.0",
+    "orjson>=3.9.0",
+]
+logging = [
+    "structlog>=24.1.0",
+]
 llm = [
     "anthropic>=0.25.0",
     "openai>=1.14.0",
+]
+validation = [
+    "scikit-learn>=1.4.0",
+    "matplotlib>=3.8.0",
+    "seaborn>=0.13.0",
 ]
 dev = [
     "pytest>=8.0.0",
@@ -57,20 +74,18 @@ dev = [
     "mypy>=1.9.0",
     "pre-commit>=3.6.0",
 ]
-validation = [
-    "scikit-learn>=1.4.0",
-    "matplotlib>=3.8.0",
-    "seaborn>=0.13.0",
+all = [
+    "parker-atlas[fhir,data,modules,notes,logging,llm,validation]",
 ]
 
 [project.scripts]
 atlas = "parker_atlas.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/parker-health/parker-atlas"
+Homepage = "https://github.com/ParkerApex/parker-atlas"
 Documentation = "https://parkerapex.com/atlas/docs"
-Repository = "https://github.com/parker-health/parker-atlas"
-"Bug Tracker" = "https://github.com/parker-health/parker-atlas/issues"
+Repository = "https://github.com/ParkerApex/parker-atlas"
+"Bug Tracker" = "https://github.com/ParkerApex/parker-atlas/issues"
 "Parker APEX" = "https://parkerapex.com"
 
 [tool.hatch.build.targets.wheel]

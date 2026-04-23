@@ -21,7 +21,7 @@ The CLA bot will prompt you on your first pull request.
 
 ```bash
 # Clone
-git clone https://github.com/parker-health/parker-atlas.git
+git clone https://github.com/ParkerApex/parker-atlas.git
 cd parker-atlas
 
 # Create a virtual environment
@@ -67,4 +67,4 @@ Parker Atlas follows the [Contributor Covenant v2.1](https://www.contributor-cov
 
 ## Questions
 
-For general questions, open a [GitHub Discussion](https://github.com/parker-health/parker-atlas/discussions). For commercial licensing, contact `licensing@parkerapex.com`.
+For general questions, open a [GitHub Discussion](https://github.com/ParkerApex/parker-atlas/discussions). For commercial licensing, contact `licensing@parkerapex.com`.
