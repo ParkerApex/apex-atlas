@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import json
 import random
+from collections import Counter
 from datetime import date
 from enum import Enum
 from pathlib import Path
@@ -22,7 +23,7 @@ from rich.progress import track
 from rich.table import Table
 
 from parker_atlas import __version__
-from parker_atlas.core.demographics import sample_demographics
+from parker_atlas.core.demographics import race_display, sample_demographics
 from parker_atlas.fhir.bundle import build_bundle, fullurl_for_gpx
 from parker_atlas.fhir.condition import build_condition_resource
 from parker_atlas.fhir.patient import build_patient_resource
@@ -61,6 +62,78 @@ class Profile(str, Enum):
     US_CORE_6_1 = "us-core-6.1"
     IPS = "ips"
     BASE = "base"
+
+
+def _summary_brackets() -> tuple[tuple[int, int], ...]:
+    """Age brackets used by the generate summary. Matches references/tables/age_sex.csv."""
+    from parker_atlas.references import load_age_sex
+
+    return tuple(sorted({(b.age_low, b.age_high) for b in load_age_sex()}))
+
+
+def _bracket_for_age(
+    age: int, brackets: tuple[tuple[int, int], ...]
+) -> tuple[int, int] | None:
+    for lo, hi in brackets:
+        if lo <= age <= hi:
+            return (lo, hi)
+    return None
+
+
+def _print_generate_summary(
+    *,
+    patients: int,
+    age_counter: Counter[tuple[int, int]],
+    sex_counter: Counter[str],
+    race_counter: Counter[str],
+    condition_counter: Counter[str],
+    summary_brackets: tuple[tuple[int, int], ...],
+    modules: list[str],
+) -> None:
+    console.print()
+    age_tbl = Table(title="Age brackets", show_edge=False)
+    age_tbl.add_column("Bracket", style="bold")
+    age_tbl.add_column("N", justify="right")
+    age_tbl.add_column("%", justify="right")
+    for bracket in summary_brackets:
+        n = age_counter.get(bracket, 0)
+        pct = 100.0 * n / patients if patients else 0.0
+        age_tbl.add_row(f"{bracket[0]}-{bracket[1]}", str(n), f"{pct:.1f}%")
+    console.print(age_tbl)
+
+    sex_tbl = Table(title="Sex", show_edge=False)
+    sex_tbl.add_column("Sex", style="bold")
+    sex_tbl.add_column("N", justify="right")
+    sex_tbl.add_column("%", justify="right")
+    for sex in ("female", "male"):
+        n = sex_counter.get(sex, 0)
+        pct = 100.0 * n / patients if patients else 0.0
+        sex_tbl.add_row(sex, str(n), f"{pct:.1f}%")
+    console.print(sex_tbl)
+
+    race_tbl = Table(title="Race", show_edge=False)
+    race_tbl.add_column("Race", style="bold")
+    race_tbl.add_column("N", justify="right")
+    race_tbl.add_column("%", justify="right")
+    for label, n in race_counter.most_common():
+        pct = 100.0 * n / patients if patients else 0.0
+        race_tbl.add_row(label, str(n), f"{pct:.1f}%")
+    console.print(race_tbl)
+
+    if modules:
+        cond_tbl = Table(
+            title=f"Conditions (modules: {', '.join(modules)})", show_edge=False
+        )
+        cond_tbl.add_column("Condition", style="bold")
+        cond_tbl.add_column("Patients", justify="right")
+        cond_tbl.add_column("%", justify="right")
+        if not condition_counter:
+            cond_tbl.add_row("(none fired)", "0", "0.0%")
+        else:
+            for label, n in condition_counter.most_common():
+                pct = 100.0 * n / patients if patients else 0.0
+                cond_tbl.add_row(label, str(n), f"{pct:.1f}%")
+        console.print(cond_tbl)
 
 
 def _not_implemented(command: str, milestone: str) -> None:
@@ -168,6 +241,7 @@ def generate(
     module: Annotated[str | None, typer.Option(help="Limit to a single clinical module.")] = None,
     profile: Annotated[Profile, typer.Option(help="FHIR profile to conform to.")] = Profile.US_CORE_6_1,
     seed: Annotated[int | None, typer.Option(help="RNG seed for reproducibility.")] = None,
+    summary: Annotated[bool, typer.Option("--summary", help="Print cohort demographics and condition summary after generation.")] = False,
 ) -> None:
     """Generate a synthetic FHIR patient population."""
     if patients < 1:
@@ -200,6 +274,13 @@ def generate(
 
     today = date.today()
 
+    # Summary counters are populated regardless; only rendered if --summary.
+    age_counter: Counter[tuple[int, int]] = Counter()
+    sex_counter: Counter[str] = Counter()
+    race_counter: Counter[str] = Counter()
+    condition_counter: Counter[str] = Counter()
+    summary_brackets = _summary_brackets()
+
     description = f"Generating {patients} patient{'s' if patients != 1 else ''}"
     for _ in track(range(patients), description=description, console=console):
         demo = sample_demographics(rng, today=today)
@@ -219,14 +300,32 @@ def generate(
                         code=dx.condition.code,
                     )
                 )
+                condition_counter[dx.condition.code.display] += 1
 
         bundle = build_bundle(gpx, patient, extras)
         (out / f"{gpx}.json").write_text(json.dumps(bundle, indent=2))
+
+        bracket = _bracket_for_age(age_years, summary_brackets)
+        if bracket is not None:
+            age_counter[bracket] += 1
+        sex_counter[demo.gender.value] += 1
+        race_counter[race_display(demo.race)] += 1
 
     console.print(
         f"[green]✓[/green] Wrote {patients} patient bundle"
         f"{'s' if patients != 1 else ''} to [bold]{out}[/bold]"
     )
+
+    if summary:
+        _print_generate_summary(
+            patients=patients,
+            age_counter=age_counter,
+            sex_counter=sex_counter,
+            race_counter=race_counter,
+            condition_counter=condition_counter,
+            summary_brackets=summary_brackets,
+            modules=[m.name for m in active_modules],
+        )
 
 
 @app.command()

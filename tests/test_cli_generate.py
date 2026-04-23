@@ -116,6 +116,55 @@ def test_modules_show_unknown_module_fails():
     assert result.exit_code == 1
 
 
+def test_generate_summary_flag_prints_cohort_breakdown(tmp_path):
+    result = runner.invoke(
+        app,
+        [
+            "generate",
+            "--patients", "500",
+            "--seed", "42",
+            "--module", "hypertension",
+            "--summary",
+            "--out", str(tmp_path),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    out = result.output
+    # Each summary table shows its title.
+    assert "Age brackets" in out
+    assert "Sex" in out
+    assert "Race" in out
+    # Module was active, so the conditions table should include hypertension.
+    assert "Conditions" in out
+    assert "Essential hypertension" in out
+
+
+def test_generate_summary_without_module_omits_condition_table(tmp_path):
+    result = runner.invoke(
+        app,
+        [
+            "generate",
+            "--patients", "50",
+            "--seed", "0",
+            "--summary",
+            "--out", str(tmp_path),
+        ],
+    )
+    assert result.exit_code == 0, result.output
+    out = result.output
+    assert "Age brackets" in out
+    assert "Conditions" not in out  # no modules → no conditions table
+
+
+def test_generate_without_summary_flag_is_silent(tmp_path):
+    result = runner.invoke(
+        app,
+        ["generate", "--patients", "3", "--seed", "0", "--out", str(tmp_path)],
+    )
+    assert result.exit_code == 0, result.output
+    assert "Age brackets" not in result.output
+
+
 def test_generate_rejects_zero_patients(tmp_path):
     result = runner.invoke(
         app,

@@ -87,11 +87,18 @@ atlas generate --patients 20 --seed 0 --module hypertension --out ./out
 atlas modules --show hypertension
 ```
 
+Print cohort demographics and condition breakdown right after
+generation without re-reading the bundles:
+
+```bash
+atlas generate --patients 500 --seed 42 --module hypertension --summary --out ./out
+```
+
 Check that a cohort's aggregate statistics match the module's declared
 fidelity targets (larger N keeps sampling variance inside the tolerance):
 
 ```bash
-atlas generate --patients 5000 --seed 42 --module hypertension --out ./cohort
+atlas generate --patients 20000 --seed 42 --module hypertension --out ./cohort
 atlas validate ./cohort --cohort --module hypertension
 ```
 
