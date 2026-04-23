@@ -19,10 +19,10 @@ from fhir.resources.R4B.patient import Patient as _Patient
 from parker_atlas.core.demographics import (
     AdministrativeGender,
     Demographics,
-    ETHNICITY_DISPLAY,
-    RACE_DISPLAY,
+    ethnicity_display,
+    race_display,
 )
-from parker_atlas.gpx import GPX, SYSTEM_URI
+from parker_atlas.gpx import GPX
 
 US_CORE_PATIENT_PROFILE = (
     "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient|6.1.0"
@@ -34,7 +34,7 @@ US_CORE_BIRTHSEX_URL = "http://hl7.org/fhir/us/core/StructureDefinition/us-core-
 
 
 def _race_extension(demo: Demographics) -> dict[str, Any]:
-    display = RACE_DISPLAY[demo.race]
+    display = race_display(demo.race)
     return {
         "url": US_CORE_RACE_URL,
         "extension": [
@@ -52,7 +52,7 @@ def _race_extension(demo: Demographics) -> dict[str, Any]:
 
 
 def _ethnicity_extension(demo: Demographics) -> dict[str, Any]:
-    display = ETHNICITY_DISPLAY[demo.ethnicity]
+    display = ethnicity_display(demo.ethnicity)
     return {
         "url": US_CORE_ETHNICITY_URL,
         "extension": [
