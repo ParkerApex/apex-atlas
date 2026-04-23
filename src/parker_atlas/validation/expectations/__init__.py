@@ -29,10 +29,31 @@ class ExpectationError(ValueError):
     """Raised when an expectation file is malformed or invalid."""
 
 
+# Z critical values for symmetric two-sided CIs at the named confidence level.
+Z_FOR_CONFIDENCE: dict[float, float] = {
+    90.0: 1.6449,
+    95.0: 1.9600,
+    99.0: 2.5758,
+    99.9: 3.2905,
+}
+
+
 @dataclass(frozen=True, slots=True)
 class Tolerance:
-    kind: str        # "absolute" is the only kind supported today
-    value: float
+    """
+    Tolerance policy for a single metric.
+
+    Kinds:
+    - "absolute"  — fixed half-width in proportion units; requires `value`.
+    - "normal"    — two-sided z-test under H0: true proportion = target. Uses
+                    SE = sqrt(target*(1-target)/n). `confidence` selects z.
+    - "wilson"    — Wilson score CI around the *observed* proportion;
+                    passes if the target falls inside. Robust at extreme p.
+    """
+
+    kind: str
+    value: float = 0.0          # absolute only
+    confidence: float = 95.0    # normal / wilson only
 
 
 @dataclass(frozen=True, slots=True)
@@ -61,6 +82,27 @@ class Expectation:
     metrics: tuple[Metric, ...]
 
 
+def _parse_tolerance(raw: dict[str, Any]) -> Tolerance:
+    if not isinstance(raw, dict) or "kind" not in raw:
+        raise ExpectationError("tolerance requires a mapping with 'kind'")
+    kind = str(raw["kind"])
+    if kind == "absolute":
+        if "value" not in raw:
+            raise ExpectationError("tolerance kind 'absolute' requires 'value'")
+        return Tolerance(kind="absolute", value=float(raw["value"]))
+    if kind in ("normal", "wilson"):
+        confidence = float(raw.get("confidence", 95.0))
+        if confidence not in Z_FOR_CONFIDENCE:
+            raise ExpectationError(
+                f"unsupported confidence {confidence!r}; "
+                f"choices: {sorted(Z_FOR_CONFIDENCE)}"
+            )
+        return Tolerance(kind=kind, confidence=confidence)
+    raise ExpectationError(
+        f"unsupported tolerance kind {kind!r}; choices: absolute, normal, wilson"
+    )
+
+
 def _parse_bracket(s: str) -> tuple[int, int]:
     try:
         lo_str, hi_str = s.split("-")
@@ -74,14 +116,7 @@ def _parse_metric(raw: dict[str, Any]) -> Metric:
         if required not in raw:
             raise ExpectationError(f"metric missing required key: {required}")
 
-    tol_raw = raw["tolerance"]
-    if "kind" not in tol_raw or "value" not in tol_raw:
-        raise ExpectationError("tolerance requires 'kind' and 'value'")
-    if tol_raw["kind"] != "absolute":
-        raise ExpectationError(
-            f"unsupported tolerance kind {tol_raw['kind']!r}; only 'absolute' is implemented"
-        )
-    tolerance = Tolerance(kind=str(tol_raw["kind"]), value=float(tol_raw["value"]))
+    tolerance = _parse_tolerance(raw["tolerance"])
 
     if raw["kind"] != "conditional_prevalence":
         raise ExpectationError(

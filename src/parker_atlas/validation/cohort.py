@@ -21,13 +21,19 @@ stratification, joint metrics, Observation-value distributions.
 from __future__ import annotations
 
 import json
+import math
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date
 from pathlib import Path
 from typing import Any
 
-from parker_atlas.validation.expectations import Expectation, Metric
+from parker_atlas.validation.expectations import (
+    Expectation,
+    Metric,
+    Tolerance,
+    Z_FOR_CONFIDENCE,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -123,6 +129,42 @@ def _load_cohort(
     return patients
 
 
+def _check_tolerance(
+    tol: Tolerance, actual: float, target: float, n: int
+) -> tuple[bool, float]:
+    """
+    Evaluate whether `actual` meets `target` under `tol` at sample size `n`.
+    Returns (within_tolerance, effective_half_width). The half-width is:
+    - `tol.value` for `absolute`;
+    - `z * SE(target)` for `normal`;
+    - the Wilson CI radius (around observed) for `wilson`.
+    """
+    if tol.kind == "absolute":
+        return abs(actual - target) <= tol.value, tol.value
+
+    z = Z_FOR_CONFIDENCE[tol.confidence]
+
+    if tol.kind == "normal":
+        if target <= 0.0 or target >= 1.0:
+            # Degenerate: only exact match passes.
+            return actual == target, 0.0
+        se = math.sqrt(target * (1.0 - target) / n)
+        half = z * se
+        return abs(actual - target) <= half, half
+
+    if tol.kind == "wilson":
+        if n == 0:
+            return False, 0.0
+        denom = 1.0 + z * z / n
+        center = (actual + z * z / (2.0 * n)) / denom
+        radius = (z / denom) * math.sqrt(
+            actual * (1.0 - actual) / n + z * z / (4.0 * n * n)
+        )
+        return (center - radius) <= target <= (center + radius), radius
+
+    raise ValueError(f"unknown tolerance kind {tol.kind!r}")
+
+
 def _evaluate_metric(
     metric: Metric,
     patients: list[tuple[int, set[str]]],
@@ -157,8 +199,7 @@ def _evaluate_metric(
             )
             continue
         actual = sum(samples) / n
-        diff = abs(actual - target)
-        within = diff <= metric.tolerance.value
+        within, half = _check_tolerance(metric.tolerance, actual, target, n)
         report.results.append(
             MetricResult(
                 metric_id=metric.id,
@@ -166,7 +207,7 @@ def _evaluate_metric(
                 n=n,
                 actual=actual,
                 target=target,
-                tolerance=metric.tolerance.value,
+                tolerance=half,
                 within_tolerance=within,
             )
         )
