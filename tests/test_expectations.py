@@ -124,9 +124,10 @@ class TestLoader:
         exp = load_bundled_expectation("hypertension")
         assert exp.module == "hypertension"
         assert exp.metrics
-        m = exp.metrics[0]
-        assert m.condition_code == "59621000"
-        assert (35, 54) in m.targets
+        age_metric = next(m for m in exp.metrics if m.stratify_by == "age_bracket")
+        assert age_metric.condition_code == "59621000"
+        # Post-NHANES-ingest brackets: 18-39, 40-59, 60-99.
+        assert (40, 59) in age_metric.targets
 
     def test_list_bundled_expectations_includes_hypertension(self):
         assert "hypertension" in list_bundled_expectations()
@@ -203,11 +204,13 @@ class TestProvenance:
         with pytest.raises(ExpectationError, match="provenance"):
             load_expectation_from_str(yaml_text)
 
-    def test_bundled_hypertension_is_placeholder(self):
+    def test_bundled_hypertension_is_sourced(self):
+        # Post-NHANES ingest: hypertension expectation carries sourced provenance.
         exp = load_bundled_expectation("hypertension")
-        assert exp.source.provenance == "placeholder"
-        assert exp.source.citations  # expectation declares its citations
+        assert exp.source.provenance == "sourced"
+        assert exp.source.citations
         assert any("cdc" in c.url.lower() for c in exp.source.citations)
+        assert any("NCHS" in c.source or "NHANES" in c.source for c in exp.source.citations)
 
 
 class TestSexStratifiedParsing:

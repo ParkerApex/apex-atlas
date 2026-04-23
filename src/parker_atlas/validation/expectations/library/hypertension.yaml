@@ -1,74 +1,66 @@
 module: hypertension
-version: 0.1.0
+version: 0.2.0
 source:
-  name: Parker Atlas internal — placeholder
-  provenance: placeholder
-  note: >
-    First-cut harness target. Numbers below are curated approximations
-    consistent with published adult-hypertension prevalence bands; they
-    are NOT drawn from NHANES microdata and must not be cited as such.
-    They mirror the hypertension module's own declared prevalence, so
-    the harness currently catches pipeline bugs (bucketing, bundle
-    parsing, sampling) rather than calibration drift. When real numbers
-    are ingested from the citations below, raise `provenance` to
-    `sourced` (or `verified` once the project independently reproduces
-    them) and update the targets accordingly.
-    Tolerance is Wilson 99%. The per-metric false-positive rate is ~1%,
-    chosen to absorb the multiple-comparisons problem across the 11
-    bracket × sex cells below while still catching real drift. Run
-    cohorts of 20k+ patients for robust passage.
+  name: NCHS Data Brief 511 (NHANES Aug 2021 – Aug 2023)
+  provenance: sourced
+  url: https://www.cdc.gov/nchs/products/databriefs/db511.htm
+  note: 'Age- and sex-stratified hypertension prevalence among US adults aged 18
+
+    and older. Numbers are crude (unadjusted) prevalence percentages from
+
+    Table 1 of NCHS Data Brief No. 511, divided by 100 to yield proportions.
+
+    Hypertension is defined per the publication as "measured high blood
+
+    pressure and/or currently taking antihypertensive medication."
+
+    Published 95% CIs are preserved in the source_note column of the input
+
+    CSV for audit but are not yet used by the Wilson tolerance checker.
+
+    '
   citations:
-    - source: CDC National Center for Health Statistics, FastStats
-      url: https://www.cdc.gov/nchs/fastats/hypertension.htm
-      version: FastStats (hypertension summary)
-      note: >
-        Top-line reference for US adult (18+) hypertension prevalence.
-        Age-bracketed rates used by this expectation come from NHANES-
-        derived tables referenced there, not fetched by Parker Atlas.
-    - source: NHANES 2017-2020 (pre-pandemic)
-      url: https://wwwn.cdc.gov/nchs/nhanes/continuousnhanes/default.aspx?Cycle=2017-2020
-      version: NHANES 2017-2020 pre-pandemic cycle
-      note: >
-        Primary microdata source for age- and sex-specific US
-        hypertension prevalence. Ingestion into Parker Atlas is tracked
-        in docs/roadmap.md; once ingested, this expectation switches
-        from `placeholder` to `sourced` and the targets are regenerated
-        from the microdata.
+  - source: 'Muntner P, Miller EC, Jaeger BC, et al. Hypertension Prevalence, Awareness, Treatment, and
+      Control Among Adults Age 18 and Older: United States, August 2021–August 2023. NCHS Data Brief no.
+      511.
 
+      '
+    url: https://www.cdc.gov/nchs/products/databriefs/db511.htm
+    version: NCHS Data Brief No. 511
+    accessed: '2026-04-23'
+    table: 'Table 1: Prevalence, awareness, treatment, and control of hypertension among adults age 18
+      and older, by selected characteristics: United States, August 2021–August 2023'
+    note: 'Numbers extracted via webfetch on 2026-04-23. Any subsequent NCHS revision of Brief 511 should
+      trigger a re-ingest.
+
+      '
 metrics:
-  - id: essential_hypertension_prevalence_by_age
-    kind: conditional_prevalence
-    condition_code: "59621000"
-    condition_system: http://snomed.info/sct
-    stratify_by: age_bracket
-    tolerance:
-      kind: wilson
-      confidence: 99
-    targets:
-      "0-17": 0.04
-      "18-34": 0.22
-      "35-54": 0.47
-      "55-74": 0.74
-      "75-95": 0.80
-
-  # Sex-stratified check. The current module does not differentiate by
-  # sex, so male/female targets here are equal. When a future module
-  # revision introduces the documented sex crossover (male-higher in
-  # middle age, female-higher in old age), these targets diverge.
-  - id: essential_hypertension_prevalence_by_sex_and_age
-    kind: conditional_prevalence
-    condition_code: "59621000"
-    condition_system: http://snomed.info/sct
-    stratify_by: sex_and_age
-    tolerance:
-      kind: wilson
-      confidence: 99
-    targets:
-      female:
-        "18-34": 0.22
-        "35-54": 0.47
-        "55-74": 0.74
-      male:
-        "18-34": 0.22
-        "35-54": 0.47
-        "55-74": 0.74
+- id: essential_hypertension_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '59621000'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    18-39: 0.234
+    40-59: 0.525
+    60-99: 0.716
+- id: essential_hypertension_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '59621000'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    female:
+      18-39: 0.164
+      40-59: 0.49
+      60-99: 0.706
+    male:
+      18-39: 0.3
+      40-59: 0.559
+      60-99: 0.727
