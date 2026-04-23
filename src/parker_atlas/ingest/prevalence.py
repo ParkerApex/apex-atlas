@@ -209,9 +209,17 @@ def _build_metrics(
     return output
 
 
+class _NoAliasDumper(yaml.SafeDumper):
+    """SafeDumper that never emits anchors/aliases, even when sub-trees repeat."""
+
+    def ignore_aliases(self, _data: Any) -> bool:
+        return True
+
+
 def _dump_yaml(obj: Any) -> str:
-    return yaml.safe_dump(
+    return yaml.dump(
         obj,
+        Dumper=_NoAliasDumper,
         sort_keys=False,
         default_flow_style=False,
         allow_unicode=True,

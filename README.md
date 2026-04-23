@@ -38,7 +38,9 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | Component                  | Status           | Notes                                                                    |
 | -------------------------- | ---------------- | ------------------------------------------------------------------------ |
 | Parker GPX identifier      | ✅ Implemented   | `src/parker_atlas/gpx.py` — spec v1.0, fully tested                      |
-| Demographic sampling       | 🟡 Placeholder   | Hardcoded US marginals; ACS-backed sampler in later M1 work              |
+| Demographic sampling       | 🟡 Placeholder   | Externalized to CSVs, but distributions still curated — pending ACS ingestion |
+| Hypertension prevalence    | ✅ Sourced       | NCHS Data Brief 511 (NHANES Aug 2021–Aug 2023) — age- and sex-stratified     |
+| `atlas ingest prevalence`  | ✅ Implemented   | CSV + metadata → sourced fidelity expectation YAML, with provenance checks    |
 | FHIR Patient builder       | ✅ Implemented   | US Core 6.1 Patient with race/ethnicity/birthsex extensions + HTEST tag  |
 | FHIR Bundle assembly       | ✅ Implemented   | Transaction Bundle, one file per patient                                 |
 | `atlas generate`           | ✅ Implemented   | `atlas generate --patients N --seed S --out DIR` → N FHIR R4 Bundles     |
@@ -46,8 +48,8 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | `atlas validate --cohort`  | ✅ First cut     | Fidelity harness: aggregate metrics vs. declared expectation w/ tolerance |
 | `atlas modules`            | ✅ Implemented   | List bundled modules, show details (`atlas modules --show NAME`)         |
 | Clinical module runtime    | 🟡 Probability  | Probability-module flavor only; state machines in a later milestone      |
-| Module library             | 🟡 1 module     | `hypertension` (placeholder prevalence, pending NHANES ingestion)        |
-| Fidelity expectations      | 🟡 1 module     | `hypertension` (placeholder targets; external-source ingestion TBD)       |
+| Module library             | 🟡 1 module     | `hypertension` (NHANES-sourced, sex-stratified; pediatric still placeholder) |
+| Fidelity expectations      | ✅ 1 module     | `hypertension` sourced from NCHS Data Brief 511                           |
 | LLM-assisted authoring     | ⏳ Not started   | Milestone 3                                                              |
 | Clinical note generation   | ⏳ Not started   | Milestone 4                                                              |
 

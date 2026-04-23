@@ -1,17 +1,29 @@
 module: hypertension
-version: 0.1.0
+version: 0.2.0
 description: >
-  Essential hypertension prevalence by age bracket. Probability-module
-  flavor — each bracket maps to a Bernoulli rate. Rates are placeholder
-  approximations pending NHANES ingestion; see docs/roadmap.md for the
-  fidelity-harness follow-up.
+  Essential hypertension prevalence by age bracket and sex. Probability-
+  module flavor — each (age, sex) cell maps to a Bernoulli rate.
+
+  Adult (18+) prevalence rates are sourced from NCHS Data Brief 511
+  (NHANES August 2021 – August 2023), Table 1. The pediatric (0-17)
+  bracket is a placeholder: NHANES does not survey minors for
+  hypertension on this cascade. A separate pediatric source (e.g.,
+  Hansen 2007 American Academy of Pediatrics) would refine this.
+
+  The bundled fidelity expectation uses the same NHANES numbers, so
+  `atlas validate --cohort --module hypertension` at sufficient cohort
+  size is currently a pipeline-correctness check (module matches its
+  own declared rates). Once a future module revision diverges from
+  the expectation (say, stratifying beyond sex × age), the harness
+  will begin testing calibration as well.
 cites:
-  - source: CDC National Center for Health Statistics, FastStats
-    url: https://www.cdc.gov/nchs/fastats/hypertension.htm
+  - source: NCHS Data Brief 511 (Muntner et al., NHANES Aug 2021–Aug 2023)
+    url: https://www.cdc.gov/nchs/products/databriefs/db511.htm
     summary: >
-      US adults aged 18+ hypertension prevalence was approximately 48%
-      (age-adjusted, 2017-2020 NHANES). Prevalence climbs steeply with
-      age; published brackets used here as rough anchors.
+      US adults aged 18+ hypertension prevalence (crude): 23.4% at
+      18-39, 52.5% at 40-59, 71.6% at 60+ (both sexes). Sex breakdown:
+      men 30.0/55.9/72.7%, women 16.4/49.0/70.6%. Hypertension defined
+      as measured high BP and/or taking antihypertensive medication.
 conditions:
   - id: essential_hypertension
     code:
@@ -19,8 +31,13 @@ conditions:
       code: "59621000"
       display: Essential hypertension (disorder)
     prevalence:
-      "0-17": 0.04
-      "18-34": 0.22
-      "35-54": 0.47
-      "55-74": 0.74
-      "75-95": 0.80
+      female:
+        "0-17": 0.04
+        "18-39": 0.164
+        "40-59": 0.490
+        "60-99": 0.706
+      male:
+        "0-17": 0.04
+        "18-39": 0.300
+        "40-59": 0.559
+        "60-99": 0.727
