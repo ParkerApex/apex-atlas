@@ -1,10 +1,19 @@
 """
 Demographic sampling for synthetic patient generation.
 
-This module provides placeholder distributions used by the Milestone 1
-vertical slice. The distributions below are rough approximations of US
-population marginals; they will be replaced with calibrated samples from
-US Census ACS microdata in a follow-up milestone.
+Distributions live in `parker_atlas/references/tables/*.csv` and are
+loaded through `parker_atlas.references`. They are currently curated
+placeholders; real US Census ACS ingestion is tracked under Milestone 1
+follow-up work in `docs/roadmap.md`.
+
+Sampling structure:
+- `age_sex.csv` provides a joint age-bracket × sex distribution. A
+  single draw yields (age_bracket, sex), preserving the slight sex
+  imbalance that varies by bracket (e.g. women live longer).
+- `race.csv` and `ethnicity.csv` are marginal OMB-category distributions,
+  drawn independently of age and sex. Joint modeling with age/sex lands
+  when ACS data replaces the placeholders.
+- `names.csv` provides three pools keyed by sex + surname.
 """
 
 from __future__ import annotations
@@ -13,6 +22,15 @@ import random
 from dataclasses import dataclass
 from datetime import date, timedelta
 from enum import Enum
+
+from parker_atlas.references import (
+    AgeSexBin,
+    CategoryWeight,
+    load_age_sex,
+    load_ethnicity,
+    load_names,
+    load_race,
+)
 
 
 class AdministrativeGender(str, Enum):
@@ -31,16 +49,6 @@ class Race(str, Enum):
     OTHER = "2131-1"
 
 
-RACE_DISPLAY: dict[Race, str] = {
-    Race.WHITE: "White",
-    Race.BLACK: "Black or African American",
-    Race.AMERICAN_INDIAN: "American Indian or Alaska Native",
-    Race.ASIAN: "Asian",
-    Race.PACIFIC_ISLANDER: "Native Hawaiian or Other Pacific Islander",
-    Race.OTHER: "Other Race",
-}
-
-
 class Ethnicity(str, Enum):
     """OMB ethnicity categories used by the US Core ethnicity extension."""
 
@@ -48,56 +56,20 @@ class Ethnicity(str, Enum):
     NON_HISPANIC = "2186-5"
 
 
-ETHNICITY_DISPLAY: dict[Ethnicity, str] = {
-    Ethnicity.HISPANIC: "Hispanic or Latino",
-    Ethnicity.NON_HISPANIC: "Not Hispanic or Latino",
-}
+def race_display(race: Race) -> str:
+    """Return the human-readable label for an OMB race code."""
+    for row in load_race():
+        if row.code == race.value:
+            return row.display
+    raise KeyError(race)
 
 
-# Placeholder distributions. Rough US population marginals — replace with
-# ACS-backed samplers before any statistical-fidelity claims.
-_GENDER_DIST: list[tuple[AdministrativeGender, float]] = [
-    (AdministrativeGender.FEMALE, 0.505),
-    (AdministrativeGender.MALE, 0.495),
-]
-
-_RACE_DIST: list[tuple[Race, float]] = [
-    (Race.WHITE, 0.59),
-    (Race.BLACK, 0.13),
-    (Race.ASIAN, 0.06),
-    (Race.AMERICAN_INDIAN, 0.01),
-    (Race.PACIFIC_ISLANDER, 0.003),
-    (Race.OTHER, 0.207),
-]
-
-_ETHNICITY_DIST: list[tuple[Ethnicity, float]] = [
-    (Ethnicity.HISPANIC, 0.19),
-    (Ethnicity.NON_HISPANIC, 0.81),
-]
-
-_AGE_BRACKETS: list[tuple[tuple[int, int], float]] = [
-    ((0, 17), 0.22),
-    ((18, 34), 0.23),
-    ((35, 54), 0.26),
-    ((55, 74), 0.22),
-    ((75, 95), 0.07),
-]
-
-_FIRST_NAMES_F = [
-    "Mary", "Patricia", "Jennifer", "Linda", "Elizabeth", "Barbara",
-    "Susan", "Jessica", "Sarah", "Karen", "Nancy", "Lisa", "Margaret",
-    "Betty", "Sandra", "Ashley", "Dorothy", "Kimberly", "Emily", "Donna",
-]
-_FIRST_NAMES_M = [
-    "James", "Robert", "John", "Michael", "David", "William", "Richard",
-    "Joseph", "Thomas", "Christopher", "Charles", "Daniel", "Matthew",
-    "Anthony", "Mark", "Donald", "Steven", "Paul", "Andrew", "Joshua",
-]
-_LAST_NAMES = [
-    "Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller",
-    "Davis", "Rodriguez", "Martinez", "Hernandez", "Lopez", "Gonzalez",
-    "Wilson", "Anderson", "Thomas", "Taylor", "Moore", "Jackson", "Martin",
-]
+def ethnicity_display(ethnicity: Ethnicity) -> str:
+    """Return the human-readable label for an OMB ethnicity code."""
+    for row in load_ethnicity():
+        if row.code == ethnicity.value:
+            return row.display
+    raise KeyError(ethnicity)
 
 
 @dataclass(frozen=True, slots=True)
@@ -111,27 +83,35 @@ class Demographics:
     birth_sex: AdministrativeGender
 
 
-def _weighted_choice(rng: random.Random, options: list[tuple]) -> object:
-    items, weights = zip(*options, strict=True)
-    return rng.choices(list(items), weights=list(weights), k=1)[0]
+def _weighted_choice_bin(rng: random.Random, bins: tuple[AgeSexBin, ...]) -> AgeSexBin:
+    weights = [b.weight for b in bins]
+    return rng.choices(list(bins), weights=weights, k=1)[0]
+
+
+def _weighted_choice_category(
+    rng: random.Random, rows: tuple[CategoryWeight, ...]
+) -> CategoryWeight:
+    weights = [r.weight for r in rows]
+    return rng.choices(list(rows), weights=weights, k=1)[0]
 
 
 def sample_demographics(rng: random.Random, today: date | None = None) -> Demographics:
-    """Draw a single synthetic demographic record from the placeholder distributions."""
+    """Draw a single synthetic demographic record from the reference tables."""
     today = today or date.today()
 
-    gender = _weighted_choice(rng, _GENDER_DIST)
-    age_lo, age_hi = _weighted_choice(rng, _AGE_BRACKETS)
-    age_years = rng.randint(age_lo, age_hi)
+    age_sex = _weighted_choice_bin(rng, load_age_sex())
+    gender = AdministrativeGender(age_sex.sex)
+    age_years = rng.randint(age_sex.age_low, age_sex.age_high)
     days_back = age_years * 365 + rng.randint(0, 364)
     birth_date = today - timedelta(days=days_back)
 
-    race = _weighted_choice(rng, _RACE_DIST)
-    ethnicity = _weighted_choice(rng, _ETHNICITY_DIST)
+    race = Race(_weighted_choice_category(rng, load_race()).code)
+    ethnicity = Ethnicity(_weighted_choice_category(rng, load_ethnicity()).code)
 
-    pool = _FIRST_NAMES_F if gender is AdministrativeGender.FEMALE else _FIRST_NAMES_M
-    given = rng.choice(pool)
-    family = rng.choice(_LAST_NAMES)
+    names = load_names()
+    first_pool = "first_female" if gender is AdministrativeGender.FEMALE else "first_male"
+    given = rng.choice(names[first_pool])
+    family = rng.choice(names["last"])
 
     return Demographics(
         given_name=given,
