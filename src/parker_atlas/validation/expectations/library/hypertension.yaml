@@ -2,14 +2,36 @@ module: hypertension
 version: 0.1.0
 source:
   name: Parker Atlas internal — placeholder
+  provenance: placeholder
   note: >
-    First-cut harness target. Mirrors the module's own declared
-    prevalence by age bracket; the harness therefore catches pipeline
-    bugs (bucketing, bundle parsing, sampling) rather than calibration
-    drift. Replace with externally-cited targets (CDC NCHS FastStats,
-    NHANES 2017-2020) when those numbers are ingested.
+    First-cut harness target. Numbers below are curated approximations
+    consistent with published adult-hypertension prevalence bands; they
+    are NOT drawn from NHANES microdata and must not be cited as such.
+    They mirror the hypertension module's own declared prevalence, so
+    the harness currently catches pipeline bugs (bucketing, bundle
+    parsing, sampling) rather than calibration drift. When real numbers
+    are ingested from the citations below, raise `provenance` to
+    `sourced` (or `verified` once the project independently reproduces
+    them) and update the targets accordingly.
     Tolerance is Wilson 95%; at small bracket N, per-metric false-positive
     rate is ~5% — run cohorts of 20k+ patients for robust passage.
+  citations:
+    - source: CDC National Center for Health Statistics, FastStats
+      url: https://www.cdc.gov/nchs/fastats/hypertension.htm
+      version: FastStats (hypertension summary)
+      note: >
+        Top-line reference for US adult (18+) hypertension prevalence.
+        Age-bracketed rates used by this expectation come from NHANES-
+        derived tables referenced there, not fetched by Parker Atlas.
+    - source: NHANES 2017-2020 (pre-pandemic)
+      url: https://wwwn.cdc.gov/nchs/nhanes/continuousnhanes/default.aspx?Cycle=2017-2020
+      version: NHANES 2017-2020 pre-pandemic cycle
+      note: >
+        Primary microdata source for age- and sex-specific US
+        hypertension prevalence. Ingestion into Parker Atlas is tracked
+        in docs/roadmap.md; once ingested, this expectation switches
+        from `placeholder` to `sourced` and the targets are regenerated
+        from the microdata.
 
 metrics:
   - id: essential_hypertension_prevalence_by_age

@@ -96,7 +96,17 @@ def _validate_cohort(
         err_console.print(f"[yellow]No FHIR Bundles found under[/yellow] {path}")
         raise typer.Exit(code=1)
 
-    table = Table(title=f"Cohort fidelity: {expectation.module} v{expectation.version}")
+    prov = expectation.source.provenance
+    prov_color = {
+        "placeholder": "yellow",
+        "sourced": "cyan",
+        "verified": "green",
+    }.get(prov, "white")
+    title = (
+        f"Cohort fidelity: {expectation.module} v{expectation.version} "
+        f"[[{prov_color}]{prov}[/{prov_color}]]"
+    )
+    table = Table(title=title)
     table.add_column("Metric", style="bold")
     table.add_column("Bracket")
     table.add_column("N", justify="right")
@@ -116,6 +126,20 @@ def _validate_cohort(
             status,
         )
     console.print(table)
+
+    if prov == "placeholder":
+        console.print(
+            "[yellow]⚠ expectation provenance is 'placeholder'[/yellow] — "
+            "targets are curated approximations, not externally cited. "
+            "Pass/fail here reflects pipeline correctness, not calibration."
+        )
+    for cite in expectation.source.citations:
+        pieces = [cite.source]
+        if cite.version:
+            pieces.append(cite.version)
+        if cite.url:
+            pieces.append(cite.url)
+        console.print(f"  cite: {' — '.join(pieces)}")
 
     for note in report.skipped:
         console.print(f"[yellow]skipped:[/yellow] {note}")

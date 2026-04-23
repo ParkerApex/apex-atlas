@@ -7,12 +7,23 @@ for the `hypertension` module).
 
 ## Status
 
-All bundled expectations are **curated placeholders**. They currently
-mirror the prevalence declared in the corresponding module YAML, so the
-harness catches pipeline bugs but not calibration drift. Externally-cited
-expectations (NHANES, CDC BRFSS, SEER) will land as those datasets are
-ingested — at which point the expectation file diverges from the module's
-own rates and the harness begins testing calibration too.
+All bundled expectations declare a `provenance` tier:
+
+- `placeholder` — curated approximations; not sourced from a public
+  dataset. Output must not be cited as reflecting that dataset.
+- `sourced` — targets drawn from the listed public citations, but not
+  independently re-verified by the project.
+- `verified` — targets re-computed from public microdata by the project
+  and matched against the citation within tolerance.
+
+Every bundled expectation ships at `placeholder` today. When real data
+lands (NHANES, CDC BRFSS, SEER), the file lifts to `sourced` and the
+targets diverge from the module's own declared rates — at which point
+the harness begins testing calibration in addition to pipeline
+correctness.
+
+The cohort harness prints the provenance tier next to the expectation
+title and emits a visible warning whenever it runs at `placeholder`.
 
 ## Schema
 
@@ -20,9 +31,17 @@ own rates and the harness begins testing calibration too.
 module: <string>          # Must match a bundled module name
 version: <semver>
 source:
-  name: <string>          # Data provenance label
+  name: <string>          # Short data provenance label
   url: <string>           # (optional) citation URL
   note: <string>          # (optional) notes on sourcing / scope
+  provenance: placeholder | sourced | verified   # default: placeholder
+  citations:              # (optional) list of backing publications
+    - source: <string>
+      url: <string>
+      version: <string>
+      table: <string>     # publication table identifier
+      accessed: <YYYY-MM-DD>
+      note: <string>
 
 metrics:
   - id: <short identifier>

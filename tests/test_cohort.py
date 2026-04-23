@@ -200,3 +200,21 @@ class TestValidateCohortCLI:
         result = runner.invoke(app, ["validate", str(tmp_path)])
         assert result.exit_code == 0
         assert "passed" in result.output
+
+    def test_cohort_output_shows_placeholder_provenance(self, tmp_path):
+        _generate(tmp_path, patients=200, seed=0, module="hypertension")
+        result = runner.invoke(
+            app,
+            [
+                "validate",
+                str(tmp_path),
+                "--cohort",
+                "--module", "hypertension",
+                "--min-samples", "10",
+                "--as-of", "2026-04-23",
+            ],
+        )
+        # Exit code may be 0 or 1 depending on sampling; we just care
+        # that the output clearly labels the expectation as placeholder.
+        assert "placeholder" in result.output
+        assert "cdc.gov" in result.output.lower()  # a citation URL is surfaced
