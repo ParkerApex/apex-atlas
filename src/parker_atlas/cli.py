@@ -47,6 +47,14 @@ app = typer.Typer(
     no_args_is_help=True,
     add_completion=False,
 )
+
+ingest_app = typer.Typer(
+    name="ingest",
+    help="Ingest external data sources into Parker Atlas (prevalence, demographics, …).",
+    no_args_is_help=True,
+)
+app.add_typer(ingest_app)
+
 console = Console()
 err_console = Console(stderr=True)
 
@@ -467,6 +475,50 @@ def status() -> None:
     for row in rows:
         table.add_row(*row)
     console.print(table)
+
+
+@ingest_app.command("prevalence")
+def ingest_prevalence_cmd(
+    input: Annotated[Path, typer.Option("--input", "-i", help="Input CSV with prevalence rows.")],
+    metadata: Annotated[Path, typer.Option("--metadata", "-m", help="Metadata YAML carrying module, tolerance, and citations.")],
+    output: Annotated[Path | None, typer.Option("--output", "-o", help="Destination path. Omit to print the rendered YAML to stdout.")] = None,
+    overwrite: Annotated[bool, typer.Option("--overwrite", help="Allow overwriting an existing --output file.")] = False,
+) -> None:
+    """Build a fidelity expectation YAML from a prevalence CSV + metadata YAML.
+
+    The ingest path enforces `provenance` of `sourced` or `verified` — placeholder
+    expectations should be authored by hand. Output is round-tripped through the
+    expectation loader before being written, so malformed metadata fails at ingest
+    time rather than at `atlas validate --cohort` time.
+    """
+    from parker_atlas.ingest.prevalence import IngestionError, ingest_prevalence
+
+    if not input.exists():
+        err_console.print(f"[red]input CSV does not exist:[/red] {input}")
+        raise typer.Exit(code=1)
+    if not metadata.exists():
+        err_console.print(f"[red]metadata YAML does not exist:[/red] {metadata}")
+        raise typer.Exit(code=1)
+
+    try:
+        expectation_yaml = ingest_prevalence(input, metadata)
+    except IngestionError as exc:
+        err_console.print(f"[red]ingest failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    if output is None:
+        console.print(expectation_yaml, end="", highlight=False)
+        return
+
+    if output.exists() and not overwrite:
+        err_console.print(
+            f"[red]{output} already exists[/red]. Pass --overwrite to replace."
+        )
+        raise typer.Exit(code=1)
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(expectation_yaml, encoding="utf-8")
+    console.print(f"[green]✓[/green] Wrote {output}")
 
 
 if __name__ == "__main__":
