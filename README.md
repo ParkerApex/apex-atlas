@@ -35,47 +35,49 @@ Parker Atlas is not trained on, derived from, or in any way informed by restrict
 
 Parker Atlas is in early development. The current repository is a scaffold — most components described below are design-complete but not yet implemented.
 
-| Component                  | Status           | Notes                                                         |
-| -------------------------- | ---------------- | ------------------------------------------------------------- |
-| Parker GPX identifier      | ✅ Implemented   | `src/parker_atlas/gpx.py` — spec v1.0, fully tested           |
-| CLI scaffolding            | 🟡 Stub          | `atlas --help` works; subcommands exit with "not implemented" |
-| Simulation core            | ⏳ Not started   | Milestone 1                                                   |
-| FHIR resource builders     | ⏳ Not started   | Milestone 1                                                   |
-| Clinical module runtime    | ⏳ Not started   | Milestone 2                                                   |
-| Module library (10+)       | ⏳ Not started   | Milestone 2                                                   |
-| Statistical validation     | ⏳ Not started   | Milestone 2                                                   |
-| LLM-assisted authoring     | ⏳ Not started   | Milestone 3                                                   |
-| Clinical note generation   | ⏳ Not started   | Milestone 4                                                   |
+| Component                  | Status           | Notes                                                                    |
+| -------------------------- | ---------------- | ------------------------------------------------------------------------ |
+| Parker GPX identifier      | ✅ Implemented   | `src/parker_atlas/gpx.py` — spec v1.0, fully tested                      |
+| Demographic sampling       | 🟡 Placeholder   | Hardcoded US marginals; ACS-backed sampler in later M1 work              |
+| FHIR Patient builder       | ✅ Implemented   | US Core 6.1 Patient with race/ethnicity/birthsex extensions + HTEST tag  |
+| FHIR Bundle assembly       | ✅ Implemented   | Transaction Bundle, one file per patient                                 |
+| `atlas generate`           | ✅ Implemented   | `atlas generate --patients N --seed S --out DIR` → N FHIR R4 Bundles     |
+| `atlas validate`           | 🟡 Stub          | Ships in Milestone 1 follow-up                                           |
+| Clinical module runtime    | ⏳ Not started   | Milestone 2                                                              |
+| Module library (10+)       | ⏳ Not started   | Milestone 2                                                              |
+| Statistical validation     | ⏳ Not started   | Milestone 2                                                              |
+| LLM-assisted authoring     | ⏳ Not started   | Milestone 3                                                              |
+| Clinical note generation   | ⏳ Not started   | Milestone 4                                                              |
 
 See [`docs/roadmap.md`](./docs/roadmap.md) for timeline and exit criteria.
 
 ## Quick start
 
-> Parker Atlas is not yet on PyPI. Once v1.0 ships, the commands below will be the primary entry points.
-
-```bash
-# (Planned) Install from PyPI
-pip install parker-atlas
-
-# (Planned) Generate 1,000 synthetic patients, FHIR R4 Bundle output
-atlas generate --patients 1000 --format fhir-r4 --out ./patients/
-
-# (Planned) Validate against US Core 6.1
-atlas validate ./patients/ --profile us-core-6.1
-
-# (Planned) Run a specific clinical module
-atlas generate --patients 100 --module type-2-diabetes --out ./t2d/
-```
-
-### Developing locally
+> Parker Atlas is not yet on PyPI. Install from source to try the current slice.
 
 ```bash
 git clone https://github.com/ParkerApex/parker-atlas.git
 cd parker-atlas
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
+
+# Generate 10 synthetic FHIR R4 Patient bundles (US Core 6.1)
+atlas generate --patients 10 --seed 42 --out ./out
+ls ./out
+# GPX-SYN-0000000001-8.json  GPX-SYN-0000000002-6.json  …
+
+# Inspect what is and isn't built yet
+atlas status
+
+# Run the test suite
 pytest
-atlas --help
+```
+
+Planned once later milestones land:
+
+```bash
+atlas validate ./out --profile us-core-6.1          # (Milestone 1 follow-up)
+atlas generate --module type-2-diabetes --out ./t2d  # (Milestone 2)
 ```
 
 ## Architecture
