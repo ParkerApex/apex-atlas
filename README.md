@@ -42,7 +42,7 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | FHIR Patient builder       | ✅ Implemented   | US Core 6.1 Patient with race/ethnicity/birthsex extensions + HTEST tag  |
 | FHIR Bundle assembly       | ✅ Implemented   | Transaction Bundle, one file per patient                                 |
 | `atlas generate`           | ✅ Implemented   | `atlas generate --patients N --seed S --out DIR` → N FHIR R4 Bundles     |
-| `atlas validate`           | 🟡 Stub          | Ships in Milestone 1 follow-up                                           |
+| `atlas validate`           | ✅ Structural    | Schema validation + US Core Patient minimums; full profile check is TBD  |
 | Clinical module runtime    | ⏳ Not started   | Milestone 2                                                              |
 | Module library (10+)       | ⏳ Not started   | Milestone 2                                                              |
 | Statistical validation     | ⏳ Not started   | Milestone 2                                                              |
@@ -66,6 +66,9 @@ atlas generate --patients 10 --seed 42 --out ./out
 ls ./out
 # GPX-SYN-0000000001-8.json  GPX-SYN-0000000002-6.json  …
 
+# Structurally validate what was generated
+atlas validate ./out
+
 # Inspect what is and isn't built yet
 atlas status
 
@@ -76,7 +79,6 @@ pytest
 Planned once later milestones land:
 
 ```bash
-atlas validate ./out --profile us-core-6.1          # (Milestone 1 follow-up)
 atlas generate --module type-2-diabetes --out ./t2d  # (Milestone 2)
 ```
 
