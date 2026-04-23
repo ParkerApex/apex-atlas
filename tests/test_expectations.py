@@ -208,3 +208,49 @@ class TestProvenance:
         assert exp.source.provenance == "placeholder"
         assert exp.source.citations  # expectation declares its citations
         assert any("cdc" in c.url.lower() for c in exp.source.citations)
+
+
+class TestSexStratifiedParsing:
+    def test_parses_sex_and_age_shape(self):
+        yaml_text = textwrap.dedent(
+            """
+            module: t
+            version: 0.0.1
+            metrics:
+              - id: m
+                kind: conditional_prevalence
+                condition_code: x
+                stratify_by: sex_and_age
+                tolerance: {kind: absolute, value: 0.05}
+                targets:
+                  female:
+                    "0-99": 0.3
+                  male:
+                    "0-99": 0.7
+            """
+        )
+        exp = load_expectation_from_str(yaml_text)
+        m = exp.metrics[0]
+        assert m.stratify_by == "sex_and_age"
+        assert m.targets_by_sex is not None
+        assert m.targets_by_sex["female"][(0, 99)] == 0.3
+        assert m.targets_by_sex["male"][(0, 99)] == 0.7
+
+    def test_rejects_unknown_sex_strata(self):
+        yaml_text = textwrap.dedent(
+            """
+            module: t
+            version: 0.0.1
+            metrics:
+              - id: m
+                kind: conditional_prevalence
+                condition_code: x
+                stratify_by: sex_and_age
+                tolerance: {kind: absolute, value: 0.05}
+                targets:
+                  aliens:
+                    "0-99": 0.5
+            """
+        )
+        with pytest.raises(ExpectationError, match="unknown sex keys"):
+            load_expectation_from_str(yaml_text)

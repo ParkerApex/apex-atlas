@@ -56,15 +56,22 @@ class Tolerance:
     confidence: float = 95.0    # normal / wilson only
 
 
+SEX_STRATA = ("female", "male")
+
+
 @dataclass(frozen=True, slots=True)
 class Metric:
     id: str
     kind: str                     # "conditional_prevalence"
     condition_code: str           # terminology code (SNOMED/ICD-10/etc.)
     condition_system: str
-    stratify_by: str              # "age_bracket"
+    stratify_by: str              # "age_bracket" | "sex_and_age"
     tolerance: Tolerance
+    # For stratify_by="age_bracket": `targets` holds {bracket: rate}.
+    # For stratify_by="sex_and_age": `targets` is empty and
+    # `targets_by_sex` holds {sex: {bracket: rate}}.
     targets: dict[tuple[int, int], float]
+    targets_by_sex: dict[str, dict[tuple[int, int], float]] | None = None
 
 
 PROVENANCE_LEVELS = ("placeholder", "sourced", "verified")
@@ -146,21 +153,44 @@ def _parse_metric(raw: dict[str, Any]) -> Metric:
         raise ExpectationError(
             f"unsupported metric kind {raw['kind']!r}; only 'conditional_prevalence' is implemented"
         )
-    if raw["stratify_by"] != "age_bracket":
+    stratify_by = str(raw["stratify_by"])
+    if stratify_by not in ("age_bracket", "sex_and_age"):
         raise ExpectationError(
-            f"unsupported stratification {raw['stratify_by']!r}; only 'age_bracket' is implemented"
+            f"unsupported stratification {stratify_by!r}; "
+            f"choices: age_bracket, sex_and_age"
         )
 
-    targets = {_parse_bracket(k): float(v) for k, v in raw["targets"].items()}
+    targets: dict[tuple[int, int], float] = {}
+    targets_by_sex: dict[str, dict[tuple[int, int], float]] | None = None
+
+    if stratify_by == "age_bracket":
+        targets = {_parse_bracket(k): float(v) for k, v in raw["targets"].items()}
+    else:  # sex_and_age
+        raw_targets = raw["targets"]
+        if not isinstance(raw_targets, dict):
+            raise ExpectationError(
+                f"{raw.get('id')!r}: sex_and_age targets must be a mapping of sex → brackets"
+            )
+        bad_keys = set(raw_targets) - set(SEX_STRATA)
+        if bad_keys:
+            raise ExpectationError(
+                f"{raw.get('id')!r}: sex_and_age targets has unknown sex keys {sorted(bad_keys)}; "
+                f"choices: {list(SEX_STRATA)}"
+            )
+        targets_by_sex = {
+            sex: {_parse_bracket(k): float(v) for k, v in brackets.items()}
+            for sex, brackets in raw_targets.items()
+        }
 
     return Metric(
         id=str(raw["id"]),
         kind=str(raw["kind"]),
         condition_code=str(raw["condition_code"]),
         condition_system=str(raw.get("condition_system", "")),
-        stratify_by=str(raw["stratify_by"]),
+        stratify_by=stratify_by,
         tolerance=tolerance,
         targets=targets,
+        targets_by_sex=targets_by_sex,
     )
 
 

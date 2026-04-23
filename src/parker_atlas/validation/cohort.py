@@ -40,6 +40,7 @@ from parker_atlas.validation.expectations import (
 class MetricResult:
     metric_id: str
     bracket: tuple[int, int]
+    sex: str | None  # None for age_bracket stratification; "female"/"male" for sex_and_age
     n: int
     actual: float
     target: float
@@ -106,10 +107,10 @@ def _condition_codes(conditions: list[dict[str, Any]]) -> set[str]:
 
 def _load_cohort(
     path: Path, report: CohortReport, reference_date: date
-) -> list[tuple[int, set[str]]]:
-    """Return (age, set_of_condition_codes) per patient. Mutates report."""
+) -> list[tuple[int, str, set[str]]]:
+    """Return (age, sex, condition_codes) per patient. Mutates report."""
     files = sorted(path.rglob("*.json")) if path.is_dir() else [path]
-    patients: list[tuple[int, set[str]]] = []
+    patients: list[tuple[int, str, set[str]]] = []
     for f in files:
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
@@ -124,7 +125,8 @@ def _load_cohort(
         if patient is None or "birthDate" not in patient:
             continue
         age = _age_years(patient["birthDate"], reference_date)
-        patients.append((age, _condition_codes(conditions)))
+        sex = str(patient.get("gender", ""))
+        patients.append((age, sex, _condition_codes(conditions)))
     report.total_patients = len(patients)
     return patients
 
@@ -165,9 +167,43 @@ def _check_tolerance(
     raise ValueError(f"unknown tolerance kind {tol.kind!r}")
 
 
+def _record_prevalence(
+    *,
+    metric: Metric,
+    bracket: tuple[int, int],
+    sex: str | None,
+    samples: list[bool],
+    min_samples: int,
+    target: float,
+    report: CohortReport,
+) -> None:
+    n = len(samples)
+    sex_label = f" {sex}" if sex else ""
+    if n < min_samples:
+        report.skipped.append(
+            f"{metric.id} {bracket[0]}-{bracket[1]}{sex_label}: "
+            f"N={n} < min_samples ({min_samples})"
+        )
+        return
+    actual = sum(samples) / n
+    within, half = _check_tolerance(metric.tolerance, actual, target, n)
+    report.results.append(
+        MetricResult(
+            metric_id=metric.id,
+            bracket=bracket,
+            sex=sex,
+            n=n,
+            actual=actual,
+            target=target,
+            tolerance=half,
+            within_tolerance=within,
+        )
+    )
+
+
 def _evaluate_metric(
     metric: Metric,
-    patients: list[tuple[int, set[str]]],
+    patients: list[tuple[int, str, set[str]]],
     *,
     min_samples: int,
     report: CohortReport,
@@ -175,42 +211,57 @@ def _evaluate_metric(
     if metric.kind != "conditional_prevalence":
         report.skipped.append(f"{metric.id}: unsupported kind {metric.kind!r}")
         return
-    if metric.stratify_by != "age_bracket":
-        report.skipped.append(
-            f"{metric.id}: unsupported stratification {metric.stratify_by!r}"
-        )
+
+    if metric.stratify_by == "age_bracket":
+        buckets: dict[tuple[int, int], list[bool]] = defaultdict(list)
+        bracket_keys = tuple(metric.targets.keys())
+        for age, _sex, codes in patients:
+            bracket = _find_bracket(age, bracket_keys)
+            if bracket is None:
+                continue
+            buckets[bracket].append(metric.condition_code in codes)
+        for bracket, target in metric.targets.items():
+            _record_prevalence(
+                metric=metric,
+                bracket=bracket,
+                sex=None,
+                samples=buckets.get(bracket, []),
+                min_samples=min_samples,
+                target=target,
+                report=report,
+            )
         return
 
-    buckets: dict[tuple[int, int], list[bool]] = defaultdict(list)
-    bracket_keys = tuple(metric.targets.keys())
-    for age, codes in patients:
-        bracket = _find_bracket(age, bracket_keys)
-        if bracket is None:
-            continue
-        buckets[bracket].append(metric.condition_code in codes)
+    if metric.stratify_by == "sex_and_age":
+        assert metric.targets_by_sex is not None
+        sex_buckets: dict[str, dict[tuple[int, int], list[bool]]] = {
+            sex: defaultdict(list) for sex in metric.targets_by_sex
+        }
+        for sex, brackets in metric.targets_by_sex.items():
+            bracket_keys = tuple(brackets.keys())
+            for age, p_sex, codes in patients:
+                if p_sex != sex:
+                    continue
+                bracket = _find_bracket(age, bracket_keys)
+                if bracket is None:
+                    continue
+                sex_buckets[sex][bracket].append(metric.condition_code in codes)
+        for sex, brackets in metric.targets_by_sex.items():
+            for bracket, target in brackets.items():
+                _record_prevalence(
+                    metric=metric,
+                    bracket=bracket,
+                    sex=sex,
+                    samples=sex_buckets[sex].get(bracket, []),
+                    min_samples=min_samples,
+                    target=target,
+                    report=report,
+                )
+        return
 
-    for bracket, target in metric.targets.items():
-        samples = buckets.get(bracket, [])
-        n = len(samples)
-        if n < min_samples:
-            report.skipped.append(
-                f"{metric.id} {bracket[0]}-{bracket[1]}: "
-                f"N={n} < min_samples ({min_samples})"
-            )
-            continue
-        actual = sum(samples) / n
-        within, half = _check_tolerance(metric.tolerance, actual, target, n)
-        report.results.append(
-            MetricResult(
-                metric_id=metric.id,
-                bracket=bracket,
-                n=n,
-                actual=actual,
-                target=target,
-                tolerance=half,
-                within_tolerance=within,
-            )
-        )
+    report.skipped.append(
+        f"{metric.id}: unsupported stratification {metric.stratify_by!r}"
+    )
 
 
 def evaluate_cohort(
