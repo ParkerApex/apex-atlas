@@ -38,9 +38,10 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | Component                  | Status           | Notes                                                                    |
 | -------------------------- | ---------------- | ------------------------------------------------------------------------ |
 | Parker GPX identifier      | ✅ Implemented   | `src/parker_atlas/gpx.py` — spec v1.0, fully tested                      |
-| Demographic sampling       | 🟡 Placeholder   | Externalized to CSVs, but distributions still curated — pending ACS ingestion |
+| Demographic sampling       | ✅ Sourced       | age_sex / race / ethnicity backed by 2020 Census + 2024 Vintage estimates      |
 | Hypertension prevalence    | ✅ Sourced       | NCHS Data Brief 511 (NHANES Aug 2021–Aug 2023) — age- and sex-stratified     |
 | `atlas ingest prevalence`  | ✅ Implemented   | CSV + metadata → sourced fidelity expectation YAML, with provenance checks    |
+| `atlas ingest demographics`| ✅ Implemented   | CSV + metadata → references/tables/*.csv + provenance sidecar                 |
 | FHIR Patient builder       | ✅ Implemented   | US Core 6.1 Patient with race/ethnicity/birthsex extensions + HTEST tag  |
 | FHIR Bundle assembly       | ✅ Implemented   | Transaction Bundle, one file per patient                                 |
 | `atlas generate`           | ✅ Implemented   | `atlas generate --patients N --seed S --out DIR` → N FHIR R4 Bundles     |
