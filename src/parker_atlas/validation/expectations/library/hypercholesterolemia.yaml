@@ -1,0 +1,68 @@
+module: hypercholesterolemia
+version: 0.1.0
+source:
+  name: NCHS Data Brief 363 (NHANES 2015–2018)
+  provenance: sourced
+  url: https://www.cdc.gov/nchs/products/databriefs/db363.htm
+  note: 'Prevalence of high total cholesterol (≥240 mg/dL) among US adults
+
+    aged 20 and older, from NCHS Data Brief 363 (Carroll & Fryar 2020).
+
+    Numbers are crude (unadjusted) percentages divided by 100.
+
+
+    The age distribution peaks at 40-59 (15.7%) and drops for 60+
+
+    (11.4%) — the opposite of diabetes and hypertension age curves.
+
+    This reflects increased statin use in older adults, which brings
+
+    measured total cholesterol below the 240 mg/dL threshold even
+
+    though the underlying lipid-metabolism disease is present.
+
+
+    Sex marginal (men 10.5% / women 12.1%) is not included as a
+
+    metric here because Brief 363 does not publish a joint age × sex
+
+    table. Adding a sex_and_age metric awaits a future ingest.
+
+
+    The module assigns SNOMED 13644009 (Hypercholesterolemia) rather
+
+    than the broader 55822004 (Hyperlipidemia) because Brief 363
+
+    specifically measures total cholesterol, not the full lipid
+
+    panel. Downstream consumers treating hyperlipidemia and
+
+    hypercholesterolemia as equivalent can remap on ingestion.
+
+    '
+  citations:
+  - source: 'Carroll MD, Fryar CD. Total and High-density Lipoprotein Cholesterol in Adults: United States,
+      2015–2018. NCHS Data Brief no. 363.
+
+      '
+    url: https://www.cdc.gov/nchs/products/databriefs/db363.htm
+    version: NCHS Data Brief No. 363 (April 2020)
+    accessed: '2026-04-23'
+    table: 'Figure 1 and Table 1: Prevalence of high total cholesterol by age'
+    note: 'Numbers extracted via webfetch on 2026-04-23. This brief uses NHANES 2015-2018 (pre-pandemic
+      cycle); subsequent NHANES cycles should trigger a re-ingest.
+
+      '
+metrics:
+- id: high_total_cholesterol_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '13644009'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    20-39: 0.075
+    40-59: 0.157
+    60-99: 0.114

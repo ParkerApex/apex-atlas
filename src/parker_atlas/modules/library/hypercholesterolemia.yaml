@@ -1,0 +1,41 @@
+module: hypercholesterolemia
+version: 0.1.0
+description: >
+  High total cholesterol (≥240 mg/dL) prevalence by age bracket.
+  Probability-module flavor — each bracket maps to a Bernoulli rate.
+
+  Adult (20+) prevalence rates are sourced from NCHS Data Brief 363
+  (Carroll & Fryar 2020, NHANES 2015-2018). The 0-19 bracket is a
+  placeholder: NHANES does not survey children for total cholesterol
+  in this brief.
+
+  The age curve is non-monotonic: prevalence rises from 20-39 to 40-59
+  then falls for 60+. This reflects statin treatment effects in older
+  adults rather than declining underlying lipid-metabolism disease —
+  measured-cholesterol prevalence and underlying-disease prevalence
+  diverge in older age groups.
+
+  Module assigns SNOMED 13644009 (Hypercholesterolemia) rather than
+  the broader 55822004 (Hyperlipidemia), since Brief 363 specifically
+  measures total cholesterol. A future module split can produce
+  Condition resources for the broader hyperlipidemia category when
+  triglyceride-inclusive data is ingested.
+cites:
+  - source: NCHS Data Brief 363 (Carroll & Fryar, NHANES 2015-2018)
+    url: https://www.cdc.gov/nchs/products/databriefs/db363.htm
+    summary: >
+      US adults aged 20+ prevalence of high total cholesterol (≥240
+      mg/dL): 7.5% at 20-39, 15.7% at 40-59, 11.4% at 60+. Sex
+      marginal: men 10.5%, women 12.1%. Joint age × sex not
+      published in this brief.
+conditions:
+  - id: high_total_cholesterol
+    code:
+      system: http://snomed.info/sct
+      code: "13644009"
+      display: Hypercholesterolemia (disorder)
+    prevalence:
+      "0-19": 0.01
+      "20-39": 0.075
+      "40-59": 0.157
+      "60-99": 0.114
