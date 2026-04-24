@@ -29,6 +29,7 @@ from typing import Any
 
 from fhir.resources.R4B.observation import Observation as _Observation
 
+from parker_atlas.fhir._datetime import fhir_datetime
 from parker_atlas.gpx import GPX
 from parker_atlas.modules.runtime import Coding
 
@@ -90,17 +91,6 @@ def _category_element(category: str) -> dict[str, Any]:
     }
 
 
-def _effective_iso(effective: date | datetime) -> str:
-    """
-    FHIR R4 `dateTime` requires a timezone whenever a time component is
-    present. Naive datetimes are treated as UTC (Z suffix); timezone-aware
-    datetimes keep their offset. Bare `date` values emit a plain date.
-    """
-    if isinstance(effective, datetime):
-        if effective.tzinfo is None:
-            return effective.isoformat() + "Z"
-        return effective.isoformat()
-    return effective.isoformat()
 
 
 def _quantity_element(q: Quantity) -> dict[str, Any]:
@@ -168,7 +158,7 @@ def build_observation_resource(
             "text": code.display,
         },
         "subject": {"reference": patient_fullurl},
-        "effectiveDateTime": _effective_iso(effective),
+        "effectiveDateTime": fhir_datetime(effective),
     }
 
     if value is not None:
