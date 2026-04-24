@@ -18,6 +18,7 @@ Why CSV as the integration point:
   time.
 """
 
+from parker_atlas.ingest.demographics import ingest_demographics
 from parker_atlas.ingest.prevalence import IngestionError, ingest_prevalence
 
-__all__ = ["IngestionError", "ingest_prevalence"]
+__all__ = ["IngestionError", "ingest_prevalence", "ingest_demographics"]
