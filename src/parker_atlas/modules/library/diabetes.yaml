@@ -1,0 +1,39 @@
+module: diabetes
+version: 0.1.0
+description: >
+  Total diabetes prevalence (both diagnosed and undiagnosed, types 1
+  and 2 combined) by age bracket. Probability-module flavor — each
+  age bracket maps to a Bernoulli rate.
+
+  Adult (20+) prevalence rates are sourced from NCHS Data Brief 516
+  (NHANES August 2021 – August 2023), Table 2. The 0-19 bracket is a
+  placeholder: NHANES does not publish diabetes prevalence for minors
+  in this brief. A refinement using pediatric SEARCH data or separate
+  NHANES pediatric tables is future work.
+
+  The module assigns the SNOMED parent code 73211009 (Diabetes mellitus)
+  rather than a type-specific code. Per the CDC National Diabetes
+  Statistics Report, roughly 95% of diabetes cases are type 2, so
+  almost all Atlas-generated diabetes patients correspond to T2DM in
+  practice. A future module revision can split by type when
+  age-stratified T1-vs-T2 prevalence is ingested.
+cites:
+  - source: NCHS Data Brief 516 (Gwira et al., NHANES Aug 2021–Aug 2023)
+    url: https://www.cdc.gov/nchs/products/databriefs/db516.htm
+    summary: >
+      US adults aged 20+ total diabetes prevalence (crude): 3.6% at
+      20-39, 17.7% at 40-59, 27.3% at 60+. Sex breakdown overall:
+      men 18.0%, women 13.7%. Diabetes defined as measured A1C ≥6.5%
+      or self-reported diagnosis. ~95% of cases are type 2 per the
+      CDC National Diabetes Statistics Report.
+conditions:
+  - id: diabetes_mellitus
+    code:
+      system: http://snomed.info/sct
+      code: "73211009"
+      display: Diabetes mellitus (disorder)
+    prevalence:
+      "0-19": 0.003
+      "20-39": 0.036
+      "40-59": 0.177
+      "60-99": 0.273
