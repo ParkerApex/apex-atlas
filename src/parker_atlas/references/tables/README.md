@@ -4,22 +4,32 @@ These CSV files are the **source of truth** for demographic sampling
 distributions. The loader in `parker_atlas/references/__init__.py` reads
 them at first use and caches the result.
 
-## Current state
+## Provenance
 
-**All files in this directory are curated placeholder distributions, not
-yet sourced from US Census ACS or any other public dataset.** They are
-shaped to be roughly consistent with US population marginals so that
-synthetic output looks plausible, but they **must not be cited as
-ACS-derived** or used for statistical fidelity claims.
+Each CSV has a sibling `<name>.provenance.yaml` carrying the citation
+chain for its numbers. Three provenance tiers mirror the fidelity-
+expectation system:
 
-Replacing these with ACS-backed samples is tracked under Milestone 1
-follow-up work (see `docs/roadmap.md`). That will involve:
+- `placeholder` — curated approximations; not sourced from a public
+  dataset.
+- `sourced` — targets drawn from the listed public citations, but not
+  independently re-verified by the project.
+- `verified` — numbers re-computed from public microdata by the project
+  and matched against the citation within tolerance.
 
-- Sourcing ACS 5-year PUMS microdata (public domain)
-- Tabulating joint distributions at appropriate granularity
-- Preserving provenance metadata (release year, query date, citation)
-- Adding a provenance manifest so `atlas status` can show the active
-  reference-data version
+Current status:
+
+| File              | Provenance | Source                                                                    |
+| ----------------- | ---------- | ------------------------------------------------------------------------- |
+| `age_sex.csv`     | sourced    | US Census Bureau Vintage 2024 annual estimates (NC-EST2024-SYASEXN)       |
+| `race.csv`        | sourced    | US Census 2020 Decennial Census — Race Alone populations                  |
+| `ethnicity.csv`   | sourced    | US Census Bureau Vintage 2024 (Hispanic/Latino share)                     |
+| `names.csv`       | placeholder| Curated common US names; not drawn from Census name frequencies           |
+
+Regenerate any of these via `atlas ingest demographics --input X.csv
+--metadata X_meta.yaml --output src/parker_atlas/references/tables/X.csv
+--overwrite`. See `docs/ingestion.md` for the full workflow, including
+the ACS → CSV transformation path.
 
 ## Files
 
@@ -38,3 +48,20 @@ Weights do not need to sum to exactly 1.0 — the sampler normalizes them.
 2. Add a loader in `parker_atlas/references/__init__.py`.
 3. Document the schema here.
 4. Update tests.
+5. If the data is externally sourced, accompany the CSV with a
+   `<name>.provenance.yaml` via `atlas ingest demographics`.
+
+## Known caveats
+
+- The `age_sex.csv` brackets (0-17, 18-39, 40-59, 60-99) are chosen to
+  match the NHANES age stratification used by the hypertension fidelity
+  expectation, not ACS's usual (18-44, 45-64, 65+). Single-year Census
+  estimates are aggregated up to these brackets at ingest time.
+- The `race.csv` "Other Race" row aggregates the Census 2020 "Some
+  other race alone" and "Two or more races" categories, because the
+  OMB-code enum in `parker_atlas.core.demographics.Race` does not
+  separately track a multiracial category. Splitting those out is a
+  future enhancement tied to enum expansion.
+- `names.csv` is still placeholder; Census name-frequency ingestion is
+  deferred until (if) Atlas starts generating names in a more principled
+  way. Hand-editing this file is the current workflow.
