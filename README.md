@@ -43,6 +43,10 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | `atlas ingest prevalence`  | ✅ Implemented   | CSV + metadata → sourced fidelity expectation YAML, with provenance checks    |
 | `atlas ingest demographics`| ✅ Implemented   | CSV + metadata → references/tables/*.csv + provenance sidecar                 |
 | FHIR Patient builder       | ✅ Implemented   | US Core 6.1 Patient with race/ethnicity/birthsex extensions + HTEST tag  |
+| FHIR Condition builder     | ✅ Implemented   | US Core Problems & Health Concerns (referenced by modules)               |
+| FHIR Observation builder   | ✅ Implemented   | Vital signs, labs, blood pressure (multi-component) — US Core profiles    |
+| FHIR Encounter builder     | ✅ Implemented   | US Core Encounter: outpatient / inpatient / emergency / home / virtual    |
+| FHIR MedicationRequest     | ✅ Implemented   | US Core MedicationRequest with inline medicationCodeableConcept           |
 | FHIR Bundle assembly       | ✅ Implemented   | Transaction Bundle, one file per patient                                 |
 | `atlas generate`           | ✅ Implemented   | `atlas generate --patients N --seed S --out DIR` → N FHIR R4 Bundles     |
 | `atlas validate`           | ✅ Structural    | Schema validation + US Core Patient/Condition minimums                   |

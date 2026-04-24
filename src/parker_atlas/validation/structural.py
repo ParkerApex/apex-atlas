@@ -119,6 +119,23 @@ def _validate_condition(condition: dict[str, Any], report: FileReport) -> None:
             report.errors.append(f"Condition.{required}: required by US Core.")
 
 
+def _validate_medication_request(med: dict[str, Any], report: FileReport) -> None:
+    # US Core MedicationRequest required elements.
+    for required in ("status", "intent", "subject"):
+        if not med.get(required):
+            report.errors.append(f"MedicationRequest.{required}: required by US Core.")
+    # medication is must-support and one of medicationCodeableConcept /
+    # medicationReference must be present.
+    if not (med.get("medicationCodeableConcept") or med.get("medicationReference")):
+        report.errors.append(
+            "MedicationRequest.medication[x]: required (CodeableConcept or Reference)."
+        )
+    if not med.get("authoredOn"):
+        report.warnings.append(
+            "MedicationRequest.authoredOn: must support per US Core."
+        )
+
+
 def _validate_encounter(encounter: dict[str, Any], report: FileReport) -> None:
     # US Core Encounter required elements.
     for required in ("identifier", "status", "class", "type", "subject"):
@@ -186,6 +203,8 @@ def _validate_bundle(bundle: dict[str, Any], report: FileReport) -> None:
             _validate_observation(resource, report)
         elif rtype == "Encounter":
             _validate_encounter(resource, report)
+        elif rtype == "MedicationRequest":
+            _validate_medication_request(resource, report)
         elif rtype is None:
             report.errors.append(f"entry[{i}]: missing resourceType")
         else:
