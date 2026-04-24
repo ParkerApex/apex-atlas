@@ -1,0 +1,67 @@
+module: diabetes
+version: 0.1.0
+source:
+  name: NCHS Data Brief 516 (NHANES Aug 2021 – Aug 2023)
+  provenance: sourced
+  url: https://www.cdc.gov/nchs/products/databriefs/db516.htm
+  note: 'Total diabetes prevalence (diagnosed + undiagnosed) among US adults
+
+    aged 20 and older, as published in NCHS Data Brief 516. Numbers are
+
+    crude (unadjusted) percentages from Tables 1 and 2, divided by 100.
+
+
+    "Total diabetes" per the publication includes both type 1 and type 2.
+
+    National Diabetes Statistics Report (CDC, 2024/2026) indicates
+
+    ~2.1M diagnosed T1 out of ~40.1M total with diabetes, so ~95% of
+
+    cases are type 2 — most of what this module generates will be T2D,
+
+    but the module does not currently split by type. The SNOMED code
+
+    is 73211009 (Diabetes mellitus, parent code).
+
+
+    The age brackets (20-39, 40-59, 60+) match the publication exactly
+
+    and align cleanly with the demographic age_sex brackets
+
+    (0-17, 18-39, 40-59, 60-99) except for the pediatric/young-adult
+
+    gap of 18-19 years old, which the module handles with a separate
+
+    placeholder bracket for ages 0-19.
+
+
+    Published 95% CIs are preserved in source_note for audit but are
+
+    not yet used by the Wilson tolerance checker.
+
+    '
+  citations:
+  - source: 'Gwira JA, Fryar CD, Gu Q. Prevalence of Total, Diagnosed, and Undiagnosed Diabetes in Adults:
+      United States, August 2021–August 2023. NCHS Data Brief no. 516.
+
+      '
+    url: https://www.cdc.gov/nchs/products/databriefs/db516.htm
+    version: NCHS Data Brief No. 516 (November 2024)
+    accessed: '2026-04-23'
+    table: 'Tables 1 and 2: Prevalence of diabetes by selected characteristics'
+    note: 'Numbers extracted via webfetch on 2026-04-23.
+
+      '
+metrics:
+- id: total_diabetes_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '73211009'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    20-39: 0.036
+    40-59: 0.177
+    60-99: 0.273
