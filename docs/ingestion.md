@@ -125,10 +125,70 @@ A typical workflow a user runs once per dataset refresh:
    the CSV and the generated YAML so the provenance trail is auditable
    from source CSV to runtime artifact.
 
-## Demographic distributions (planned)
+## Demographic distributions — `atlas ingest demographics`
 
-`atlas ingest demographics` will accept an ACS-shaped CSV (joint age ×
-sex × race distributions) and write
-`src/parker_atlas/references/tables/age_sex.csv`,
-`…/race.csv`, and `…/ethnicity.csv` with a provenance sidecar. Tracked
-as follow-up work.
+Companion to the prevalence pipeline, for the demographic reference
+CSVs in `src/parker_atlas/references/tables/`. Writes two files side by
+side: the validated CSV at `--output`, and a `<basename>.provenance.yaml`
+sidecar with the citation chain.
+
+### Input CSV (three shapes)
+
+| `table`     | Required columns                               |
+| ----------- | ---------------------------------------------- |
+| `age_sex`   | `age_low, age_high, sex, weight`               |
+| `race`      | `code, display, weight`                        |
+| `ethnicity` | `code, display, weight`                        |
+
+`sex` must be `female` or `male`. `age_low <= age_high`, both
+non-negative integers. `weight` must be a positive number; the sampler
+normalizes rows so weights don't need to sum to 1.
+
+### Metadata YAML
+
+```yaml
+table: age_sex           # age_sex | race | ethnicity
+version: 0.2.0
+
+source:
+  name: US Census ACS 2023 1-year estimates
+  provenance: sourced    # or verified; ingest refuses placeholder
+  url: https://api.census.gov/data/2023/acs/acs1
+  citations:
+    - source: American Community Survey 2023 (1-year estimates)
+      url: https://api.census.gov/data/2023/acs/acs1
+      version: ACS 2023
+      accessed: "2026-04-23"
+      table: "B01001 — Sex by age"
+```
+
+### Running
+
+```bash
+atlas ingest demographics \
+  -i ./age_sex.csv \
+  -m ./age_sex_meta.yaml \
+  -o src/parker_atlas/references/tables/age_sex.csv \
+  --overwrite
+# Writes:
+#   src/parker_atlas/references/tables/age_sex.csv
+#   src/parker_atlas/references/tables/age_sex.provenance.yaml
+```
+
+Repeat for `race` and `ethnicity` with their own CSV + metadata pairs.
+
+### Source → CSV transformation
+
+ACS publishes microdata (PUMS) and aggregate tables (the Census Data
+API). A typical workflow:
+
+1. Query `api.census.gov/data/2023/acs/acs1?get=...` for the joint
+   age × sex population estimates in table `B01001`.
+2. Pivot the API response into the `age_low, age_high, sex, weight`
+   shape (weights are raw population counts or proportions; either
+   works — the sampler normalizes).
+3. Write a small metadata YAML carrying the ACS release year and
+   table identifier.
+4. Run `atlas ingest demographics`.
+
+For race/ethnicity, tables `B02001` and `B03003` respectively.

@@ -521,5 +521,51 @@ def ingest_prevalence_cmd(
     console.print(f"[green]✓[/green] Wrote {output}")
 
 
+@ingest_app.command("demographics")
+def ingest_demographics_cmd(
+    input: Annotated[Path, typer.Option("--input", "-i", help="Input CSV (age_sex / race / ethnicity shape).")],
+    metadata: Annotated[Path, typer.Option("--metadata", "-m", help="Metadata YAML declaring `table` and provenance / citations.")],
+    output: Annotated[Path, typer.Option("--output", "-o", help="Destination CSV path. The sibling <basename>.provenance.yaml is written alongside.")],
+    overwrite: Annotated[bool, typer.Option("--overwrite", help="Allow overwriting existing output files.")] = False,
+) -> None:
+    """Ingest a demographic reference CSV (ACS, Census) into references/tables/.
+
+    Writes two files next to each other:
+    - the validated CSV at --output,
+    - a <basename>.provenance.yaml sidecar carrying the citation chain.
+    """
+    from parker_atlas.ingest.demographics import ingest_demographics
+    from parker_atlas.ingest.prevalence import IngestionError
+
+    if not input.exists():
+        err_console.print(f"[red]input CSV does not exist:[/red] {input}")
+        raise typer.Exit(code=1)
+    if not metadata.exists():
+        err_console.print(f"[red]metadata YAML does not exist:[/red] {metadata}")
+        raise typer.Exit(code=1)
+
+    try:
+        table, csv_content, provenance_yaml = ingest_demographics(input, metadata)
+    except IngestionError as exc:
+        err_console.print(f"[red]ingest failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    provenance_path = output.with_suffix(".provenance.yaml")
+    existing = [p for p in (output, provenance_path) if p.exists()]
+    if existing and not overwrite:
+        err_console.print(
+            f"[red]output files already exist:[/red] "
+            f"{', '.join(str(p) for p in existing)}. Pass --overwrite to replace."
+        )
+        raise typer.Exit(code=1)
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(csv_content, encoding="utf-8")
+    provenance_path.write_text(provenance_yaml, encoding="utf-8")
+    console.print(f"[green]✓[/green] Wrote {output}")
+    console.print(f"[green]✓[/green] Wrote {provenance_path}")
+    console.print(f"  table: [bold]{table}[/bold]")
+
+
 if __name__ == "__main__":
     app()
