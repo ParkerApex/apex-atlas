@@ -1,9 +1,19 @@
 module: diabetes
-version: 0.1.0
+version: 0.2.0
 description: >
   Total diabetes prevalence (both diagnosed and undiagnosed, types 1
   and 2 combined) by age bracket. Probability-module flavor — each
   age bracket maps to a Bernoulli rate.
+
+  When a patient is positive, the module emits an encounter-level
+  record:
+  - An ambulatory follow-up Encounter
+  - A Hemoglobin A1c Observation with value 6.5–10.0% (diagnostic
+    threshold through moderately-uncontrolled range), linked to the
+    Encounter
+  - A MedicationRequest for metformin 500 mg in 70% of cases
+    (approximating the rate of diagnosed diabetics on metformin per
+    ADA guidance; exact rate is a future ingestion)
 
   Adult (20+) prevalence rates are sourced from NCHS Data Brief 516
   (NHANES August 2021 – August 2023), Table 2. The 0-19 bracket is a
@@ -17,6 +27,11 @@ description: >
   almost all Atlas-generated diabetes patients correspond to T2DM in
   practice. A future module revision can split by type when
   age-stratified T1-vs-T2 prevalence is ingested.
+
+  Emit value ranges and medication probability are placeholders with
+  clinical-literature ranges; the cohort harness currently checks
+  only condition prevalence. Emit-fidelity checks (A1C distribution,
+  metformin treatment rate) land in a follow-up commit.
 cites:
   - source: NCHS Data Brief 516 (Gwira et al., NHANES Aug 2021–Aug 2023)
     url: https://www.cdc.gov/nchs/products/databriefs/db516.htm
@@ -37,3 +52,40 @@ conditions:
       "20-39": 0.036
       "40-59": 0.177
       "60-99": 0.273
+    emits:
+      - resource_type: Encounter
+        spec_id: diabetes_followup_visit
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "73211009"
+          display: Diabetes mellitus
+
+      - resource_type: Observation
+        spec_id: diabetes_a1c_measurement
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "4548-4"
+          display: Hemoglobin A1c/Hemoglobin.total in Blood
+        value_range:
+          low: 6.5
+          high: 10.0
+          precision: 1
+        unit: "%"
+
+      - resource_type: MedicationRequest
+        spec_id: diabetes_metformin
+        probability: 0.70
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "860975"
+          display: Metformin 500 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "73211009"
+          display: Diabetes mellitus
