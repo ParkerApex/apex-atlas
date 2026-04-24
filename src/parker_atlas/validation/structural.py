@@ -119,6 +119,17 @@ def _validate_condition(condition: dict[str, Any], report: FileReport) -> None:
             report.errors.append(f"Condition.{required}: required by US Core.")
 
 
+def _validate_encounter(encounter: dict[str, Any], report: FileReport) -> None:
+    # US Core Encounter required elements.
+    for required in ("identifier", "status", "class", "type", "subject"):
+        if not encounter.get(required):
+            report.errors.append(f"Encounter.{required}: required by US Core.")
+    if not encounter.get("period"):
+        report.warnings.append(
+            "Encounter.period: must support per US Core (recommended)."
+        )
+
+
 def _validate_observation(observation: dict[str, Any], report: FileReport) -> None:
     # US Core Observation required elements (shared across vital-signs,
     # blood-pressure, and lab-result profiles).
@@ -173,6 +184,8 @@ def _validate_bundle(bundle: dict[str, Any], report: FileReport) -> None:
             _validate_condition(resource, report)
         elif rtype == "Observation":
             _validate_observation(resource, report)
+        elif rtype == "Encounter":
+            _validate_encounter(resource, report)
         elif rtype is None:
             report.errors.append(f"entry[{i}]: missing resourceType")
         else:
