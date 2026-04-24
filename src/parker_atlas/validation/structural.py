@@ -119,6 +119,43 @@ def _validate_condition(condition: dict[str, Any], report: FileReport) -> None:
             report.errors.append(f"Condition.{required}: required by US Core.")
 
 
+def _validate_observation(observation: dict[str, Any], report: FileReport) -> None:
+    # US Core Observation required elements (shared across vital-signs,
+    # blood-pressure, and lab-result profiles).
+    for required in ("status", "category", "code", "subject"):
+        if not observation.get(required):
+            report.errors.append(f"Observation.{required}: required by US Core.")
+    if not (
+        observation.get("effectiveDateTime")
+        or observation.get("effectivePeriod")
+    ):
+        report.errors.append(
+            "Observation.effective[x]: required by US Core (dateTime or Period)."
+        )
+    # Must have a value OR components OR a dataAbsentReason.
+    if not any(
+        observation.get(k)
+        for k in (
+            "valueQuantity",
+            "valueCodeableConcept",
+            "valueString",
+            "valueBoolean",
+            "valueInteger",
+            "valueRange",
+            "valueRatio",
+            "valueSampledData",
+            "valueTime",
+            "valueDateTime",
+            "valuePeriod",
+            "component",
+            "dataAbsentReason",
+        )
+    ):
+        report.errors.append(
+            "Observation must carry value[x], component, or dataAbsentReason."
+        )
+
+
 def _validate_bundle(bundle: dict[str, Any], report: FileReport) -> None:
     try:
         _Bundle.model_validate(bundle)
@@ -134,6 +171,8 @@ def _validate_bundle(bundle: dict[str, Any], report: FileReport) -> None:
             _validate_patient(resource, report)
         elif rtype == "Condition":
             _validate_condition(resource, report)
+        elif rtype == "Observation":
+            _validate_observation(resource, report)
         elif rtype is None:
             report.errors.append(f"entry[{i}]: missing resourceType")
         else:
