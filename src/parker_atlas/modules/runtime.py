@@ -63,6 +63,56 @@ class Citation:
 
 
 @dataclass(frozen=True, slots=True)
+class ValueRange:
+    """Uniform-sample range for an Observation value."""
+
+    low: float
+    high: float
+    precision: int = 1  # decimal places to round to; 0 → integer
+
+
+@dataclass(frozen=True, slots=True)
+class ObservationComponentEmit:
+    code: Coding
+    value_range: ValueRange
+    unit: str
+    unit_code: str | None = None  # defaults to unit
+
+
+@dataclass(frozen=True, slots=True)
+class EncounterEmit:
+    spec_id: str
+    encounter_class: str  # AMB, IMP, EMER, HH, VR
+    type_code: Coding
+    reason_code: Coding | None = None
+    probability: float = 1.0
+
+
+@dataclass(frozen=True, slots=True)
+class ObservationEmit:
+    spec_id: str
+    category: str  # "vital-signs" | "laboratory"
+    code: Coding
+    # Single-value OR multi-component. Enforced at parse time.
+    value_range: ValueRange | None = None
+    unit: str | None = None
+    unit_code: str | None = None
+    components: tuple[ObservationComponentEmit, ...] = ()
+    probability: float = 1.0
+
+
+@dataclass(frozen=True, slots=True)
+class MedicationRequestEmit:
+    spec_id: str
+    medication_code: Coding
+    reason_code: Coding | None = None
+    probability: float = 1.0
+
+
+EmitSpec = EncounterEmit | ObservationEmit | MedicationRequestEmit
+
+
+@dataclass(frozen=True, slots=True)
 class ConditionSpec:
     """One condition a module can assign to a patient."""
 
@@ -73,6 +123,8 @@ class ConditionSpec:
     # used for all sexes.
     prevalence_by_bracket: dict[tuple[int, int], float]
     prevalence_by_sex: dict[str, dict[tuple[int, int], float]] | None = None
+    # Additional resources emitted when the condition fires for a patient.
+    emits: tuple[EmitSpec, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -84,11 +136,52 @@ class Module:
     conditions: tuple[ConditionSpec, ...]
 
 
+# ---- Concrete per-patient sampled resources -------------------------------
+
+
+@dataclass(frozen=True, slots=True)
+class SampledComponent:
+    code: Coding
+    value: float
+    unit: str
+    unit_code: str
+
+
+@dataclass(frozen=True, slots=True)
+class SampledEncounter:
+    spec_id: str
+    encounter_class: str
+    type_code: Coding
+    reason_code: Coding | None
+
+
+@dataclass(frozen=True, slots=True)
+class SampledObservation:
+    spec_id: str
+    category: str
+    code: Coding
+    value: float | None
+    unit: str | None
+    unit_code: str | None
+    components: tuple[SampledComponent, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class SampledMedicationRequest:
+    spec_id: str
+    medication_code: Coding
+    reason_code: Coding | None
+
+
+SampledResource = SampledEncounter | SampledObservation | SampledMedicationRequest
+
+
 @dataclass(frozen=True, slots=True)
 class Diagnosis:
     """Output of run_module: a condition the module says this patient has."""
 
     condition: ConditionSpec
+    sampled_resources: tuple[SampledResource, ...] = ()
 
 
 class ModuleError(ValueError):
@@ -128,18 +221,141 @@ def _parse_prevalence(
     return flat, None
 
 
-def _parse_condition(raw: dict[str, Any]) -> ConditionSpec:
+def _parse_coding(raw: dict[str, Any], context: str) -> Coding:
     try:
-        code = Coding(**raw["code"])
+        return Coding(**raw)
     except TypeError as exc:
-        raise ModuleError(f"condition {raw.get('id')!r} has malformed code: {exc}") from exc
+        raise ModuleError(f"{context}: malformed code {raw!r}: {exc}") from exc
 
+
+def _parse_value_range(raw: dict[str, Any], context: str) -> ValueRange:
+    for required in ("low", "high"):
+        if required not in raw:
+            raise ModuleError(f"{context}: value_range missing {required!r}")
+    precision = int(raw.get("precision", 1))
+    if precision < 0:
+        raise ModuleError(f"{context}: value_range.precision must be >= 0")
+    low = float(raw["low"])
+    high = float(raw["high"])
+    if high < low:
+        raise ModuleError(f"{context}: value_range.high {high} < low {low}")
+    return ValueRange(low=low, high=high, precision=precision)
+
+
+def _parse_probability(raw: dict[str, Any], context: str) -> float:
+    p = float(raw.get("probability", 1.0))
+    if not 0.0 <= p <= 1.0:
+        raise ModuleError(f"{context}: probability {p} must be in [0, 1]")
+    return p
+
+
+def _parse_observation_component(raw: dict[str, Any], ctx: str) -> ObservationComponentEmit:
+    for req in ("code", "value_range", "unit"):
+        if req not in raw:
+            raise ModuleError(f"{ctx}: component missing {req!r}")
+    return ObservationComponentEmit(
+        code=_parse_coding(raw["code"], f"{ctx}.code"),
+        value_range=_parse_value_range(raw["value_range"], f"{ctx}.value_range"),
+        unit=str(raw["unit"]),
+        unit_code=str(raw["unit_code"]) if raw.get("unit_code") else None,
+    )
+
+
+def _parse_observation_emit(raw: dict[str, Any], ctx: str) -> ObservationEmit:
+    for req in ("spec_id", "category", "code"):
+        if req not in raw:
+            raise ModuleError(f"{ctx}: Observation emit missing {req!r}")
+    components_raw = raw.get("components") or ()
+    has_value = "value_range" in raw
+    if bool(components_raw) == has_value:
+        raise ModuleError(
+            f"{ctx}: Observation emit must declare exactly one of "
+            f"`value_range` (single-value) or `components` (multi-component)"
+        )
+    components = tuple(
+        _parse_observation_component(c, f"{ctx}.components[{i}]")
+        for i, c in enumerate(components_raw)
+    )
+    value_range = (
+        _parse_value_range(raw["value_range"], f"{ctx}.value_range") if has_value else None
+    )
+    if has_value and "unit" not in raw:
+        raise ModuleError(f"{ctx}: Observation emit with value_range must declare `unit`")
+    return ObservationEmit(
+        spec_id=str(raw["spec_id"]),
+        category=str(raw["category"]),
+        code=_parse_coding(raw["code"], f"{ctx}.code"),
+        value_range=value_range,
+        unit=str(raw["unit"]) if has_value else None,
+        unit_code=str(raw["unit_code"]) if has_value and raw.get("unit_code") else None,
+        components=components,
+        probability=_parse_probability(raw, ctx),
+    )
+
+
+def _parse_encounter_emit(raw: dict[str, Any], ctx: str) -> EncounterEmit:
+    for req in ("spec_id", "encounter_class", "type"):
+        if req not in raw:
+            raise ModuleError(f"{ctx}: Encounter emit missing {req!r}")
+    reason = raw.get("reason")
+    return EncounterEmit(
+        spec_id=str(raw["spec_id"]),
+        encounter_class=str(raw["encounter_class"]),
+        type_code=_parse_coding(raw["type"], f"{ctx}.type"),
+        reason_code=_parse_coding(reason, f"{ctx}.reason") if reason else None,
+        probability=_parse_probability(raw, ctx),
+    )
+
+
+def _parse_medication_request_emit(raw: dict[str, Any], ctx: str) -> MedicationRequestEmit:
+    for req in ("spec_id", "medication"):
+        if req not in raw:
+            raise ModuleError(f"{ctx}: MedicationRequest emit missing {req!r}")
+    reason = raw.get("reason")
+    return MedicationRequestEmit(
+        spec_id=str(raw["spec_id"]),
+        medication_code=_parse_coding(raw["medication"], f"{ctx}.medication"),
+        reason_code=_parse_coding(reason, f"{ctx}.reason") if reason else None,
+        probability=_parse_probability(raw, ctx),
+    )
+
+
+def _parse_emit(raw: dict[str, Any], ctx: str) -> EmitSpec:
+    if "resource_type" not in raw:
+        raise ModuleError(f"{ctx}: emit missing `resource_type`")
+    rtype = raw["resource_type"]
+    if rtype == "Encounter":
+        return _parse_encounter_emit(raw, ctx)
+    if rtype == "Observation":
+        return _parse_observation_emit(raw, ctx)
+    if rtype == "MedicationRequest":
+        return _parse_medication_request_emit(raw, ctx)
+    raise ModuleError(
+        f"{ctx}: unsupported resource_type {rtype!r}; "
+        f"choices: Encounter, Observation, MedicationRequest"
+    )
+
+
+def _parse_condition(raw: dict[str, Any]) -> ConditionSpec:
+    code = _parse_coding(raw["code"], f"condition {raw.get('id')!r}.code")
     prevalence, by_sex = _parse_prevalence(raw.get("prevalence", {}))
+    emits_raw = raw.get("emits") or ()
+    emits = tuple(
+        _parse_emit(e, f"condition {raw.get('id')!r}.emits[{i}]")
+        for i, e in enumerate(emits_raw)
+    )
+    # At most one Encounter per condition (the one all other resources link to).
+    encounter_count = sum(1 for e in emits if isinstance(e, EncounterEmit))
+    if encounter_count > 1:
+        raise ModuleError(
+            f"condition {raw.get('id')!r}: at most one Encounter emit per condition"
+        )
     return ConditionSpec(
         id=raw["id"],
         code=code,
         prevalence_by_bracket=prevalence,
         prevalence_by_sex=by_sex,
+        emits=emits,
     )
 
 
@@ -211,6 +427,78 @@ def _lookup_prevalence(
     return cond.prevalence_by_bracket.get(key) if key else None
 
 
+def _sample_value(rng: random.Random, rng_range: ValueRange) -> float:
+    v = rng.uniform(rng_range.low, rng_range.high)
+    if rng_range.precision == 0:
+        return float(int(round(v)))
+    return round(v, rng_range.precision)
+
+
+def _sample_observation(
+    emit: ObservationEmit, rng: random.Random
+) -> SampledObservation:
+    if emit.components:
+        components = tuple(
+            SampledComponent(
+                code=c.code,
+                value=_sample_value(rng, c.value_range),
+                unit=c.unit,
+                unit_code=c.unit_code or c.unit,
+            )
+            for c in emit.components
+        )
+        return SampledObservation(
+            spec_id=emit.spec_id,
+            category=emit.category,
+            code=emit.code,
+            value=None,
+            unit=None,
+            unit_code=None,
+            components=components,
+        )
+    assert emit.value_range is not None and emit.unit is not None
+    return SampledObservation(
+        spec_id=emit.spec_id,
+        category=emit.category,
+        code=emit.code,
+        value=_sample_value(rng, emit.value_range),
+        unit=emit.unit,
+        unit_code=emit.unit_code or emit.unit,
+        components=(),
+    )
+
+
+def _sample_emits(
+    cond: ConditionSpec, rng: random.Random
+) -> tuple[SampledResource, ...]:
+    out: list[SampledResource] = []
+    for emit in cond.emits:
+        if rng.random() >= emit.probability:
+            continue
+        if isinstance(emit, EncounterEmit):
+            out.append(
+                SampledEncounter(
+                    spec_id=emit.spec_id,
+                    encounter_class=emit.encounter_class,
+                    type_code=emit.type_code,
+                    reason_code=emit.reason_code,
+                )
+            )
+        elif isinstance(emit, ObservationEmit):
+            out.append(_sample_observation(emit, rng))
+        elif isinstance(emit, MedicationRequestEmit):
+            out.append(
+                SampledMedicationRequest(
+                    spec_id=emit.spec_id,
+                    medication_code=emit.medication_code,
+                    reason_code=emit.reason_code,
+                )
+            )
+        else:  # pragma: no cover — defensive
+            raise AssertionError(f"unknown emit type {type(emit).__name__}")
+    return tuple(out)
+
+
 def run_module(
     module: Module, age_years: int, sex: str, rng: random.Random
 ) -> list[Diagnosis]:
@@ -221,5 +509,6 @@ def run_module(
         if p is None:
             continue
         if rng.random() < p:
-            out.append(Diagnosis(condition=cond))
+            sampled = _sample_emits(cond, rng)
+            out.append(Diagnosis(condition=cond, sampled_resources=sampled))
     return out

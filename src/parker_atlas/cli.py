@@ -24,12 +24,22 @@ from rich.table import Table
 
 from parker_atlas import __version__
 from parker_atlas.core.demographics import race_display, sample_demographics
-from parker_atlas.fhir.bundle import build_bundle, fullurl_for_gpx
+from parker_atlas.fhir.bundle import build_bundle, fullurl_for_gpx, fullurl_for_resource
 from parker_atlas.fhir.condition import build_condition_resource
+from parker_atlas.fhir.encounter import build_encounter_resource
+from parker_atlas.fhir.medication_request import build_medication_request_resource
+from parker_atlas.fhir.observation import (
+    ObservationComponent,
+    Quantity,
+    build_observation_resource,
+)
 from parker_atlas.fhir.patient import build_patient_resource
 from parker_atlas.gpx import Allocator, Category
 from parker_atlas.modules import (
     ModuleError,
+    SampledEncounter,
+    SampledMedicationRequest,
+    SampledObservation,
     list_bundled_modules,
     load_module,
     run_module,
@@ -70,6 +80,93 @@ class Profile(str, Enum):
     US_CORE_6_1 = "us-core-6.1"
     IPS = "ips"
     BASE = "base"
+
+
+def _build_emitted_resources(
+    *,
+    gpx,
+    patient_url: str,
+    diagnosis,
+    effective,
+) -> list[dict]:
+    """Convert a Diagnosis's sampled resources into FHIR dicts.
+
+    If the diagnosis emits an Encounter, all Observations and
+    MedicationRequests in the same emit block reference that Encounter
+    by fullUrl. Without an Encounter they stand alone.
+    """
+    built: list[dict] = []
+
+    # Emit the Encounter first (if any) so we can link other resources to it.
+    encounter_url: str | None = None
+    for sr in diagnosis.sampled_resources:
+        if isinstance(sr, SampledEncounter):
+            enc = build_encounter_resource(
+                gpx=gpx,
+                patient_fullurl=patient_url,
+                encounter_spec_id=sr.spec_id,
+                class_code=sr.encounter_class,
+                type_code=sr.type_code,
+                period_start=effective,
+                period_end=effective,
+                reason_code=sr.reason_code,
+            )
+            built.append(enc)
+            encounter_url = fullurl_for_resource(gpx, enc)
+            break  # parser enforces at most one Encounter per condition
+
+    for sr in diagnosis.sampled_resources:
+        if isinstance(sr, SampledEncounter):
+            continue  # already handled
+        if isinstance(sr, SampledObservation):
+            if sr.components:
+                components = tuple(
+                    ObservationComponent(
+                        code=c.code,
+                        value=Quantity(value=c.value, unit=c.unit, code=c.unit_code),
+                    )
+                    for c in sr.components
+                )
+                obs = build_observation_resource(
+                    gpx=gpx,
+                    patient_fullurl=patient_url,
+                    observation_spec_id=sr.spec_id,
+                    category=sr.category,
+                    code=sr.code,
+                    effective=effective,
+                    components=components,
+                )
+            else:
+                assert sr.value is not None and sr.unit is not None
+                obs = build_observation_resource(
+                    gpx=gpx,
+                    patient_fullurl=patient_url,
+                    observation_spec_id=sr.spec_id,
+                    category=sr.category,
+                    code=sr.code,
+                    effective=effective,
+                    value=Quantity(
+                        value=sr.value,
+                        unit=sr.unit,
+                        code=sr.unit_code or sr.unit,
+                    ),
+                )
+            if encounter_url is not None:
+                obs["encounter"] = {"reference": encounter_url}
+            built.append(obs)
+        elif isinstance(sr, SampledMedicationRequest):
+            med = build_medication_request_resource(
+                gpx=gpx,
+                patient_fullurl=patient_url,
+                medication_spec_id=sr.spec_id,
+                medication_code=sr.medication_code,
+                authored_on=effective,
+                reason_code=sr.reason_code,
+                encounter_fullurl=encounter_url,
+            )
+            built.append(med)
+
+    return built
 
 
 def _summary_brackets() -> tuple[tuple[int, int], ...]:
@@ -309,6 +406,14 @@ def generate(
                     )
                 )
                 condition_counter[dx.condition.code.display] += 1
+                extras.extend(
+                    _build_emitted_resources(
+                        gpx=gpx,
+                        patient_url=patient_url,
+                        diagnosis=dx,
+                        effective=today,
+                    )
+                )
 
         bundle = build_bundle(gpx, patient, extras)
         (out / f"{gpx}.json").write_text(json.dumps(bundle, indent=2))
@@ -469,7 +574,7 @@ def status() -> None:
         ("atlas generate",        "[green]implemented[/green]",    "M1"),
         ("atlas validate",        "[green]structural[/green]",     "M1"),
         ("atlas validate --cohort","[green]first cut[/green]",      "M2"),
-        ("Module runtime",        "[yellow]probability[/yellow]",  "M2"),
+        ("Module runtime",        "[green]multi-resource[/green]", "M2"),
         ("Module library",        "[green]3 modules[/green]",      "M2"),
         ("Fidelity harness",      "[green]3 modules[/green]",      "M2"),
         ("LLM authoring",         "[dim]not started[/dim]",        "M3"),

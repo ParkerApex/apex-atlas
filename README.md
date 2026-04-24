@@ -52,8 +52,8 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | `atlas validate`           | ✅ Structural    | Schema validation + US Core Patient/Condition minimums                   |
 | `atlas validate --cohort`  | ✅ First cut     | Fidelity harness: aggregate metrics vs. declared expectation w/ tolerance |
 | `atlas modules`            | ✅ Implemented   | List bundled modules, show details (`atlas modules --show NAME`)         |
-| Clinical module runtime    | 🟡 Probability  | Probability-module flavor only; state machines in a later milestone      |
-| Module library             | ✅ 3 modules    | `hypertension`, `diabetes`, `hypercholesterolemia` (all NHANES-sourced)   |
+| Clinical module runtime    | ✅ Multi-resource | Probability module can emit Encounter + Observation + MedicationRequest |
+| Module library             | ✅ 3 modules    | `hypertension` (full-bundle emits), `diabetes`, `hypercholesterolemia`   |
 | Fidelity expectations      | ✅ 3 modules    | NCHS Data Briefs 511, 516, 363 — all `sourced` provenance                 |
 | LLM-assisted authoring     | ⏳ Not started   | Milestone 3                                                              |
 | Clinical note generation   | ⏳ Not started   | Milestone 4                                                              |

@@ -1,29 +1,39 @@
 module: hypertension
-version: 0.2.0
+version: 0.3.0
 description: >
-  Essential hypertension prevalence by age bracket and sex. Probability-
-  module flavor — each (age, sex) cell maps to a Bernoulli rate.
+  Essential hypertension module. Probability-module flavor: each
+  (age, sex) cell maps to a Bernoulli rate that decides whether the
+  patient is hypertensive.
+
+  When a patient is positive, the module now emits a small encounter-
+  level record in addition to the Condition:
+  - An ambulatory follow-up Encounter
+  - A blood-pressure Observation with systolic 140-180 / diastolic
+    90-110 (the range by which NHANES defines stage-2 hypertension),
+    linked to the Encounter
+  - A MedicationRequest for lisinopril in 60% of cases (approximating
+    the NHANES treated-hypertension rate for diagnosed adults; the
+    exact rate is a future ingestion)
 
   Adult (18+) prevalence rates are sourced from NCHS Data Brief 511
   (NHANES August 2021 – August 2023), Table 1. The pediatric (0-17)
-  bracket is a placeholder: NHANES does not survey minors for
-  hypertension on this cascade. A separate pediatric source (e.g.,
-  Hansen 2007 American Academy of Pediatrics) would refine this.
+  bracket is a placeholder — NHANES does not survey minors for
+  hypertension on this cascade.
 
   The bundled fidelity expectation uses the same NHANES numbers, so
   `atlas validate --cohort --module hypertension` at sufficient cohort
-  size is currently a pipeline-correctness check (module matches its
-  own declared rates). Once a future module revision diverges from
-  the expectation (say, stratifying beyond sex × age), the harness
-  will begin testing calibration as well.
+  size checks pipeline correctness (module matches its own declared
+  rates). Emit probabilities and value ranges are placeholders and
+  are not yet gated by the harness — a future commit will add emit-
+  fidelity metrics (e.g., "≥95% of hypertensive patients should have a
+  BP Observation in the 140/90 range").
 cites:
   - source: NCHS Data Brief 511 (Muntner et al., NHANES Aug 2021–Aug 2023)
     url: https://www.cdc.gov/nchs/products/databriefs/db511.htm
     summary: >
       US adults aged 18+ hypertension prevalence (crude): 23.4% at
       18-39, 52.5% at 40-59, 71.6% at 60+ (both sexes). Sex breakdown:
-      men 30.0/55.9/72.7%, women 16.4/49.0/70.6%. Hypertension defined
-      as measured high BP and/or taking antihypertensive medication.
+      men 30.0/55.9/72.7%, women 16.4/49.0/70.6%.
 conditions:
   - id: essential_hypertension
     code:
@@ -41,3 +51,54 @@ conditions:
         "18-39": 0.300
         "40-59": 0.559
         "60-99": 0.727
+    emits:
+      - resource_type: Encounter
+        spec_id: htn_followup_visit
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "59621000"
+          display: Essential hypertension
+
+      - resource_type: Observation
+        spec_id: htn_bp_reading
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "85354-9"
+          display: Blood pressure panel with all children optional
+        components:
+          - code:
+              system: http://loinc.org
+              code: "8480-6"
+              display: Systolic blood pressure
+            value_range:
+              low: 140
+              high: 180
+              precision: 0
+            unit: mm[Hg]
+          - code:
+              system: http://loinc.org
+              code: "8462-4"
+              display: Diastolic blood pressure
+            value_range:
+              low: 90
+              high: 110
+              precision: 0
+            unit: mm[Hg]
+
+      - resource_type: MedicationRequest
+        spec_id: htn_ace_inhibitor
+        probability: 0.60
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "197361"
+          display: Lisinopril 10 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "59621000"
+          display: Essential hypertension
