@@ -1,5 +1,5 @@
 module: obesity
-version: 0.1.0
+version: 0.2.0
 description: >
   Obesity (BMI ≥30) prevalence by age bracket. Probability-module
   flavor — each bracket maps to a Bernoulli rate.
@@ -35,6 +35,13 @@ conditions:
       "20-39": 0.355
       "40-59": 0.464
       "60-99": 0.389
+    # Obesity is gradual rather than acutely diagnosed; most US adults
+    # who carry the diagnosis would have crossed the BMI threshold
+    # somewhere between mid-adolescence and middle adulthood. The
+    # range below picks a plausible "first recorded as obese" window.
+    onset_age:
+      min: 15
+      max: 45
     emits:
       - resource_type: Encounter
         spec_id: obesity_followup_visit
