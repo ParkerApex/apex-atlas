@@ -1,5 +1,5 @@
 module: hypercholesterolemia
-version: 0.3.0
+version: 0.4.0
 description: >
   High total cholesterol (≥240 mg/dL) prevalence by age bracket.
   Probability-module flavor — each bracket maps to a Bernoulli rate.
@@ -56,20 +56,25 @@ conditions:
       min: 30
       max: 70
     emits:
+      # === Diagnosis day ===
       - resource_type: Encounter
-        spec_id: cholesterol_followup_visit
+        spec_id: cholesterol_diagnosis_visit
+        when: onset
         encounter_class: AMB
         type:
           system: http://snomed.info/sct
-          code: "390906007"
-          display: Follow-up encounter
+          code: "185349003"
+          display: Encounter for check up
         reason:
           system: http://snomed.info/sct
           code: "13644009"
           display: Hypercholesterolemia
 
+      # Initial diagnostic total cholesterol (>= 240 mg/dL by definition).
       - resource_type: Observation
-        spec_id: total_cholesterol_measurement
+        spec_id: initial_total_cholesterol
+        when: onset
+        link_to: cholesterol_diagnosis_visit
         category: laboratory
         code:
           system: http://loinc.org
@@ -81,8 +86,11 @@ conditions:
           precision: 0
         unit: mg/dL
 
+      # Initial statin prescription, 40% of diagnosed patients.
       - resource_type: MedicationRequest
         spec_id: cholesterol_statin
+        when: onset
+        link_to: cholesterol_diagnosis_visit
         probability: 0.40
         medication:
           system: http://www.nlm.nih.gov/research/umls/rxnorm
@@ -92,3 +100,23 @@ conditions:
           system: http://snomed.info/sct
           code: "13644009"
           display: Hypercholesterolemia
+
+      # === ~12-week post-diagnosis re-check ===
+      # ATP/AHA guidance: re-check lipids ~3 months after starting therapy
+      # (or at next scheduled visit if untreated). Range covers a mixed
+      # population — some patients on statins (controlled), some not
+      # (still elevated). Skewed toward the controlled side because the
+      # population that gets re-checked tends to be the treated subset.
+      - resource_type: Observation
+        spec_id: followup_total_cholesterol
+        when: onset+90d
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "2093-3"
+          display: Cholesterol [Mass/volume] in Serum or Plasma
+        value_range:
+          low: 180
+          high: 260
+          precision: 0
+        unit: mg/dL
