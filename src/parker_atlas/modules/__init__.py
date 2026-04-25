@@ -1,7 +1,6 @@
 """Clinical module runtime and bundled module library."""
 
 from parker_atlas.modules.runtime import (
-    ALLOWED_EMIT_WHEN,
     Citation,
     Coding,
     ConditionSpec,
@@ -20,6 +19,8 @@ from parker_atlas.modules.runtime import (
     SampledObservation,
     SampledResource,
     ValueRange,
+    WHEN_BASE,
+    WHEN_PATTERN,
     list_bundled_modules,
     load_module,
     load_module_from_str,
@@ -27,7 +28,6 @@ from parker_atlas.modules.runtime import (
 )
 
 __all__ = [
-    "ALLOWED_EMIT_WHEN",
     "Citation",
     "Coding",
     "ConditionSpec",
@@ -46,6 +46,8 @@ __all__ = [
     "SampledObservation",
     "SampledResource",
     "ValueRange",
+    "WHEN_BASE",
+    "WHEN_PATTERN",
     "list_bundled_modules",
     "load_module",
     "load_module_from_str",

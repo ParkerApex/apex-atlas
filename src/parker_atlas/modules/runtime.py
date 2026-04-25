@@ -41,6 +41,7 @@ Module YAML shape:
 from __future__ import annotations
 
 import random
+import re
 from dataclasses import dataclass
 from datetime import date, timedelta
 from importlib import resources
@@ -80,10 +81,18 @@ class ObservationComponentEmit:
     unit_code: str | None = None  # defaults to unit
 
 
-# Allowed `when` values on emits. "today" → simulation reference date.
-# "onset" → the diagnosis's sampled onset_date (falls back to today if
-# the condition has no onset_age).
-ALLOWED_EMIT_WHEN = ("today", "onset")
+# `when` values are anchor + optional offset. Examples:
+#   today, onset, onset+30d, onset+6m, today-1y, today-2w
+# Anchors:
+#   today — simulation reference date
+#   onset — the diagnosis's sampled onset_date (falls back to today if
+#           the condition has no onset_age)
+# Offset units: d (days), w (weeks ≈ 7d), m (months ≈ 30d), y (years ≈ 365d).
+# Months/years are nominal; consumers needing calendar-exact arithmetic
+# can decompose into days at module-author time.
+WHEN_BASE = ("today", "onset")
+_WHEN_OFFSET_DAYS = {"d": 1, "w": 7, "m": 30, "y": 365}
+WHEN_PATTERN = re.compile(r"^(today|onset)(?:([+-])(\d+)([dwmy]))?$")
 
 
 @dataclass(frozen=True, slots=True)
@@ -289,10 +298,12 @@ def _parse_probability(raw: dict[str, Any], context: str) -> float:
 
 def _parse_when(raw: dict[str, Any], context: str) -> str:
     when = str(raw.get("when", "today"))
-    if when not in ALLOWED_EMIT_WHEN:
+    if not WHEN_PATTERN.match(when):
         raise ModuleError(
-            f"{context}: when={when!r} not supported; "
-            f"choices: {list(ALLOWED_EMIT_WHEN)}"
+            f"{context}: when={when!r} not supported. "
+            f"Expected an anchor ({list(WHEN_BASE)}) optionally followed by "
+            f"an offset like +30d, -1y, +6m, +2w. "
+            f"Examples: today, onset, onset+30d, today-1y."
         )
     return when
 
@@ -522,10 +533,25 @@ def _sample_value(rng: random.Random, rng_range: ValueRange) -> float:
 
 
 def _resolve_when(when: str, today: date, onset_date: date | None) -> date:
-    """Map a `when` keyword to the actual effective date for a sampled emit."""
-    if when == "onset" and onset_date is not None:
-        return onset_date
-    return today
+    """Map a `when` expression to a concrete date for a sampled emit.
+
+    Pattern: `<anchor>(<sign><count><unit>)?`
+        anchor → today | onset
+        sign   → + | -
+        unit   → d | w | m | y (days / weeks / months≈30d / years≈365d)
+
+    `onset` falls back to `today` when the condition has no onset_age.
+    """
+    match = WHEN_PATTERN.match(when)
+    if match is None:  # pragma: no cover — parser already validated
+        raise ValueError(f"unparseable when={when!r}")
+    base, sign, count_str, unit = match.groups()
+    anchor = onset_date if base == "onset" and onset_date is not None else today
+    if sign is None:
+        return anchor
+    days = int(count_str) * _WHEN_OFFSET_DAYS[unit]
+    delta = timedelta(days=days)
+    return anchor + delta if sign == "+" else anchor - delta
 
 
 def _sample_observation(
