@@ -1,5 +1,5 @@
 module: diabetes
-version: 0.3.0
+version: 0.4.0
 description: >
   Total diabetes prevalence (both diagnosed and undiagnosed, types 1
   and 2 combined) by age bracket. Probability-module flavor — each
@@ -60,33 +60,42 @@ conditions:
       min: 35
       max: 70
     emits:
+      # === Diagnosis day ===
       - resource_type: Encounter
-        spec_id: diabetes_followup_visit
+        spec_id: diabetes_diagnosis_visit
+        when: onset
         encounter_class: AMB
         type:
           system: http://snomed.info/sct
-          code: "390906007"
-          display: Follow-up encounter
+          code: "185349003"
+          display: Encounter for check up
         reason:
           system: http://snomed.info/sct
           code: "73211009"
           display: Diabetes mellitus
 
+      # Initial A1C that established the diagnosis. Range reflects newly-
+      # diagnosed values before treatment kicks in (typically high).
       - resource_type: Observation
-        spec_id: diabetes_a1c_measurement
+        spec_id: diabetes_initial_a1c
+        when: onset
+        link_to: diabetes_diagnosis_visit
         category: laboratory
         code:
           system: http://loinc.org
           code: "4548-4"
           display: Hemoglobin A1c/Hemoglobin.total in Blood
         value_range:
-          low: 6.5
-          high: 10.0
+          low: 7.5
+          high: 11.0
           precision: 1
         unit: "%"
 
+      # Initial metformin prescription written at diagnosis.
       - resource_type: MedicationRequest
         spec_id: diabetes_metformin
+        when: onset
+        link_to: diabetes_diagnosis_visit
         probability: 0.70
         medication:
           system: http://www.nlm.nih.gov/research/umls/rxnorm
@@ -96,3 +105,21 @@ conditions:
           system: http://snomed.info/sct
           code: "73211009"
           display: Diabetes mellitus
+
+      # === 90-day post-diagnosis follow-up ===
+      # ADA guidance: re-check A1C ~3 months after starting therapy.
+      # The follow-up A1C range is somewhat lower than the initial one,
+      # reflecting partial response to metformin and lifestyle changes.
+      - resource_type: Observation
+        spec_id: diabetes_90day_a1c
+        when: onset+90d
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "4548-4"
+          display: Hemoglobin A1c/Hemoglobin.total in Blood
+        value_range:
+          low: 6.5
+          high: 9.0
+          precision: 1
+        unit: "%"

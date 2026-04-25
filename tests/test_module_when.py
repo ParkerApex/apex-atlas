@@ -12,7 +12,7 @@ from typer.testing import CliRunner
 
 from parker_atlas.cli import app
 from parker_atlas.modules import (
-    ALLOWED_EMIT_WHEN,
+    WHEN_BASE,
     ModuleError,
     SampledEncounter,
     SampledObservation,
@@ -107,8 +107,8 @@ class TestWhenParsing:
                 )
             )
 
-    def test_allowed_set_documents_choices(self):
-        assert ALLOWED_EMIT_WHEN == ("today", "onset")
+    def test_when_base_documents_anchor_choices(self):
+        assert WHEN_BASE == ("today", "onset")
 
 
 class TestWhenSampling:
@@ -290,8 +290,8 @@ class TestWhenEndToEnd:
             if enc_entry and obs_entry:
                 assert obs_entry["resource"]["encounter"]["reference"] == enc_entry["fullUrl"]
 
-    def test_diabetes_default_when_today_unchanged(self, tmp_path):
-        # Diabetes v0.3.0 doesn't declare `when` on its emits → defaults
+    def test_default_when_today_unchanged_for_modules_that_dont_opt_in(self, tmp_path):
+        # asthma v0.2.0 doesn't declare `when` on its emits → defaults
         # to today. This ensures the new feature is fully backwards-
         # compatible with modules that don't opt in.
         result = runner.invoke(
@@ -300,7 +300,7 @@ class TestWhenEndToEnd:
                 "generate",
                 "--patients", "30",
                 "--seed", "42",
-                "--module", "diabetes",
+                "--module", "asthma",
                 "--out", str(tmp_path),
             ],
         )
