@@ -160,18 +160,6 @@ class TestNDJSONCohortInteroperability:
 
 
 class TestUnsupportedFormats:
-    def test_parquet_still_rejected(self, tmp_path):
-        r = runner.invoke(
-            app,
-            [
-                "generate", "--patients", "1", "--seed", "0",
-                "--format", "parquet",
-                "--out", str(tmp_path),
-            ],
-        )
-        assert r.exit_code == 2
-        assert "not yet supported" in r.output
-
     def test_fhir_r5_still_rejected(self, tmp_path):
         r = runner.invoke(
             app,
