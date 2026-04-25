@@ -1,5 +1,5 @@
 module: hypertension
-version: 0.2.0
+version: 0.3.0
 source:
   name: NCHS Data Brief 511 (NHANES Aug 2021 – Aug 2023)
   provenance: sourced
@@ -75,3 +75,14 @@ metrics:
   target: 0.6
   emit_code: '197361'
   emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm
+- id: htn_to_ckd_progression_rate
+  kind: emit_presence_rate
+  condition_code: '59621000'
+  condition_system: http://snomed.info/sct
+  tolerance:
+    kind: absolute
+    value: 0.03
+  emit_resource_type: Condition
+  target: 0.06
+  emit_code: '709044004'
+  emit_code_system: http://snomed.info/sct

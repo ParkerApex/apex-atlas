@@ -1,5 +1,5 @@
 module: hypertension
-version: 0.6.0
+version: 0.7.0
 description: >
   Essential hypertension module. Probability-module flavor: each
   (age, sex) cell maps to a Bernoulli rate that decides whether the
@@ -14,6 +14,12 @@ description: >
   - A MedicationRequest for lisinopril in 60% of cases (approximating
     the NHANES treated-hypertension rate for diagnosed adults; the
     exact rate is a future ingestion)
+
+  v0.7 adds a one-hop progression to hypertensive chronic kidney
+  disease. After 10 years of HTN, ~10% of patients progress to CKD
+  (placeholder rate; see cites). When progression fires, the patient
+  receives a Condition for hypertensive CKD plus a follow-up
+  nephrology Encounter and an eGFR Observation.
 
   Adult (18+) prevalence rates are sourced from NCHS Data Brief 511
   (NHANES August 2021 – August 2023), Table 1. The pediatric (0-17)
@@ -34,6 +40,19 @@ cites:
       US adults aged 18+ hypertension prevalence (crude): 23.4% at
       18-39, 52.5% at 40-59, 71.6% at 60+ (both sexes). Sex breakdown:
       men 30.0/55.9/72.7%, women 16.4/49.0/70.6%.
+  - source: >
+      Fox CS, Larson MG, Leip EP, Culleton B, Wilson PW, Levy D.
+      Predictors of new-onset kidney disease in a community-based
+      population. JAMA. 2004;291(7):844-850.
+    url: https://jamanetwork.com/journals/jama/fullarticle/198251
+    summary: >
+      Framingham Offspring cohort (~2,800 adults, ~18 yr follow-up).
+      Hypertension was an independent predictor of incident CKD
+      (eGFR<59). Cumulative CKD incidence among hypertensives
+      approximated 10-13% over the follow-up window. The progression
+      rate used here (10% at 10 yr) is a placeholder anchored to this
+      and KDIGO ranges; clean ingestion via `atlas ingest progression`
+      is a future commit.
 conditions:
   - id: essential_hypertension
     code:
@@ -58,6 +77,14 @@ conditions:
     onset_age:
       min: 25
       max: 65
+    # One-hop progression to hypertensive CKD, anchored to Fox et al.
+    # (Framingham Offspring) range of 10-13% cumulative CKD incidence
+    # among hypertensives over ~10 years. Probability is a placeholder
+    # mid-estimate; the exact rate from KDIGO / USRDS is a follow-up.
+    progressions:
+      - to: hypertensive_ckd
+        after_years: 10
+        probability: 0.10
     emits:
       # === Diagnosis day ===
       - resource_type: Encounter
@@ -151,3 +178,43 @@ conditions:
               display: Diastolic blood pressure
             value_range: {low: 75, high: 92, precision: 0}
             unit: mm[Hg]
+
+  # Progression target — only entered via `progressions` from
+  # essential_hypertension, never directly. prevalence is 0 across all
+  # brackets so the standard probability gate cannot fire it.
+  - id: hypertensive_ckd
+    code:
+      system: http://snomed.info/sct
+      code: "709044004"
+      display: Chronic kidney disease due to hypertension (disorder)
+    prevalence:
+      "0-99": 0.0
+    emits:
+      # Nephrology follow-up encounter at the time of progression.
+      - resource_type: Encounter
+        spec_id: htn_ckd_nephro_visit
+        when: onset
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "709044004"
+          display: Chronic kidney disease due to hypertension
+
+      # eGFR Observation in the CKD-stage range (eGFR 30-59 covers
+      # stages 3a-3b, the most common presentation at progression).
+      - resource_type: Observation
+        spec_id: htn_ckd_egfr
+        when: onset
+        link_to: htn_ckd_nephro_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "33914-3"
+          display: Glomerular filtration rate/1.73 sq M.predicted (MDRD)
+        value_range: {low: 30, high: 59, precision: 0}
+        unit: mL/min/{1.73_m2}
+        unit_code: mL/min/{1.73_m2}
