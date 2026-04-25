@@ -1,0 +1,123 @@
+module: ischemic_heart_disease
+version: 0.1.0
+description: >
+  Ischemic heart disease (IHD / coronary heart disease) prevalence by
+  sex-and-age bracket. Probability-module flavor — each (sex, age)
+  cell maps to a Bernoulli rate.
+
+  Prevalence rates are sourced from the AHA Heart Disease and Stroke
+  Statistics — 2024 Update (Tsao et al, Circulation 2024). CHD affects
+  ~20.5M US adults (~7.2% prevalence overall, sharply age-stratified
+  with men more affected at every age). The 60-99 bracket is a
+  weighted blend of AHA's 60-79 + 80+ sub-buckets (~70/30 by
+  population share) since Atlas's demographic age_sex.csv tops out at
+  60-99.
+
+  When a patient is positive, the module emits:
+  - A cardiology follow-up Encounter
+  - An LDL-C Observation (LOINC 13457-7) in the 130-200 mg/dL range
+    (the untreated / poorly-controlled zone for CHD patients;
+    treatment-stable patients run lower)
+  - An atorvastatin MedicationRequest in 75% of cases — statins are
+    Class I (Level A) secondary-prevention therapy per the 2018 ACC/
+    AHA cholesterol guideline
+  - A low-dose aspirin MedicationRequest in 60% of cases —
+    secondary-prevention indication per the 2019 ACC/AHA primary
+    prevention guideline (stable, established CHD without high
+    bleeding risk)
+
+  Pediatric IHD is rare and out of scope; the 0-17 bracket is set to 0.
+cites:
+  - source: >
+      Tsao CW, Aday AW, Almarzooq ZI, et al. Heart Disease and Stroke
+      Statistics — 2024 Update: A Report from the American Heart
+      Association. Circulation 2024;149(8):e347-e913.
+    url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001209
+    summary: >
+      US adults CHD prevalence: ~20.5M (~7.2%). Age × sex breakdown
+      (NHANES 2017-2020): 20-39 men 0.5% / women 0.3%; 40-59 men 7.5%
+      / women 4.2%; 60-79 men 21.5% / women 12.8%; 80+ men 32.5% /
+      women 24.0%.
+  - source: >
+      Grundy SM, Stone NJ, Bailey AL, et al. 2018 AHA/ACC/Multisociety
+      Guideline on the Management of Blood Cholesterol. Journal of the
+      American College of Cardiology 2019;73(24):e285-e350.
+    url: https://www.jacc.org/doi/10.1016/j.jacc.2018.11.003
+    summary: >
+      High-intensity statin therapy is Class I (Level A) for adults
+      with established ASCVD. Atorvastatin 40-80 mg or rosuvastatin
+      20-40 mg are the canonical high-intensity options.
+conditions:
+  - id: ischemic_heart_disease
+    code:
+      system: http://snomed.info/sct
+      code: "414545008"
+      display: Ischemic heart disease (disorder)
+    prevalence:
+      female:
+        "0-17": 0.0
+        "18-39": 0.003
+        "40-59": 0.042
+        "60-99": 0.162
+      male:
+        "0-17": 0.0
+        "18-39": 0.005
+        "40-59": 0.075
+        "60-99": 0.248
+    onset_age:
+      min: 45
+      max: 75
+    emits:
+      - resource_type: Encounter
+        spec_id: ihd_cardiology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "414545008"
+          display: Ischemic heart disease
+
+      - resource_type: Observation
+        spec_id: ihd_ldl_c
+        when: today
+        link_to: ihd_cardiology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "13457-7"
+          display: Cholesterol in LDL [Mass/volume] in Serum or Plasma by calculation
+        value_range: {low: 130, high: 200, precision: 0}
+        unit: mg/dL
+        unit_code: mg/dL
+
+      - resource_type: MedicationRequest
+        spec_id: ihd_atorvastatin
+        when: today
+        link_to: ihd_cardiology_visit
+        probability: 0.75
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "617311"
+          display: Atorvastatin 20 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "414545008"
+          display: Ischemic heart disease
+
+      - resource_type: MedicationRequest
+        spec_id: ihd_aspirin
+        when: today
+        link_to: ihd_cardiology_visit
+        probability: 0.60
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "243670"
+          display: Aspirin 81 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "414545008"
+          display: Ischemic heart disease

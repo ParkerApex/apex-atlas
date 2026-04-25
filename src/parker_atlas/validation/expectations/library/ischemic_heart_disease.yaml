@@ -1,0 +1,59 @@
+module: ischemic_heart_disease
+version: 0.1.0
+source:
+  name: AHA Heart Disease and Stroke Statistics — 2024 Update (Tsao et al, Circulation 2024)
+  provenance: sourced
+  url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001209
+  note: >
+    US adults CHD/IHD prevalence by age × sex from the AHA 2024 Update
+    (drawing on NHANES 2017-2020). Atlas's 60-99 bracket aggregates
+    AHA's 60-79 + 80+ sub-buckets weighted ~70/30 by population share.
+  citations:
+    - source: >
+        Tsao CW, Aday AW, Almarzooq ZI, et al. Heart Disease and Stroke
+        Statistics — 2024 Update: A Report from the American Heart
+        Association. Circulation 2024;149(8):e347-e913.
+      url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001209
+      version: AHA 2024 Update
+      accessed: '2026-04-25'
+      table: 'Chart 19-1 / Table 19-1: CHD prevalence by age and sex.'
+metrics:
+  - id: ihd_prevalence_by_sex_and_age
+    kind: conditional_prevalence
+    condition_code: '414545008'
+    condition_system: http://snomed.info/sct
+    stratify_by: sex_and_age
+    tolerance:
+      kind: wilson
+      confidence: 99
+    targets:
+      female:
+        18-39: 0.003
+        40-59: 0.042
+        60-99: 0.162
+      male:
+        18-39: 0.005
+        40-59: 0.075
+        60-99: 0.248
+  - id: ihd_atorvastatin_rate
+    kind: emit_presence_rate
+    condition_code: '414545008'
+    condition_system: http://snomed.info/sct
+    tolerance:
+      kind: wilson
+      confidence: 99
+    emit_resource_type: MedicationRequest
+    target: 0.75
+    emit_code: '617311'
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm
+  - id: ihd_aspirin_rate
+    kind: emit_presence_rate
+    condition_code: '414545008'
+    condition_system: http://snomed.info/sct
+    tolerance:
+      kind: wilson
+      confidence: 99
+    emit_resource_type: MedicationRequest
+    target: 0.60
+    emit_code: '243670'
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm
