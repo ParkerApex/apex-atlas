@@ -433,6 +433,17 @@ def _parse_condition(
         requires_raw = [requires_raw]
     requires = tuple(str(r) for r in requires_raw)
     for r in requires:
+        if ":" in r:
+            # Cross-module reference (`module_name:cond_id`). Can't be
+            # validated at parse time — we don't know which other modules
+            # will be active. Runtime checks at generate time.
+            mod_part, _, _ = r.partition(":")
+            if not mod_part or not _:
+                raise ModuleError(
+                    f"condition {raw.get('id')!r}: requires={r!r} must be "
+                    f"either a sibling condition id or `module_name:condition_id`"
+                )
+            continue
         if r == raw.get("id"):
             raise ModuleError(
                 f"condition {raw.get('id')!r}: requires={r!r} cannot reference itself"
@@ -440,7 +451,8 @@ def _parse_condition(
         if r not in prior_condition_ids:
             raise ModuleError(
                 f"condition {raw.get('id')!r}: requires={r!r} must reference an "
-                f"earlier-declared sibling condition. Conditions seen so far: "
+                f"earlier-declared sibling condition (use `module_name:condition_id` "
+                f"for a cross-module reference). Conditions seen so far: "
                 f"{sorted(prior_condition_ids) or '(none)'}."
             )
     encounter_specs = {e.spec_id for e in emits if isinstance(e, EncounterEmit)}
@@ -701,15 +713,35 @@ def run_module(
     rng: random.Random,
     *,
     today: date | None = None,
+    external_fired: set[str] | None = None,
 ) -> list[Diagnosis]:
-    """Run a probability module for one patient; return sampled diagnoses."""
+    """Run a probability module for one patient; return sampled diagnoses.
+
+    `external_fired`, when provided, is a set of `module_name:condition_id`
+    strings populated by previously-run modules in the same patient. Conditions
+    with cross-module `requires` (e.g., `hypertension:essential_hypertension`)
+    are evaluated against this set. Same-module `requires` continue to use the
+    in-this-run `fired_ids` set.
+    """
     today = today or date.today()
+    external = external_fired if external_fired is not None else set()
     out: list[Diagnosis] = []
     fired_ids: set[str] = set()
     for cond in module.conditions:
-        # Comorbidity gate: skip if any required sibling condition didn't fire.
-        if cond.requires and not all(r in fired_ids for r in cond.requires):
-            continue
+        # Comorbidity gate: skip if any required dependency didn't fire.
+        if cond.requires:
+            satisfied = True
+            for r in cond.requires:
+                if ":" in r:
+                    if r not in external:
+                        satisfied = False
+                        break
+                else:
+                    if r not in fired_ids:
+                        satisfied = False
+                        break
+            if not satisfied:
+                continue
         p = _lookup_prevalence(cond, age_years, sex)
         if p is None:
             continue

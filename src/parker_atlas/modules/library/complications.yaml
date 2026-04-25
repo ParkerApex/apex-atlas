@@ -1,0 +1,74 @@
+module: complications
+version: 0.1.0
+description: >
+  Late-stage and secondary conditions whose prevalence is conditional
+  on upstream chronic-disease modules. Run alongside the relevant
+  primary module(s):
+
+      atlas generate --module hypertension,complications
+
+  Order matters: the upstream module must come first so its
+  conditions are visible when this module's `requires` are
+  evaluated.
+
+  All prevalence rates in this module are PLACEHOLDER. Real cited
+  numbers for chronic-disease progression (HTN → CKD, T2D →
+  retinopathy, etc.) require data from CMS / USRDS / NEDS or the
+  AHA Statistical Update; ingestion of those is future work.
+  Until then the module exists primarily to demonstrate the
+  cross-module `requires` mechanism — output should not be cited as
+  reflecting real complication rates. There is intentionally no
+  bundled fidelity expectation for this module.
+cites:
+  - source: Placeholder — cross-module demonstration only
+    url: ""
+    summary: >
+      No publication-pinned numbers. Awaiting USRDS / AHA
+      Statistical Update ingestion for HTN→CKD progression rates
+      and similar.
+
+conditions:
+  # Hypertensive nephropathy / chronic kidney disease secondary to HTN.
+  # Fires only for patients who have essential hypertension from the
+  # `hypertension` module. The 0.15 prevalence is a placeholder; real
+  # USRDS data shows wide variation by HTN duration, control, and
+  # comorbidity.
+  - id: hypertensive_nephropathy
+    code:
+      system: http://snomed.info/sct
+      code: "236425005"
+      display: Chronic kidney disease stage 3 (disorder)
+    requires: hypertension:essential_hypertension
+    prevalence:
+      "0-99": 0.15
+    onset_age:
+      min: 50
+      max: 85
+    emits:
+      - resource_type: Encounter
+        spec_id: ckd_diagnosis_visit
+        when: onset
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185349003"
+          display: Encounter for check up
+        reason:
+          system: http://snomed.info/sct
+          code: "236425005"
+          display: Chronic kidney disease stage 3
+      # Estimated GFR — diagnostic for CKD stage 3 (30-59 mL/min/1.73m²).
+      - resource_type: Observation
+        spec_id: ckd_egfr
+        when: onset
+        link_to: ckd_diagnosis_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "62238-1"
+          display: Glomerular filtration rate/1.73 sq M.predicted by Creatinine-based formula (CKD-EPI)
+        value_range:
+          low: 30
+          high: 59
+          precision: 0
+        unit: mL/min/{1.73_m2}
