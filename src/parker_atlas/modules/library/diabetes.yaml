@@ -1,5 +1,5 @@
 module: diabetes
-version: 0.4.0
+version: 0.5.0
 description: >
   Total diabetes prevalence (both diagnosed and undiagnosed, types 1
   and 2 combined) by age bracket. Probability-module flavor — each
@@ -14,6 +14,15 @@ description: >
   - A MedicationRequest for metformin 500 mg in 70% of cases
     (approximating the rate of diagnosed diabetics on metformin per
     ADA guidance; exact rate is a future ingestion)
+
+  v0.5 adds a one-hop progression to diabetic chronic kidney disease.
+  After 10 years of diabetes, ~20% of patients progress to clinically
+  relevant CKD (placeholder rate; see cites). When progression fires,
+  the patient receives a Condition for diabetic CKD plus a follow-up
+  nephrology Encounter and an eGFR Observation. This is the second
+  use of the progressions feature (the first being HTN → CKD); the
+  underlying rate-ingest path is tracked in
+  https://github.com/ParkerApex/parker-atlas/issues/1.
 
   Adult (20+) prevalence rates are sourced from NCHS Data Brief 516
   (NHANES August 2021 – August 2023), Table 2. The 0-19 bracket is a
@@ -41,6 +50,21 @@ cites:
       men 18.0%, women 13.7%. Diabetes defined as measured A1C ≥6.5%
       or self-reported diagnosis. ~95% of cases are type 2 per the
       CDC National Diabetes Statistics Report.
+  - source: >
+      Adler AI, Stevens RJ, Manley SE, Bilous RW, Cull CA, Holman RR;
+      UKPDS Group. Development and progression of nephropathy in type 2
+      diabetes: The United Kingdom Prospective Diabetes Study (UKPDS 64).
+      Kidney International 2003;63(1):225-232.
+    url: https://doi.org/10.1046/j.1523-1755.2003.00712.x
+    summary: >
+      UKPDS cohort (5,097 newly-diagnosed T2DM, ~15 yr follow-up).
+      Cumulative incidence of macroalbuminuria 5.3% at 10 yr;
+      elevated plasma creatinine or RRT ~2.7% at 10 yr; ~28% had
+      progressed to at least microalbuminuria by 10 yr. The 20%
+      progression-to-CKD rate used here is a placeholder mid-estimate
+      anchored to this and USRDS 2023 ADR (diabetes = leading cause of
+      ESRD, ~38-44% of incident cases). Clean ingestion via
+      `atlas ingest progression` is tracked in issue #1.
 conditions:
   - id: diabetes_mellitus
     code:
@@ -59,6 +83,14 @@ conditions:
     onset_age:
       min: 35
       max: 70
+    # One-hop progression to diabetic CKD, anchored to UKPDS 64
+    # (cumulative incidence of clinically-relevant CKD at 10 yr) and
+    # USRDS 2023 ADR (diabetes = leading cause of ESRD). Probability is
+    # a placeholder mid-estimate; clean rate ingest is issue #1.
+    progressions:
+      - to: diabetic_ckd
+        after_years: 10
+        probability: 0.20
     emits:
       # === Diagnosis day ===
       - resource_type: Encounter
@@ -123,3 +155,43 @@ conditions:
           high: 9.0
           precision: 1
         unit: "%"
+
+  # Progression target — only entered via `progressions` from
+  # diabetes_mellitus, never directly. prevalence is 0 across all
+  # brackets so the standard probability gate cannot fire it.
+  - id: diabetic_ckd
+    code:
+      system: http://snomed.info/sct
+      code: "420715001"
+      display: Diabetic chronic kidney disease (disorder)
+    prevalence:
+      "0-99": 0.0
+    emits:
+      # Nephrology follow-up encounter at the time of progression.
+      - resource_type: Encounter
+        spec_id: dm2_ckd_nephro_visit
+        when: onset
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "420715001"
+          display: Diabetic chronic kidney disease
+
+      # eGFR Observation in the CKD-stage range (eGFR 30-59 covers
+      # stages 3a-3b, the most common presentation at progression).
+      - resource_type: Observation
+        spec_id: dm2_ckd_egfr
+        when: onset
+        link_to: dm2_ckd_nephro_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "33914-3"
+          display: Glomerular filtration rate/1.73 sq M.predicted (MDRD)
+        value_range: {low: 30, high: 59, precision: 0}
+        unit: mL/min/{1.73_m2}
+        unit_code: mL/min/{1.73_m2}
