@@ -369,7 +369,7 @@ def generate(
     patients: Annotated[int, typer.Option(help="Number of patients to generate.")] = 1000,
     out: Annotated[Path, typer.Option(help="Output directory.")] = Path("./patients"),
     format: Annotated[OutputFormat, typer.Option(help="Output format.")] = OutputFormat.FHIR_R4,
-    module: Annotated[str | None, typer.Option(help="Limit to a single clinical module.")] = None,
+    module: Annotated[str | None, typer.Option(help="Module(s) to run, comma-separated for multiple (e.g. hypertension,complications).")] = None,
     profile: Annotated[Profile, typer.Option(help="FHIR profile to conform to.")] = Profile.US_CORE_6_1,
     seed: Annotated[int | None, typer.Option(help="RNG seed for reproducibility.")] = None,
     summary: Annotated[bool, typer.Option("--summary", help="Print cohort demographics and condition summary after generation.")] = False,
@@ -393,11 +393,12 @@ def generate(
         raise typer.Exit(code=2)
     active_modules = []
     if module is not None:
-        try:
-            active_modules.append(load_module(module))
-        except ModuleError as exc:
-            err_console.print(f"[red]{exc}[/red]")
-            raise typer.Exit(code=1) from exc
+        for name in [m.strip() for m in module.split(",") if m.strip()]:
+            try:
+                active_modules.append(load_module(name))
+            except ModuleError as exc:
+                err_console.print(f"[red]{exc}[/red]")
+                raise typer.Exit(code=1) from exc
 
     out.mkdir(parents=True, exist_ok=True)
     rng = random.Random(seed)
@@ -421,14 +422,23 @@ def generate(
 
         extras: list[dict] = []
         age_years = (today - demo.birth_date).days // 365
+        # Track conditions fired across all modules for this patient. The
+        # cross-module `requires` syntax (e.g. hypertension:essential_hypertension)
+        # is satisfied against this set; same-module `requires` use a
+        # separate per-module set inside run_module.
+        patient_fired: set[str] = set()
         for mod in active_modules:
-            for dx in run_module(
+            diagnoses = run_module(
                 mod,
                 age_years=age_years,
                 sex=demo.gender.value,
                 rng=rng,
                 today=today,
-            ):
+                external_fired=patient_fired,
+            )
+            for dx in diagnoses:
+                patient_fired.add(f"{mod.name}:{dx.condition.id}")
+            for dx in diagnoses:
                 extras.append(
                     build_condition_resource(
                         gpx=gpx,
@@ -606,8 +616,8 @@ def status() -> None:
         ("atlas generate",        "[green]implemented[/green]",    "M1"),
         ("atlas validate",        "[green]structural[/green]",     "M1"),
         ("atlas validate --cohort","[green]first cut[/green]",      "M2"),
-        ("Module runtime",        "[green]time-aware emits[/green]", "M2"),
-        ("Module library",        "[green]5 modules[/green]",      "M2"),
+        ("Module runtime",        "[green]cross-module reqs[/green]", "M2"),
+        ("Module library",        "[green]5 sourced + 1 demo[/green]", "M2"),
         ("Fidelity harness",      "[green]5 modules[/green]",      "M2"),
         ("LLM authoring",         "[dim]not started[/dim]",        "M3"),
         ("Clinical notes",        "[dim]not started[/dim]",        "M4"),
