@@ -1,8 +1,18 @@
 module: hypercholesterolemia
-version: 0.1.0
+version: 0.2.0
 description: >
   High total cholesterol (≥240 mg/dL) prevalence by age bracket.
   Probability-module flavor — each bracket maps to a Bernoulli rate.
+
+  When a patient is positive, the module emits an encounter-level
+  record:
+  - An ambulatory follow-up Encounter
+  - A Total Cholesterol Observation with value 240–300 mg/dL
+    (diagnostic threshold through a typical uncontrolled range),
+    linked to the Encounter
+  - A MedicationRequest for atorvastatin 20 mg in 40% of cases
+    (approximating the rate of adults with high cholesterol on
+    statins per NHANES; exact rate is a future ingestion)
 
   Adult (20+) prevalence rates are sourced from NCHS Data Brief 363
   (Carroll & Fryar 2020, NHANES 2015-2018). The 0-19 bracket is a
@@ -17,9 +27,9 @@ description: >
 
   Module assigns SNOMED 13644009 (Hypercholesterolemia) rather than
   the broader 55822004 (Hyperlipidemia), since Brief 363 specifically
-  measures total cholesterol. A future module split can produce
-  Condition resources for the broader hyperlipidemia category when
-  triglyceride-inclusive data is ingested.
+  measures total cholesterol. Emit value ranges and medication
+  probability are placeholders with clinical-literature ranges;
+  emit-fidelity harness checks land in a follow-up commit.
 cites:
   - source: NCHS Data Brief 363 (Carroll & Fryar, NHANES 2015-2018)
     url: https://www.cdc.gov/nchs/products/databriefs/db363.htm
@@ -39,3 +49,40 @@ conditions:
       "20-39": 0.075
       "40-59": 0.157
       "60-99": 0.114
+    emits:
+      - resource_type: Encounter
+        spec_id: cholesterol_followup_visit
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "13644009"
+          display: Hypercholesterolemia
+
+      - resource_type: Observation
+        spec_id: total_cholesterol_measurement
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "2093-3"
+          display: Cholesterol [Mass/volume] in Serum or Plasma
+        value_range:
+          low: 240
+          high: 300
+          precision: 0
+        unit: mg/dL
+
+      - resource_type: MedicationRequest
+        spec_id: cholesterol_statin
+        probability: 0.40
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "617311"
+          display: Atorvastatin 20 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "13644009"
+          display: Hypercholesterolemia
