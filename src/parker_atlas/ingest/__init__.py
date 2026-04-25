@@ -20,5 +20,11 @@ Why CSV as the integration point:
 
 from parker_atlas.ingest.demographics import ingest_demographics
 from parker_atlas.ingest.prevalence import IngestionError, ingest_prevalence
+from parker_atlas.ingest.progression import ingest_progression
 
-__all__ = ["IngestionError", "ingest_prevalence", "ingest_demographics"]
+__all__ = [
+    "IngestionError",
+    "ingest_demographics",
+    "ingest_prevalence",
+    "ingest_progression",
+]

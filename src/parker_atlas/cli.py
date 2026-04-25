@@ -826,5 +826,55 @@ def ingest_demographics_cmd(
     console.print(f"  table: [bold]{table}[/bold]")
 
 
+@ingest_app.command("progression")
+def ingest_progression_cmd(
+    input: Annotated[Path, typer.Option("--input", "-i", help="Input CSV with progression rows (from, to, after_years, probability).")],
+    metadata: Annotated[Path, typer.Option("--metadata", "-m", help="Metadata YAML carrying module name, version, and source citations.")],
+    output: Annotated[Path | None, typer.Option("--output", "-o", help="Destination path. Omit to print the rendered overlay YAML to stdout.")] = None,
+    overwrite: Annotated[bool, typer.Option("--overwrite", help="Allow overwriting an existing --output file.")] = False,
+) -> None:
+    """Build a progressions-overlay YAML from a CSV + metadata YAML.
+
+    The overlay overrides matching `(from, to)` progression rates declared
+    inline in the bundled module YAML. Adding new progressions via overlay
+    is rejected — that requires a module YAML edit. The ingest path
+    enforces `provenance` of `sourced` or `verified` (hand-authored
+    placeholder rates belong inline in the module).
+
+    Output is round-tripped through `apply_progressions_overlay` against
+    the matching bundled module before being written, so unknown
+    `(from, to)` pairs and bad rate values fail at ingest time rather
+    than at module-load time.
+    """
+    from parker_atlas.ingest.progression import IngestionError, ingest_progression
+
+    if not input.exists():
+        err_console.print(f"[red]input CSV does not exist:[/red] {input}")
+        raise typer.Exit(code=1)
+    if not metadata.exists():
+        err_console.print(f"[red]metadata YAML does not exist:[/red] {metadata}")
+        raise typer.Exit(code=1)
+
+    try:
+        overlay_yaml = ingest_progression(input, metadata)
+    except IngestionError as exc:
+        err_console.print(f"[red]ingest failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    if output is None:
+        console.print(overlay_yaml, end="", highlight=False)
+        return
+
+    if output.exists() and not overwrite:
+        err_console.print(
+            f"[red]{output} already exists[/red]. Pass --overwrite to replace."
+        )
+        raise typer.Exit(code=1)
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(overlay_yaml, encoding="utf-8")
+    console.print(f"[green]✓[/green] Wrote {output}")
+
+
 if __name__ == "__main__":
     app()

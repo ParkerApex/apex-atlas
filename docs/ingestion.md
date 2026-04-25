@@ -192,3 +192,65 @@ API). A typical workflow:
 4. Run `atlas ingest demographics`.
 
 For race/ethnicity, tables `B02001` and `B03003` respectively.
+
+## Progression rates — `atlas ingest progression`
+
+Sources the `(after_years, probability)` rate of a one-hop progression
+declared in a clinical module. Output is a `<module>.progressions.yaml`
+overlay file that the runtime loader applies on top of the module YAML
+at load time, overriding the inline rate.
+
+The overlay can only **override existing** progressions — it cannot
+add new ones. Adding a progression target requires a module YAML edit
+(the target condition must exist as a sibling). This split keeps the
+structural shape of the module hand-authored and the *rates* sourced.
+
+### Input CSV
+
+| Column        | Required | Notes                                              |
+| ------------- | -------- | -------------------------------------------------- |
+| `from`        | yes      | spec_id of the source condition (must exist)       |
+| `to`          | yes      | spec_id of the target condition (must exist)       |
+| `after_years` | yes      | integer ≥ 0                                        |
+| `probability` | yes      | float in [0, 1]                                    |
+| `source_note` | no       | free text for audit; ignored by the runtime        |
+
+### Metadata YAML
+
+```yaml
+module: hypertension
+version: 1.0.0
+source:
+  name: KDIGO 2024 CKD Guideline + USRDS 2023 ADR
+  provenance: sourced       # or verified; ingest refuses placeholder
+  url: https://kdigo.org/guidelines/ckd-evaluation-and-management/
+  citations:
+    - source: Hsu CY et al. Arch Intern Med 2005
+      url: https://jamanetwork.com/journals/jamainternalmedicine/fullarticle/486521
+      accessed: "2026-04-25"
+```
+
+### Running
+
+```bash
+atlas ingest progression \
+  -i ./hypertension.csv \
+  -m ./hypertension_meta.yaml \
+  -o src/parker_atlas/modules/library/hypertension.progressions.yaml
+```
+
+The output is round-tripped through `apply_progressions_overlay`
+against the matching bundled module before being written, so unknown
+`(from, to)` pairs and bad rate values fail at ingest time.
+
+### Authoring workflow
+
+1. Identify the source/target condition spec_ids in the module YAML.
+2. Pick a defensible rate from the literature (KDIGO, USRDS, cohort
+   studies). Document the citation chain in the metadata YAML.
+3. Run `atlas ingest progression`.
+4. Re-run the cohort harness (`atlas validate --cohort --module NAME`)
+   to confirm the new rate stays inside the existing tolerance, or
+   adjust the bundled expectation target if it has shifted materially.
+5. Commit the input CSV, metadata, and generated overlay so the
+   provenance chain is auditable from source row to runtime artifact.

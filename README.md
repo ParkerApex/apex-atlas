@@ -42,6 +42,7 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | Hypertension prevalence    | ✅ Sourced       | NCHS Data Brief 511 (NHANES Aug 2021–Aug 2023) — age- and sex-stratified     |
 | `atlas ingest prevalence`  | ✅ Implemented   | CSV + metadata → sourced fidelity expectation YAML, with provenance checks    |
 | `atlas ingest demographics`| ✅ Implemented   | CSV + metadata → references/tables/*.csv + provenance sidecar                 |
+| `atlas ingest progression` | ✅ Implemented   | CSV + metadata → `<module>.progressions.yaml` overlay; HTN/DM live in library |
 | FHIR Patient builder       | ✅ Implemented   | US Core 6.1 Patient with race/ethnicity/birthsex extensions + HTEST tag  |
 | FHIR Condition builder     | ✅ Implemented   | US Core Problems & Health Concerns (referenced by modules)               |
 | FHIR Observation builder   | ✅ Implemented   | Vital signs, labs, blood pressure (multi-component) — US Core profiles    |
@@ -56,7 +57,7 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | Module library             | ✅ 6 modules    | 5 sourced (HTN / DM / lipids / asthma / obesity) + complications (placeholder cross-module demo) |
 | Fidelity expectations      | ✅ 6 modules    | 5 sourced + complications (placeholder cross-module fidelity check)        |
 | Cross-module dependencies  | ✅ Implemented  | `requires: module:cond_id` + `emit_resource_type: Condition` for harness gating |
-| State-machine progressions | ✅ One-hop      | `progressions: [{to, after_years, probability}]`; HTN → hypertensive CKD live in module |
+| State-machine progressions | ✅ One-hop      | `progressions: [{to, after_years, probability}]`; HTN→CKD + DM→CKD with sourced overlays |
 | Clinical note generation   | ✅ Template     | `--with-notes`: DocumentReference + inline markdown progress note per condition |
 | LLM-assisted authoring     | ⏳ Not started   | Milestone 3                                                              |
 | LLM-assisted note authoring| ⏳ Not started   | Milestone 4 — `NoteStrategy.LLM` API surface in place                    |

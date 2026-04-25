@@ -42,7 +42,7 @@ from __future__ import annotations
 
 import random
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from datetime import date, timedelta
 from importlib import resources
 from typing import Any
@@ -603,23 +603,128 @@ def load_module_from_str(yaml_text: str) -> Module:
 
 
 def load_module(name: str) -> Module:
-    """Load a bundled module by name from parker_atlas.modules.library."""
+    """Load a bundled module by name from parker_atlas.modules.library.
+
+    If a sibling `<name>.progressions.yaml` overlay file exists, its
+    sourced rates override the matching inline progressions on the
+    module's conditions. The overlay is the artifact emitted by
+    `atlas ingest progression`; see `apply_progressions_overlay`.
+    """
     pkg = resources.files("parker_atlas.modules.library")
     target = pkg.joinpath(f"{name}.yaml")
     if not target.is_file():
         bundled = ", ".join(list_bundled_modules()) or "(none)"
         raise ModuleError(f"no bundled module named {name!r}. Available: {bundled}")
-    return load_module_from_str(target.read_text(encoding="utf-8"))
+    module = load_module_from_str(target.read_text(encoding="utf-8"))
+    overlay = pkg.joinpath(f"{name}.progressions.yaml")
+    if overlay.is_file():
+        module = apply_progressions_overlay(module, overlay.read_text(encoding="utf-8"))
+    return module
 
 
 def list_bundled_modules() -> list[str]:
-    """Return sorted names of all bundled modules."""
+    """Return sorted names of all bundled modules.
+
+    Overlay files (`<name>.progressions.yaml`) are excluded — they aren't
+    standalone modules, just sourced-rate sidecars consumed by load_module.
+    """
     pkg = resources.files("parker_atlas.modules.library")
     return sorted(
         f.name.removesuffix(".yaml")
         for f in pkg.iterdir()
-        if f.name.endswith(".yaml")
+        if f.name.endswith(".yaml") and not f.name.endswith(".progressions.yaml")
     )
+
+
+def apply_progressions_overlay(module: Module, overlay_yaml: str) -> Module:
+    """Override matching inline progressions with sourced rates from an overlay.
+
+    Overlay YAML shape:
+        module: <module_name>          # must match `module.name`
+        version: <semver>
+        source:
+          name: <source name>
+          provenance: sourced | verified
+          citations: [...]
+        progressions:
+          - from: <source_condition_id>  # spec_id of an existing condition
+            to: <target_condition_id>    # spec_id of an existing condition
+            after_years: <int>
+            probability: <float in [0, 1]>
+
+    Each overlay entry must match a `(from, to)` progression already
+    declared on the source condition. Adding new progressions via overlay
+    is rejected — that requires a module YAML edit. This keeps the
+    structural shape of the module hand-authored and the *rates* sourced.
+    """
+    try:
+        data = yaml.safe_load(overlay_yaml)
+    except yaml.YAMLError as exc:
+        raise ModuleError(f"invalid progressions overlay YAML: {exc}") from exc
+    if not isinstance(data, dict):
+        raise ModuleError("progressions overlay must be a YAML mapping")
+
+    overlay_module = data.get("module")
+    if overlay_module != module.name:
+        raise ModuleError(
+            f"progressions overlay declares module={overlay_module!r}, "
+            f"but is being applied to module={module.name!r}"
+        )
+
+    src = data.get("source") or {}
+    provenance = src.get("provenance")
+    if provenance not in ("sourced", "verified"):
+        raise ModuleError(
+            f"progressions overlay must declare source.provenance of "
+            f"'sourced' or 'verified'; got {provenance!r}. Hand-authored "
+            f"placeholder rates belong inline in the module YAML."
+        )
+
+    overrides: dict[tuple[str, str], ProgressionSpec] = {}
+    for i, entry in enumerate(data.get("progressions") or []):
+        for required in ("from", "to", "after_years", "probability"):
+            if required not in entry:
+                raise ModuleError(
+                    f"progressions overlay entry {i}: missing {required!r}"
+                )
+        after_years = int(entry["after_years"])
+        if after_years < 0:
+            raise ModuleError(
+                f"progressions overlay entry {i}: after_years {after_years} must be >= 0"
+            )
+        probability = float(entry["probability"])
+        if not 0.0 <= probability <= 1.0:
+            raise ModuleError(
+                f"progressions overlay entry {i}: probability {probability} must be in [0, 1]"
+            )
+        overrides[(str(entry["from"]), str(entry["to"]))] = ProgressionSpec(
+            to=str(entry["to"]),
+            after_years=after_years,
+            probability=probability,
+        )
+
+    declared_pairs = {
+        (c.id, p.to) for c in module.conditions for p in c.progressions
+    }
+    unknown = sorted(set(overrides) - declared_pairs)
+    if unknown:
+        raise ModuleError(
+            f"progressions overlay declares (from, to) pairs not present in "
+            f"module {module.name!r}: {unknown}. Overlays can only override "
+            f"existing progressions; add the progression to the module YAML "
+            f"first."
+        )
+
+    new_conditions: list[ConditionSpec] = []
+    for cond in module.conditions:
+        if not cond.progressions:
+            new_conditions.append(cond)
+            continue
+        new_progs = tuple(
+            overrides.get((cond.id, p.to), p) for p in cond.progressions
+        )
+        new_conditions.append(replace(cond, progressions=new_progs))
+    return replace(module, conditions=tuple(new_conditions))
 
 
 # -- Execution ---------------------------------------------------------------
