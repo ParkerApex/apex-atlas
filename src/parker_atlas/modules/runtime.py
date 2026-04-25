@@ -145,6 +145,23 @@ class OnsetAgeRange:
 
 
 @dataclass(frozen=True, slots=True)
+class ProgressionSpec:
+    """One forward transition: source condition → target condition after N years.
+
+    Minimal first-cut state-machine flavor. The source condition fires via
+    its normal probability gate; if it fires AND has an onset_date AND
+    `today >= onset_date + after_years`, a Bernoulli(probability) trial
+    decides whether the target condition also fires. Progressed onset is
+    `source.onset_date + after_years`, never in the future. No chains:
+    progressions of progressions are not evaluated in the same run.
+    """
+
+    to: str  # spec_id of a sibling condition in the same module
+    after_years: int
+    probability: float
+
+
+@dataclass(frozen=True, slots=True)
 class ConditionSpec:
     """One condition a module can assign to a patient."""
 
@@ -164,6 +181,10 @@ class ConditionSpec:
     # for this condition to be eligible. Used for comorbidity rules like
     # "hypertensive nephropathy" requiring "essential_hypertension".
     requires: tuple[str, ...] = ()
+    # Forward transitions to other conditions in this same module. See
+    # ProgressionSpec for semantics. Evaluated after all conditions have
+    # had their normal-prevalence trial.
+    progressions: tuple[ProgressionSpec, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -404,6 +425,25 @@ def _parse_emit(raw: dict[str, Any], ctx: str) -> EmitSpec:
     )
 
 
+def _parse_progression(raw: dict[str, Any], context: str) -> ProgressionSpec:
+    for required in ("to", "after_years", "probability"):
+        if required not in raw:
+            raise ModuleError(f"{context}: progression missing {required!r}")
+    after_years = int(raw["after_years"])
+    if after_years < 0:
+        raise ModuleError(f"{context}: progression.after_years {after_years} must be >= 0")
+    probability = float(raw["probability"])
+    if not 0.0 <= probability <= 1.0:
+        raise ModuleError(
+            f"{context}: progression.probability {probability} must be in [0, 1]"
+        )
+    return ProgressionSpec(
+        to=str(raw["to"]),
+        after_years=after_years,
+        probability=probability,
+    )
+
+
 def _parse_onset_age(raw: dict[str, Any], context: str) -> OnsetAgeRange:
     for required in ("min", "max"):
         if required not in raw:
@@ -481,6 +521,28 @@ def _parse_condition(
         if raw.get("onset_age")
         else None
     )
+    progressions_raw = raw.get("progressions") or ()
+    progressions = tuple(
+        _parse_progression(p, f"condition {raw.get('id')!r}.progressions[{i}]")
+        for i, p in enumerate(progressions_raw)
+    )
+    if progressions and onset_age is None:
+        raise ModuleError(
+            f"condition {raw.get('id')!r}: progressions require an `onset_age` "
+            f"on the source condition (progression timing is measured from onset)"
+        )
+    progression_targets = [p.to for p in progressions]
+    if len(set(progression_targets)) != len(progression_targets):
+        raise ModuleError(
+            f"condition {raw.get('id')!r}: duplicate progression targets: "
+            f"{sorted({t for t in progression_targets if progression_targets.count(t) > 1})}"
+        )
+    for p in progressions:
+        if p.to == raw.get("id"):
+            raise ModuleError(
+                f"condition {raw.get('id')!r}: progression.to={p.to!r} cannot "
+                f"reference itself"
+            )
     return ConditionSpec(
         id=raw["id"],
         code=code,
@@ -489,6 +551,7 @@ def _parse_condition(
         emits=emits,
         onset_age=onset_age,
         requires=requires,
+        progressions=progressions,
     )
 
 
@@ -518,6 +581,17 @@ def load_module_from_str(yaml_text: str) -> Module:
         parsed_conditions.append(cond)
         seen_condition_ids.add(cond.id)
     conditions = tuple(parsed_conditions)
+
+    # Progression targets may be forward-references — validate after the
+    # full condition set is known.
+    all_ids = {c.id for c in conditions}
+    for c in conditions:
+        for p in c.progressions:
+            if p.to not in all_ids:
+                raise ModuleError(
+                    f"condition {c.id!r}: progression.to={p.to!r} must reference "
+                    f"a sibling condition in this module. Available: {sorted(all_ids)}"
+                )
 
     return Module(
         name=str(data["module"]),
@@ -725,7 +799,8 @@ def run_module(
     """
     today = today or date.today()
     external = external_fired if external_fired is not None else set()
-    out: list[Diagnosis] = []
+    cond_by_id = {c.id: c for c in module.conditions}
+    fired_dx: dict[str, Diagnosis] = {}
     fired_ids: set[str] = set()
     for cond in module.conditions:
         # Comorbidity gate: skip if any required dependency didn't fire.
@@ -752,12 +827,39 @@ def run_module(
                 else None
             )
             sampled = _sample_emits(cond, rng, today=today, onset_date=onset_date)
-            out.append(
-                Diagnosis(
-                    condition=cond,
-                    sampled_resources=sampled,
-                    onset_date=onset_date,
-                )
+            fired_dx[cond.id] = Diagnosis(
+                condition=cond,
+                sampled_resources=sampled,
+                onset_date=onset_date,
             )
             fired_ids.add(cond.id)
-    return out
+
+    # Second pass: progressions. One hop only — progressions of progressions
+    # are not evaluated this run (avoids author-introduced cycles and keeps
+    # the minimal flavor predictable). Iterate a snapshot so newly-added
+    # diagnoses don't seed further hops.
+    for source_dx in list(fired_dx.values()):
+        if not source_dx.condition.progressions or source_dx.onset_date is None:
+            continue
+        for prog in source_dx.condition.progressions:
+            if prog.to in fired_dx:
+                continue  # already fired via its own prevalence
+            progressed_onset = source_dx.onset_date + timedelta(
+                days=prog.after_years * 365
+            )
+            if progressed_onset > today:
+                continue  # not yet — patient hasn't lived long enough since onset
+            if rng.random() >= prog.probability:
+                continue
+            target = cond_by_id[prog.to]
+            sampled = _sample_emits(
+                target, rng, today=today, onset_date=progressed_onset
+            )
+            fired_dx[target.id] = Diagnosis(
+                condition=target,
+                sampled_resources=sampled,
+                onset_date=progressed_onset,
+            )
+
+    # Preserve declaration order so callers see deterministic ordering.
+    return [fired_dx[c.id] for c in module.conditions if c.id in fired_dx]
