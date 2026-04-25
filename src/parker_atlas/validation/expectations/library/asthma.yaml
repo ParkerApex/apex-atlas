@@ -1,0 +1,52 @@
+module: asthma
+version: 0.1.0
+source:
+  name: CDC NCHS FastStats — Asthma (NHIS 2019-2024)
+  provenance: sourced
+  url: https://www.cdc.gov/nchs/fastats/asthma.htm
+  note: 'Current-asthma prevalence among US children (<18) and adults (18+)
+
+    from CDC FastStats, drawing on NHIS 2019-2024. The brief reports
+
+    only two coarse age brackets at this granularity (no within-adult
+
+    stratification, no sex split). A finer-grained NHIS table would
+
+    enable per-bracket and per-sex metrics — future ingestion.
+
+    '
+  citations:
+  - source: 'Centers for Disease Control and Prevention, National Center for Health Statistics. "Asthma."
+      FastStats. Drawing on Interactive Summary Health Statistics for Adults/Children: National Health
+      Interview Survey, 2019-2024.
+
+      '
+    url: https://www.cdc.gov/nchs/fastats/asthma.htm
+    version: NHIS 2019-2024
+    accessed: '2026-04-25'
+    note: 'Adults 18+: 8.6%. Children <18: 6.5%. Numbers extracted via webfetch on 2026-04-25.
+
+      '
+metrics:
+- id: current_asthma_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '195967001'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    0-17: 0.065
+    18-99: 0.086
+- id: asthma_albuterol_rate
+  kind: emit_presence_rate
+  condition_code: '195967001'
+  condition_system: http://snomed.info/sct
+  tolerance:
+    kind: wilson
+    confidence: 99
+  emit_resource_type: MedicationRequest
+  target: 0.75
+  emit_code: '745679'
+  emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm

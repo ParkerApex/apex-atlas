@@ -1,0 +1,62 @@
+module: obesity
+version: 0.1.0
+description: >
+  Obesity (BMI ≥30) prevalence by age bracket. Probability-module
+  flavor — each bracket maps to a Bernoulli rate.
+
+  Adult (20+) prevalence rates are sourced from NCHS Data Brief 508
+  (Emmerich et al., NHANES August 2021 – August 2023). The age curve
+  peaks at 40-59 (46.4%) and is somewhat lower in younger adults
+  (35.5%) and older adults (38.9%). The 0-19 bracket is a
+  placeholder — pediatric obesity uses a different definition (≥95th
+  percentile on growth charts) and is published separately in NCHS
+  Data Brief 509.
+
+  Module assigns SNOMED 414916001 (Obesity). When a patient is
+  positive, it emits an ambulatory follow-up Encounter and a BMI
+  Observation in the obese range (30-40 kg/m²). No prescription
+  is emitted by default — pharmacotherapy for obesity is highly
+  variable and not yet typical at the population level.
+cites:
+  - source: NCHS Data Brief 508 (Emmerich et al., NHANES Aug 2021–Aug 2023)
+    url: https://www.cdc.gov/nchs/products/databriefs/db508.htm
+    summary: >
+      US adult obesity prevalence (BMI ≥30): 35.5% at 20-39, 46.4% at
+      40-59, 38.9% at 60+. Sex marginal (men 39.2%, women 41.3%) is
+      not significantly different — module is age-only.
+conditions:
+  - id: obesity
+    code:
+      system: http://snomed.info/sct
+      code: "414916001"
+      display: Obesity (disorder)
+    prevalence:
+      "0-19": 0.10
+      "20-39": 0.355
+      "40-59": 0.464
+      "60-99": 0.389
+    emits:
+      - resource_type: Encounter
+        spec_id: obesity_followup_visit
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "414916001"
+          display: Obesity
+
+      - resource_type: Observation
+        spec_id: obesity_bmi_measurement
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "39156-5"
+          display: Body mass index (BMI) [Ratio]
+        value_range:
+          low: 30.0
+          high: 40.0
+          precision: 1
+        unit: kg/m2
