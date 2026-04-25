@@ -48,7 +48,7 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | FHIR Encounter builder     | ✅ Implemented   | US Core Encounter: outpatient / inpatient / emergency / home / virtual    |
 | FHIR MedicationRequest     | ✅ Implemented   | US Core MedicationRequest with inline medicationCodeableConcept           |
 | FHIR Bundle assembly       | ✅ Implemented   | Transaction Bundle, one file per patient                                 |
-| `atlas generate`           | ✅ Implemented   | `atlas generate --patients N --seed S --out DIR` → N FHIR R4 Bundles     |
+| `atlas generate`           | ✅ Implemented   | `--format fhir-r4` (one Bundle per patient) or `--format ndjson` (Bulk-style)  |
 | `atlas validate`           | ✅ Structural    | Schema validation + US Core Patient/Condition minimums                   |
 | `atlas validate --cohort`  | ✅ First cut     | Fidelity harness: aggregate metrics vs. declared expectation w/ tolerance |
 | `atlas modules`            | ✅ Implemented   | List bundled modules, show details (`atlas modules --show NAME`)         |
@@ -100,6 +100,17 @@ generation without re-reading the bundles:
 
 ```bash
 atlas generate --patients 500 --seed 42 --module hypertension --summary --out ./out
+```
+
+Or write FHIR Bulk Data-style NDJSON — one file per resourceType,
+one resource per line — for ML pipelines and analytics tools:
+
+```bash
+atlas generate --patients 500 --seed 42 --module hypertension \
+    --format ndjson --out ./bulk
+ls ./bulk
+# Condition.ndjson  Encounter.ndjson  MedicationRequest.ndjson
+# Observation.ndjson  Patient.ndjson
 ```
 
 Check that a cohort's aggregate statistics match the module's declared
