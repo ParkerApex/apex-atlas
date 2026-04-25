@@ -1,5 +1,5 @@
 module: diabetes
-version: 0.6.0
+version: 0.7.0
 description: >
   Total diabetes prevalence (both diagnosed and undiagnosed, types 1
   and 2 combined) by age bracket. Probability-module flavor — each
@@ -15,14 +15,15 @@ description: >
     (approximating the rate of diagnosed diabetics on metformin per
     ADA guidance; exact rate is a future ingestion)
 
-  v0.5 adds a one-hop progression to diabetic chronic kidney disease.
-  After 10 years of diabetes, ~20% of patients progress to clinically
-  relevant CKD (placeholder rate; see cites). When progression fires,
-  the patient receives a Condition for diabetic CKD plus a follow-up
-  nephrology Encounter and an eGFR Observation. This is the second
-  use of the progressions feature (the first being HTN → CKD); the
-  underlying rate-ingest path is tracked in
-  https://github.com/ParkerApex/parker-atlas/issues/1.
+  v0.5 added a one-hop progression to diabetic chronic kidney disease.
+  v0.7 adds a second one-hop progression: diabetic retinopathy. After
+  10 years of diabetes, ~30% of patients progress to clinically-noted
+  retinopathy (Yau 2012 / UKPDS-50). When progression fires the
+  patient receives a Condition for diabetic retinopathy plus an
+  ophthalmology Encounter and a LogMAR visual-acuity Observation in
+  the 0.0-0.3 range (mild-to-moderate impairment, typical of NPDR).
+  Both rates are sourced via `atlas ingest progression` and applied
+  through the bundled `diabetes.progressions.yaml` overlay.
 
   Adult (20+) prevalence rates are sourced from NCHS Data Brief 516
   (NHANES August 2021 – August 2023), Table 2. The 0-19 bracket is a
@@ -61,10 +62,22 @@ cites:
       Cumulative incidence of macroalbuminuria 5.3% at 10 yr;
       elevated plasma creatinine or RRT ~2.7% at 10 yr; ~28% had
       progressed to at least microalbuminuria by 10 yr. The 20%
-      progression-to-CKD rate used here is a placeholder mid-estimate
-      anchored to this and USRDS 2023 ADR (diabetes = leading cause of
-      ESRD, ~38-44% of incident cases). Clean ingestion via
-      `atlas ingest progression` is tracked in issue #1.
+      progression-to-CKD rate is now sourced via the
+      `diabetes.progressions.yaml` overlay (KDIGO 2024 / USRDS 2023 /
+      UKPDS 64 anchored).
+  - source: >
+      Yau JWY, Rogers SL, Kawasaki R, Lamoureux EL, Kowalski JW, Bek T,
+      et al. Global prevalence and major risk factors of diabetic
+      retinopathy. Diabetes Care 2012;35(3):556-564.
+    url: https://doi.org/10.2337/dc11-1909
+    summary: >
+      Pooled meta-analysis (35 studies, 22,896 individuals with diabetes).
+      Global prevalence of any diabetic retinopathy ~34.6%; vision-
+      threatening retinopathy ~10.2%. UKPDS-50 (Stratton 2001) reports
+      ~50% cumulative incidence of any DR at 10 yr in T2DM. The 30%
+      progression-to-DR rate used here represents clinically-noted DR
+      (rather than screening-detected sub-clinical findings) and is
+      sourced via the `diabetes.progressions.yaml` overlay.
 conditions:
   - id: diabetes_mellitus
     code:
@@ -83,14 +96,18 @@ conditions:
     onset_age:
       min: 35
       max: 70
-    # One-hop progression to diabetic CKD. The bundled
-    # `diabetes.progressions.yaml` overlay supersedes this rate at load
-    # time with the sourced 20% (KDIGO 2024 / USRDS 2023 / UKPDS 64);
-    # this inline block is the fallback when the overlay is absent.
+    # One-hop progressions to diabetic CKD and diabetic retinopathy.
+    # The bundled `diabetes.progressions.yaml` overlay supersedes both
+    # rates at load time with sourced values (KDIGO 2024 / USRDS 2023 /
+    # UKPDS 64 for CKD; Yau 2012 / UKPDS-50 for DR); this inline block
+    # is the fallback when the overlay is absent.
     progressions:
       - to: diabetic_ckd
         after_years: 10
         probability: 0.20
+      - to: diabetic_retinopathy
+        after_years: 10
+        probability: 0.30
     emits:
       # === Diagnosis day ===
       - resource_type: Encounter
@@ -195,3 +212,44 @@ conditions:
         value_range: {low: 30, high: 59, precision: 0}
         unit: mL/min/{1.73_m2}
         unit_code: mL/min/{1.73_m2}
+
+  # Progression target — only entered via `progressions` from
+  # diabetes_mellitus, never directly. prevalence is 0 across all
+  # brackets so the standard probability gate cannot fire it.
+  - id: diabetic_retinopathy
+    code:
+      system: http://snomed.info/sct
+      code: "4855003"
+      display: Retinopathy due to diabetes mellitus (disorder)
+    prevalence:
+      "0-99": 0.0
+    emits:
+      # Ophthalmology follow-up encounter at the time of progression.
+      - resource_type: Encounter
+        spec_id: dm2_dr_ophthalmology_visit
+        when: onset
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "4855003"
+          display: Retinopathy due to diabetes mellitus
+
+      # Visual acuity Observation in LogMAR (numeric scale; 0.0 = 20/20,
+      # 0.3 ≈ 20/40, 0.7 ≈ 20/100). The 0.0-0.3 range covers
+      # mild-to-moderate impairment typical of NPDR at first diagnosis.
+      - resource_type: Observation
+        spec_id: dm2_dr_visual_acuity
+        when: onset
+        link_to: dm2_dr_ophthalmology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "70936-0"
+          display: Right eye Distance binocular Visual acuity LogMAR
+        value_range: {low: 0.0, high: 0.3, precision: 2}
+        unit: "{LogMAR}"
+        unit_code: "{LogMAR}"

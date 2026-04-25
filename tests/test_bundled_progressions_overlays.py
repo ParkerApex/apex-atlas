@@ -46,13 +46,20 @@ class TestDiabetesOverlay:
         assert overlay["source"]["provenance"] == "sourced"
         assert overlay["source"]["citations"]
 
-    def test_loaded_module_uses_overlay_rate(self):
+    def test_overlay_declares_both_progressions(self):
+        overlay = _read_overlay("diabetes")
+        pairs = {(p["from"], p["to"]) for p in overlay["progressions"]}
+        assert ("diabetes_mellitus", "diabetic_ckd") in pairs
+        assert ("diabetes_mellitus", "diabetic_retinopathy") in pairs
+
+    def test_loaded_module_uses_overlay_rates(self):
         module = load_module("diabetes")
         dm = next(c for c in module.conditions if c.id == "diabetes_mellitus")
-        progs = [p for p in dm.progressions if p.to == "diabetic_ckd"]
-        assert len(progs) == 1
-        assert progs[0].probability == 0.20
-        assert progs[0].after_years == 10
+        by_target = {p.to: p for p in dm.progressions}
+        assert by_target["diabetic_ckd"].probability == 0.20
+        assert by_target["diabetic_ckd"].after_years == 10
+        assert by_target["diabetic_retinopathy"].probability == 0.30
+        assert by_target["diabetic_retinopathy"].after_years == 10
 
 
 class TestModuleListingExcludesOverlays:

@@ -1,14 +1,14 @@
 module: diabetes
-version: 1.0.0
+version: 1.1.0
 source:
-  name: KDIGO 2024 CKD Guideline + USRDS 2023 ADR (UKPDS 64 anchored)
+  name: KDIGO 2024 / USRDS 2023 / UKPDS 64 (CKD); Yau 2012 / UKPDS-50 (DR)
   provenance: sourced
   url: https://kdigo.org/guidelines/ckd-evaluation-and-management/
-  note: 'Cumulative incidence of clinically-relevant CKD (eGFR <60 mL/min/1.73 m² or persistent macroalbuminuria)
-    at 10 years among patients with diabetes. The 20% rate sits inside the UKPDS 64 envelope (5.3% macroalbuminuria
-    + 2.7% elevated creatinine + sub-clinical eGFR decline → ~15-25% clinically-relevant CKD by 10 yr)
-    and the KDIGO 2024 narrative range of 20-30% over 10 yr. USRDS 2023 ADR confirms diabetes as the leading
-    cause of incident ESRD (~38-44%).
+  note: 'Two diabetes complications are sourced here. CKD (eGFR <60 mL/min/1.73 m² or persistent macroalbuminuria)
+    at 10 years: 20%, inside the UKPDS 64 envelope and KDIGO 2024 20-30% range; USRDS 2023 ADR confirms
+    diabetes as the #1 cause of incident ESRD. Retinopathy at 10 years: 30%, representing clinically-noted
+    DR rather than screening-detected sub-clinical findings; Yau 2012 meta-analysis pooled DR prevalence
+    at 34.6% and UKPDS-50 (Stratton 2001) reports cumulative DR incidence ~50% at 10 yr in T2DM.
 
     '
   citations:
@@ -40,8 +40,30 @@ source:
     version: KDIGO 2024
     accessed: '2026-04-25'
     table: Section 4.2 narrative on diabetes as the leading single cause of CKD.
+  - source: 'Yau JWY, Rogers SL, Kawasaki R, Lamoureux EL, Kowalski JW, Bek T, et al. Global prevalence
+      and major risk factors of diabetic retinopathy. Diabetes Care. 2012;35(3):556-564.
+
+      '
+    url: https://doi.org/10.2337/dc11-1909
+    version: Diabetes Care Vol 35 No 3
+    accessed: '2026-04-25'
+    table: 'Table 2: Pooled global prevalence of any diabetic retinopathy and vision-threatening DR across
+      35 studies.'
+  - source: 'Stratton IM, Kohner EM, Aldington SJ, Turner RC, Holman RR, Manley SE, Matthews DR. UKPDS
+      50: Risk factors for incidence and progression of retinopathy in Type II diabetes over 6 years from
+      diagnosis. Diabetologia 2001;44(2):156-163.
+
+      '
+    url: https://doi.org/10.1007/s001250051594
+    version: Diabetologia Vol 44 No 2
+    accessed: '2026-04-25'
+    table: Cumulative incidence of any DR in newly-diagnosed T2DM at 6-yr follow-up.
 progressions:
 - from: diabetes_mellitus
   to: diabetic_ckd
   after_years: 10
   probability: 0.2
+- from: diabetes_mellitus
+  to: diabetic_retinopathy
+  after_years: 10
+  probability: 0.3
