@@ -1,5 +1,5 @@
 module: hypertension
-version: 0.5.0
+version: 0.6.0
 description: >
   Essential hypertension module. Probability-module flavor: each
   (age, sex) cell maps to a Bernoulli rate that decides whether the
@@ -59,7 +59,7 @@ conditions:
       min: 25
       max: 65
     emits:
-      # The Encounter is the diagnosis visit, anchored at onset_date.
+      # === Diagnosis day ===
       - resource_type: Encounter
         spec_id: htn_diagnosis_visit
         when: onset
@@ -73,11 +73,11 @@ conditions:
           code: "59621000"
           display: Essential hypertension
 
-      # The BP measurement that established the diagnosis — at onset.
-      # Linked to the diagnosis Encounter because they share `when`.
+      # The BP measurement that established the diagnosis.
       - resource_type: Observation
-        spec_id: htn_bp_reading
+        spec_id: htn_initial_bp
         when: onset
+        link_to: htn_diagnosis_visit
         category: vital-signs
         code:
           system: http://loinc.org
@@ -88,26 +88,20 @@ conditions:
               system: http://loinc.org
               code: "8480-6"
               display: Systolic blood pressure
-            value_range:
-              low: 140
-              high: 180
-              precision: 0
+            value_range: {low: 140, high: 180, precision: 0}
             unit: mm[Hg]
           - code:
               system: http://loinc.org
               code: "8462-4"
               display: Diastolic blood pressure
-            value_range:
-              low: 90
-              high: 110
-              precision: 0
+            value_range: {low: 90, high: 110, precision: 0}
             unit: mm[Hg]
 
-      # Initial prescription written at the diagnosis visit. Same `when`,
-      # so it links to the Encounter.
+      # Initial prescription written at the diagnosis visit.
       - resource_type: MedicationRequest
         spec_id: htn_ace_inhibitor
         when: onset
+        link_to: htn_diagnosis_visit
         probability: 0.60
         medication:
           system: http://www.nlm.nih.gov/research/umls/rxnorm
@@ -117,3 +111,43 @@ conditions:
           system: http://snomed.info/sct
           code: "59621000"
           display: Essential hypertension
+
+      # === Follow-up visit today ===
+      - resource_type: Encounter
+        spec_id: htn_followup_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "59621000"
+          display: Essential hypertension
+
+      # Recent BP — typically lower than the diagnostic reading because
+      # most patients are on treatment by now. Range covers controlled
+      # to mildly elevated.
+      - resource_type: Observation
+        spec_id: htn_recent_bp
+        when: today
+        link_to: htn_followup_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "85354-9"
+          display: Blood pressure panel with all children optional
+        components:
+          - code:
+              system: http://loinc.org
+              code: "8480-6"
+              display: Systolic blood pressure
+            value_range: {low: 120, high: 145, precision: 0}
+            unit: mm[Hg]
+          - code:
+              system: http://loinc.org
+              code: "8462-4"
+              display: Diastolic blood pressure
+            value_range: {low: 75, high: 92, precision: 0}
+            unit: mm[Hg]

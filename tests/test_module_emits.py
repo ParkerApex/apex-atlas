@@ -182,19 +182,58 @@ class TestEmitParsing:
                 )
             )
 
-    def test_rejects_multiple_encounters_per_condition(self):
-        with pytest.raises(ModuleError, match="at most one Encounter"):
+    def test_accepts_multiple_encounters_per_condition(self):
+        # Multi-encounter is now supported (e.g., diagnosis visit at
+        # onset + follow-up visit today).
+        mod = load_module_from_str(
+            _minimal_module_with_emits(
+                """
+                - resource_type: Encounter
+                  spec_id: v1
+                  encounter_class: AMB
+                  type: {system: s, code: "1", display: d}
+                - resource_type: Encounter
+                  spec_id: v2
+                  encounter_class: IMP
+                  type: {system: s, code: "2", display: d}
+                """
+            )
+        )
+        assert sum(1 for e in mod.conditions[0].emits if isinstance(e, EncounterEmit)) == 2
+
+    def test_rejects_duplicate_emit_spec_ids(self):
+        with pytest.raises(ModuleError, match="duplicate emit spec_ids"):
             load_module_from_str(
                 _minimal_module_with_emits(
                     """
                     - resource_type: Encounter
-                      spec_id: v1
+                      spec_id: visit
                       encounter_class: AMB
                       type: {system: s, code: "1", display: d}
                     - resource_type: Encounter
-                      spec_id: v2
+                      spec_id: visit
                       encounter_class: IMP
                       type: {system: s, code: "2", display: d}
+                    """
+                )
+            )
+
+    def test_rejects_link_to_unknown_encounter(self):
+        with pytest.raises(ModuleError, match="link_to=.*does not match"):
+            load_module_from_str(
+                _minimal_module_with_emits(
+                    """
+                    - resource_type: Encounter
+                      spec_id: visit
+                      encounter_class: AMB
+                      type: {system: s, code: "1", display: d}
+                    - resource_type: Observation
+                      spec_id: bp
+                      link_to: nonexistent
+                      category: vital-signs
+                      code: {system: s, code: c, display: d}
+                      value_range: {low: 1, high: 2}
+                      unit: x
                     """
                 )
             )
