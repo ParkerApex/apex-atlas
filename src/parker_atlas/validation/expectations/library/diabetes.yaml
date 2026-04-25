@@ -1,5 +1,5 @@
 module: diabetes
-version: 0.1.0
+version: 0.2.0
 source:
   name: NCHS Data Brief 516 (NHANES Aug 2021 – Aug 2023)
   provenance: sourced
@@ -76,3 +76,14 @@ metrics:
   target: 0.7
   emit_code: '860975'
   emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm
+- id: dm_to_ckd_progression_rate
+  kind: emit_presence_rate
+  condition_code: '73211009'
+  condition_system: http://snomed.info/sct
+  tolerance:
+    kind: absolute
+    value: 0.04
+  emit_resource_type: Condition
+  target: 0.12
+  emit_code: '420715001'
+  emit_code_system: http://snomed.info/sct
