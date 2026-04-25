@@ -50,12 +50,12 @@ def test_generate_is_reproducible_with_seed(tmp_path):
 
 
 def test_generate_rejects_unsupported_format(tmp_path):
-    # ndjson is now supported; parquet remains unimplemented and should
-    # reject. (The dedicated TestUnsupportedFormats class in
-    # tests/test_cli_ndjson.py covers parquet + fhir-r5 in detail.)
+    # ndjson and parquet are now supported; fhir-r5 remains unimplemented
+    # and should reject. (TestUnsupportedFormats in test_cli_ndjson.py
+    # covers fhir-r5 in detail.)
     result = runner.invoke(
         app,
-        ["generate", "--patients", "1", "--format", "parquet", "--out", str(tmp_path)],
+        ["generate", "--patients", "1", "--format", "fhir-r5", "--out", str(tmp_path)],
     )
     assert result.exit_code == 2
     assert "not yet supported" in result.output

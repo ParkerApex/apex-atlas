@@ -378,13 +378,23 @@ def generate(
     if patients < 1:
         err_console.print("[red]--patients must be >= 1[/red]")
         raise typer.Exit(code=1)
-    if format not in (OutputFormat.FHIR_R4, OutputFormat.NDJSON):
+    if format not in (OutputFormat.FHIR_R4, OutputFormat.NDJSON, OutputFormat.PARQUET):
         err_console.print(
             f"[yellow]--format={format.value}[/yellow] is not yet supported. "
-            f"Currently implemented: fhir-r4 (one Bundle per patient) and "
-            f"ndjson (one file per resourceType, FHIR Bulk Data style)."
+            f"Currently implemented: fhir-r4 (one Bundle per patient), "
+            f"ndjson (one file per resourceType, FHIR Bulk Data style), and "
+            f"parquet (columnar, one file per resourceType)."
         )
         raise typer.Exit(code=2)
+    if format is OutputFormat.PARQUET:
+        try:
+            import pyarrow  # noqa: F401
+        except ImportError as exc:
+            err_console.print(
+                "[red]parquet output requires pyarrow.[/red] "
+                'Install with: pip install -e ".[data]"'
+            )
+            raise typer.Exit(code=1) from exc
     if profile is not Profile.US_CORE_6_1:
         err_console.print(
             f"[yellow]--profile={profile.value}[/yellow] is not yet supported. "
@@ -417,6 +427,13 @@ def generate(
     # on first encounter, closed in the finally block below. Matches the
     # FHIR Bulk Data Access ($export) convention.
     ndjson_files: dict[str, Any] = {}
+
+    # Parquet writer state — accumulate rows per resourceType in memory,
+    # flushed to one file per resourceType at the end. Schema is uniform:
+    # id, subject_reference (nullable; null for Patient), raw_json. The
+    # raw_json column preserves the full FHIR resource for round-tripping;
+    # the typed columns make common filters (by patient, by id) cheap.
+    parquet_rows: dict[str, list[dict[str, Any]]] = {}
 
     description = f"Generating {patients} patient{'s' if patients != 1 else ''}"
     try:
@@ -466,7 +483,7 @@ def generate(
             if format is OutputFormat.FHIR_R4:
                 bundle = build_bundle(gpx, patient, extras)
                 (out / f"{gpx}.json").write_text(json.dumps(bundle, indent=2))
-            else:  # NDJSON
+            elif format is OutputFormat.NDJSON:
                 for resource in (patient, *extras):
                     rtype = resource["resourceType"]
                     fh = ndjson_files.get(rtype)
@@ -474,6 +491,21 @@ def generate(
                         fh = (out / f"{rtype}.ndjson").open("w", encoding="utf-8")
                         ndjson_files[rtype] = fh
                     fh.write(json.dumps(resource) + "\n")
+            else:  # PARQUET
+                for resource in (patient, *extras):
+                    rtype = resource["resourceType"]
+                    subject_ref = None
+                    if rtype != "Patient":
+                        subj = resource.get("subject")
+                        if isinstance(subj, dict):
+                            subject_ref = subj.get("reference")
+                    parquet_rows.setdefault(rtype, []).append(
+                        {
+                            "id": resource.get("id"),
+                            "subject_reference": subject_ref,
+                            "raw_json": json.dumps(resource),
+                        }
+                    )
 
             bracket = _bracket_for_age(age_years, summary_brackets)
             if bracket is not None:
@@ -489,12 +521,32 @@ def generate(
             f"[green]✓[/green] Wrote {patients} patient bundle"
             f"{'s' if patients != 1 else ''} to [bold]{out}[/bold]"
         )
-    else:  # NDJSON
+    elif format is OutputFormat.NDJSON:
         rtypes = sorted(ndjson_files.keys())
         console.print(
             f"[green]✓[/green] Wrote {patients} patient"
             f"{'s' if patients != 1 else ''} to [bold]{out}[/bold] "
             f"as NDJSON ({', '.join(f'{rt}.ndjson' for rt in rtypes)})"
+        )
+    else:  # PARQUET
+        import pyarrow as pa
+        import pyarrow.parquet as pq
+
+        schema = pa.schema(
+            [
+                ("id", pa.string()),
+                ("subject_reference", pa.string()),
+                ("raw_json", pa.string()),
+            ]
+        )
+        for rtype, rows in sorted(parquet_rows.items()):
+            table = pa.Table.from_pylist(rows, schema=schema)
+            pq.write_table(table, out / f"{rtype}.parquet")
+        rtypes = sorted(parquet_rows.keys())
+        console.print(
+            f"[green]✓[/green] Wrote {patients} patient"
+            f"{'s' if patients != 1 else ''} to [bold]{out}[/bold] "
+            f"as Parquet ({', '.join(f'{rt}.parquet' for rt in rtypes)})"
         )
 
     if summary:
