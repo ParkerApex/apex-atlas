@@ -99,7 +99,18 @@ def _read_csv(path: Path) -> list[dict[str, str]]:
     missing = [c for c in REQUIRED_CSV_COLUMNS if c not in fields]
     if missing:
         raise IngestionError(f"CSV missing required columns: {missing}")
-    rows = [{k: (v or "").strip() for k, v in row.items()} for row in reader]
+    rows: list[dict[str, str]] = []
+    for i, row in enumerate(reader, start=2):
+        # DictReader stuffs extras under None when a row has more fields
+        # than the header — typically because a free-text column contains
+        # an unquoted comma. Surface that as a clear ingest error rather
+        # than letting it explode later as 'list has no attribute strip'.
+        if None in row:
+            raise IngestionError(
+                f"CSV line {i}: too many fields (extras: {row[None]!r}). "
+                f"If a column contains commas, wrap it in double quotes."
+            )
+        rows.append({k: (v or "").strip() for k, v in row.items()})
     if not rows:
         raise IngestionError("CSV has no data rows")
     return rows

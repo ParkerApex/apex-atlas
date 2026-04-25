@@ -1,5 +1,5 @@
 module: diabetes
-version: 0.3.0
+version: 0.4.0
 source:
   name: NCHS Data Brief 516 (NHANES Aug 2021 – Aug 2023)
   provenance: sourced
@@ -86,4 +86,15 @@ metrics:
   emit_resource_type: Condition
   target: 0.12
   emit_code: '420715001'
+  emit_code_system: http://snomed.info/sct
+- id: dm_to_retinopathy_progression_rate
+  kind: emit_presence_rate
+  condition_code: '73211009'
+  condition_system: http://snomed.info/sct
+  tolerance:
+    kind: absolute
+    value: 0.05
+  emit_resource_type: Condition
+  target: 0.20
+  emit_code: '4855003'
   emit_code_system: http://snomed.info/sct
