@@ -64,3 +64,14 @@ metrics:
       18-39: 0.3
       40-59: 0.559
       60-99: 0.727
+- id: hypertension_treated_rate
+  kind: emit_presence_rate
+  condition_code: '59621000'
+  condition_system: http://snomed.info/sct
+  tolerance:
+    kind: wilson
+    confidence: 99
+  emit_resource_type: MedicationRequest
+  target: 0.6
+  emit_code: '197361'
+  emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm

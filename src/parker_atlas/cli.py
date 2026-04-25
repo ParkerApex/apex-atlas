@@ -295,9 +295,12 @@ def _validate_cohort(
     table.add_column("Status")
     for r in report.results:
         status = "[green]OK[/green]" if r.within_tolerance else "[red]FAIL[/red]"
+        bracket_label = (
+            f"{r.bracket[0]}-{r.bracket[1]}" if r.bracket else "cohort"
+        )
         table.add_row(
             r.metric_id,
-            f"{r.bracket[0]}-{r.bracket[1]}",
+            bracket_label,
             r.sex or "—",
             str(r.n),
             f"{r.actual:.3f}",

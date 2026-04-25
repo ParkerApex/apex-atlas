@@ -206,6 +206,34 @@ def _build_metrics(
             }
         )
 
+    # Emit-presence metrics live entirely in metadata (no CSV rows). They
+    # get appended in declaration order after the prevalence metrics.
+    for em in meta.get("emit_metrics") or []:
+        for required in ("id", "condition_code", "emit_resource_type", "target"):
+            if not em.get(required):
+                raise IngestionError(
+                    f"emit_metrics: missing required key {required!r} in {em!r}"
+                )
+        target = float(em["target"])
+        if not 0.0 <= target <= 1.0:
+            raise IngestionError(
+                f"emit_metrics.{em['id']}: target {target} must be in [0, 1]"
+            )
+        rendered: dict[str, Any] = {
+            "id": str(em["id"]),
+            "kind": "emit_presence_rate",
+            "condition_code": str(em["condition_code"]),
+            "condition_system": str(em.get("condition_system", "http://snomed.info/sct")),
+            "tolerance": tolerance,
+            "emit_resource_type": str(em["emit_resource_type"]),
+            "target": target,
+        }
+        if em.get("emit_code"):
+            rendered["emit_code"] = str(em["emit_code"])
+        if em.get("emit_code_system"):
+            rendered["emit_code_system"] = str(em["emit_code_system"])
+        output.append(rendered)
+
     return output
 
 
