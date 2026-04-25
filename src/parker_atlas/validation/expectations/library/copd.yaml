@@ -1,0 +1,55 @@
+module: copd
+version: 0.1.0
+source:
+  name: NCHS Data Brief 332 (Wheaton et al, BRFSS 2017)
+  provenance: sourced
+  url: https://www.cdc.gov/nchs/products/databriefs/db332.htm
+  note: >
+    COPD prevalence among US adults aged 18 and older from NCHS Data
+    Brief 332 (Wheaton et al, 2019), drawing on BRFSS 2017 self-
+    reported physician-diagnosed COPD. Numbers are crude (unadjusted)
+    age × sex prevalence percentages divided by 100. The publication
+    reports overall age-adjusted prevalence as 6.2% (5.4% men, 6.9%
+    women); per-bracket targets here aggregate the published age and
+    sex breakdowns, and pediatric (0-17) is set to zero since BRFSS
+    surveys adults only and the COPD definition (post-bronchodilator
+    FEV1/FVC < 0.70) is age-tied.
+  citations:
+    - source: >
+        Wheaton AG, Liu Y, Croft JB, VanFrank B, Croxton TL, Punturieri A,
+        Postow L, Greenlund KJ. Chronic Obstructive Pulmonary Disease and
+        Smoking Status — United States, 2017. NCHS Data Brief No. 332.
+        National Center for Health Statistics. November 2019.
+      url: https://www.cdc.gov/nchs/products/databriefs/db332.htm
+      version: NCHS Data Brief No. 332
+      accessed: '2026-04-25'
+      table: 'Tables 1-2: COPD prevalence by sex and age group, BRFSS 2017.'
+metrics:
+  - id: copd_prevalence_by_sex_and_age
+    kind: conditional_prevalence
+    condition_code: '13645005'
+    condition_system: http://snomed.info/sct
+    stratify_by: sex_and_age
+    tolerance:
+      kind: wilson
+      confidence: 99
+    targets:
+      female:
+        18-39: 0.025
+        40-59: 0.066
+        60-99: 0.121
+      male:
+        18-39: 0.022
+        40-59: 0.058
+        60-99: 0.111
+  - id: copd_tiotropium_rate
+    kind: emit_presence_rate
+    condition_code: '13645005'
+    condition_system: http://snomed.info/sct
+    tolerance:
+      kind: wilson
+      confidence: 99
+    emit_resource_type: MedicationRequest
+    target: 0.60
+    emit_code: '1546430'
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm
