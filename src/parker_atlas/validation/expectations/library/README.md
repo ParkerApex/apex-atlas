@@ -63,13 +63,21 @@ metrics:
 | Kind                    | Denominator                          | Numerator                                                          | Use                                                                                              |
 | ----------------------- | ------------------------------------ | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------ |
 | `conditional_prevalence` | All patients in an age (× sex) cell  | Patients with the named Condition code                             | "X% of 40-59yo men should have hypertension"                                                     |
-| `emit_presence_rate`     | Patients who carry the named Condition | Of those, patients who also carry an emitted resource of a given type (and optionally code) | "60% of hypertensive patients should have a Lisinopril MedicationRequest"                       |
+| `emit_presence_rate`     | Patients who carry the named Condition | Of those, patients who also carry a resource of a given type (and optionally code) | "60% of hypertensive patients should have a Lisinopril MedicationRequest"; "15% of hypertensive patients should also have CKD" |
 
 `emit_presence_rate` metrics declare a single `target` (rate in [0, 1])
 plus the `emit_resource_type` (`Encounter` / `Observation` /
-`MedicationRequest`) and optional `emit_code` + `emit_code_system` for
-filtering. They use `stratify_by: cohort` (no per-bracket breakdown);
-the cohort harness reports a single row labeled "cohort".
+`MedicationRequest` / `Condition`) and optional `emit_code` +
+`emit_code_system` for filtering. They use `stratify_by: cohort` (no
+per-bracket breakdown); the cohort harness reports a single row
+labeled "cohort".
+
+When `emit_resource_type` is `Condition`, the metric becomes a
+**cross-module fidelity check**: e.g., "of patients with HTN
+(condition A in module X), what fraction also have CKD (condition B
+in module Y)?" This pairs with the runtime's cross-module `requires`
+syntax — the runtime can declare the dependency, and the harness can
+validate that the rate matches the declared target.
 
 ### Tolerance kinds
 

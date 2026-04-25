@@ -1,0 +1,38 @@
+module: complications
+version: 0.1.0
+source:
+  name: Parker Atlas internal — placeholder
+  provenance: placeholder
+  note: |
+    The complications module ships with placeholder progression rates
+    pending USRDS / AHA Statistical Update / KDIGO ingestion. This
+    expectation exists primarily to demonstrate the cross-module
+    fidelity check (using emit_resource_type=Condition on
+    emit_presence_rate); the 0.15 target mirrors the placeholder
+    prevalence in modules/library/complications.yaml.
+
+    Replace with a real source citation when USRDS Annual Data Report
+    chapters on CKD prevalence in hypertension are ingested.
+  citations:
+    - source: USRDS Annual Data Report (placeholder, not yet ingested)
+      url: https://usrds-adr.niddk.nih.gov/
+
+# Hand-authored rather than ingested because the ingest pipeline
+# (correctly) refuses provenance: placeholder. When the underlying
+# numbers are sourced, switch to the standard ingest workflow.
+
+metrics:
+  # Cross-module check: of patients with hypertension's
+  # essential_hypertension Condition, what fraction also have the
+  # complications module's hypertensive_nephropathy Condition?
+  - id: htn_to_ckd_progression_rate
+    kind: emit_presence_rate
+    condition_code: "59621000"
+    condition_system: http://snomed.info/sct
+    emit_resource_type: Condition
+    emit_code: "236425005"
+    emit_code_system: http://snomed.info/sct
+    target: 0.15
+    tolerance:
+      kind: wilson
+      confidence: 95

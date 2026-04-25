@@ -172,10 +172,15 @@ def _parse_emit_presence_metric(raw: dict[str, Any]) -> Metric:
         code=str(raw["emit_code"]) if raw.get("emit_code") else None,
         code_system=str(raw["emit_code_system"]) if raw.get("emit_code_system") else None,
     )
-    if presence.resource_type not in ("Encounter", "Observation", "MedicationRequest"):
+    if presence.resource_type not in (
+        "Encounter",
+        "Observation",
+        "MedicationRequest",
+        "Condition",
+    ):
         raise ExpectationError(
             f"unsupported emit_resource_type {presence.resource_type!r}; "
-            f"choices: Encounter, Observation, MedicationRequest"
+            f"choices: Encounter, Observation, MedicationRequest, Condition"
         )
     return Metric(
         id=str(raw["id"]),

@@ -54,8 +54,8 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | `atlas modules`            | ✅ Implemented   | List bundled modules, show details (`atlas modules --show NAME`)         |
 | Clinical module runtime    | ✅ Time-aware emits | Conditions sampled with onset date; emits declare `when: today \| onset` for relative timing |
 | Module library             | ✅ 6 modules    | 5 sourced (HTN / DM / lipids / asthma / obesity) + complications (placeholder cross-module demo) |
-| Fidelity expectations      | ✅ 5 modules    | NCHS Data Briefs 511, 516, 363, 508 + FastStats Asthma — sourced            |
-| Cross-module dependencies  | ✅ Implemented  | `requires: module:cond_id`; CLI runs `--module a,b,c` with shared fired-set per patient |
+| Fidelity expectations      | ✅ 6 modules    | 5 sourced + complications (placeholder cross-module fidelity check)        |
+| Cross-module dependencies  | ✅ Implemented  | `requires: module:cond_id` + `emit_resource_type: Condition` for harness gating |
 | LLM-assisted authoring     | ⏳ Not started   | Milestone 3                                                              |
 | Clinical note generation   | ⏳ Not started   | Milestone 4                                                              |
 

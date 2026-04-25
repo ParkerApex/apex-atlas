@@ -618,7 +618,7 @@ def status() -> None:
         ("atlas validate --cohort","[green]first cut[/green]",      "M2"),
         ("Module runtime",        "[green]cross-module reqs[/green]", "M2"),
         ("Module library",        "[green]5 sourced + 1 demo[/green]", "M2"),
-        ("Fidelity harness",      "[green]5 modules[/green]",      "M2"),
+        ("Fidelity harness",      "[green]6 modules[/green]",      "M2"),
         ("LLM authoring",         "[dim]not started[/dim]",        "M3"),
         ("Clinical notes",        "[dim]not started[/dim]",        "M4"),
     ]

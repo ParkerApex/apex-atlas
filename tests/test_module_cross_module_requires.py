@@ -229,3 +229,73 @@ class TestMultiModuleCLI:
             ],
         )
         assert result.exit_code == 1
+
+
+class TestCrossModuleFidelityHarness:
+    """The bundled complications expectation declares a cross-module
+    `emit_presence_rate` with emit_resource_type=Condition that asks
+    'of patients with HTN, what fraction also have CKD?' This harness
+    metric closes the cross-module loop: the runtime can declare the
+    dependency, and the harness can validate the rate."""
+
+    def test_complications_expectation_passes_at_scale(self, tmp_path):
+        gen = runner.invoke(
+            app,
+            [
+                "generate",
+                "--patients", "5000",
+                "--seed", "42",
+                "--module", "hypertension,complications",
+                "--out", str(tmp_path),
+            ],
+        )
+        assert gen.exit_code == 0, gen.output
+
+        result = runner.invoke(
+            app,
+            [
+                "validate",
+                str(tmp_path),
+                "--cohort",
+                "--module", "complications",
+                "--min-samples", "100",
+                "--as-of", "2026-04-25",
+            ],
+        )
+        # Bundled target is 0.15 with Wilson 95% → expected to pass at
+        # N=5000 with ~1900 HTN patients.
+        assert result.exit_code == 0, result.output
+        assert "htn_to_ckd_progre" in result.output
+        # Placeholder warning is emitted because complications
+        # provenance is 'placeholder'.
+        assert "placeholder" in result.output
+
+    def test_harness_fails_when_module_not_run(self, tmp_path):
+        # Generate without complications → no CKD Conditions → metric
+        # actual=0 well below target 0.15 → harness fails.
+        gen = runner.invoke(
+            app,
+            [
+                "generate",
+                "--patients", "5000",
+                "--seed", "42",
+                "--module", "hypertension",  # complications NOT included
+                "--out", str(tmp_path),
+            ],
+        )
+        assert gen.exit_code == 0, gen.output
+
+        result = runner.invoke(
+            app,
+            [
+                "validate",
+                str(tmp_path),
+                "--cohort",
+                "--module", "complications",
+                "--min-samples", "100",
+                "--as-of", "2026-04-25",
+            ],
+        )
+        # CKD never fires when complications isn't in --module → actual
+        # rate is 0% vs target 15% → fail.
+        assert result.exit_code == 1, result.output
