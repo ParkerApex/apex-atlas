@@ -28,6 +28,11 @@ from pathlib import Path
 from typing import Any
 
 from fhir.resources.R4B.bundle import Bundle as _Bundle
+from fhir.resources.R4B.condition import Condition as _Condition
+from fhir.resources.R4B.encounter import Encounter as _Encounter
+from fhir.resources.R4B.medicationrequest import MedicationRequest as _MedReq
+from fhir.resources.R4B.observation import Observation as _Observation
+from fhir.resources.R4B.patient import Patient as _Patient
 
 from parker_atlas.fhir.patient import (
     US_CORE_BIRTHSEX_URL,
@@ -35,6 +40,17 @@ from parker_atlas.fhir.patient import (
     US_CORE_PATIENT_PROFILE,
     US_CORE_RACE_URL,
 )
+
+# Map resourceType → fhir.resources R4B class for per-resource schema
+# validation. Used by the NDJSON walker; the bundle walker validates
+# transitively through Bundle.model_validate().
+_FHIR_R4B_CLASSES: dict[str, type] = {
+    "Patient": _Patient,
+    "Condition": _Condition,
+    "Encounter": _Encounter,
+    "Observation": _Observation,
+    "MedicationRequest": _MedReq,
+}
 
 
 @dataclass
@@ -70,9 +86,10 @@ class ValidationSummary:
 
 
 def _iter_json_files(path: Path) -> list[Path]:
+    """Return JSON-Bundle and NDJSON files at or beneath `path`."""
     if path.is_file():
         return [path]
-    return sorted(path.rglob("*.json"))
+    return sorted([*path.rglob("*.json"), *path.rglob("*.ndjson")])
 
 
 def _validate_patient(patient: dict[str, Any], report: FileReport) -> None:
@@ -213,8 +230,88 @@ def _validate_bundle(bundle: dict[str, Any], report: FileReport) -> None:
             pass
 
 
+def _validate_resource_dict(
+    resource: dict[str, Any], report: FileReport, *, context: str
+) -> None:
+    """Schema-validate a resource via fhir.resources, then run US Core checks."""
+    rtype = resource.get("resourceType")
+    if rtype is None:
+        report.errors.append(f"{context}: missing resourceType")
+        return
+    cls = _FHIR_R4B_CLASSES.get(rtype)
+    if cls is None:
+        # Unknown / unsupported types pass silently in NDJSON mode — the
+        # filename → type cross-check below will already have flagged any
+        # mismatch.
+        return
+    try:
+        cls.model_validate(resource)
+    except Exception as exc:
+        report.errors.append(f"{context}: schema validation failed: {exc}")
+        return
+    if rtype == "Patient":
+        _validate_patient(resource, report)
+    elif rtype == "Condition":
+        _validate_condition(resource, report)
+    elif rtype == "Observation":
+        _validate_observation(resource, report)
+    elif rtype == "Encounter":
+        _validate_encounter(resource, report)
+    elif rtype == "MedicationRequest":
+        _validate_medication_request(resource, report)
+
+
+def _validate_ndjson_file(path: Path) -> FileReport:
+    """Validate a `.ndjson` file: one resource per line, all of one resourceType.
+
+    The file's resourceType is taken from the filename stem (Atlas writes
+    `<ResourceType>.ndjson` in Bulk Data style). Each line is JSON-parsed,
+    schema-validated, and run through the per-resource US Core checks.
+    """
+    report = FileReport(path=path)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError as exc:
+        report.errors.append(f"cannot read file: {exc}")
+        return report
+
+    expected_rtype = path.stem
+    if expected_rtype not in _FHIR_R4B_CLASSES:
+        report.warnings.append(
+            f"NDJSON filename stem {expected_rtype!r} is not a recognized Atlas "
+            f"resourceType ({sorted(_FHIR_R4B_CLASSES)}); per-line validation "
+            f"will skip the schema check."
+        )
+        expected_rtype = None  # disable cross-check
+
+    line_count = 0
+    for lineno, line in enumerate(text.splitlines(), start=1):
+        if not line.strip():
+            continue
+        line_count += 1
+        try:
+            resource = json.loads(line)
+        except json.JSONDecodeError as exc:
+            report.errors.append(f"line {lineno}: invalid JSON: {exc}")
+            continue
+        actual_rtype = resource.get("resourceType")
+        if expected_rtype and actual_rtype != expected_rtype:
+            report.errors.append(
+                f"line {lineno}: resourceType {actual_rtype!r} doesn't match "
+                f"filename {path.name!r} (expected {expected_rtype!r})"
+            )
+            # Continue to schema-validate anyway so the user sees other errors.
+        _validate_resource_dict(resource, report, context=f"line {lineno}")
+
+    if line_count == 0:
+        report.warnings.append("ndjson file has no data lines")
+    return report
+
+
 def validate_file(path: Path) -> FileReport:
-    """Validate a single JSON file and return a per-file report."""
+    """Validate a single FHIR file (JSON Bundle / Patient, or NDJSON)."""
+    if path.suffix == ".ndjson":
+        return _validate_ndjson_file(path)
     report = FileReport(path=path)
     try:
         data = json.loads(path.read_text())
@@ -235,7 +332,7 @@ def validate_file(path: Path) -> FileReport:
 
 
 def validate_path(path: Path) -> ValidationSummary:
-    """Validate every JSON file at or beneath `path`."""
+    """Validate every JSON / NDJSON file at or beneath `path`."""
     summary = ValidationSummary()
     for f in _iter_json_files(path):
         summary.files.append(validate_file(f))
