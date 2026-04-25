@@ -1,5 +1,5 @@
 module: diabetes
-version: 0.2.0
+version: 0.3.0
 description: >
   Total diabetes prevalence (both diagnosed and undiagnosed, types 1
   and 2 combined) by age bracket. Probability-module flavor — each
@@ -52,6 +52,13 @@ conditions:
       "20-39": 0.036
       "40-59": 0.177
       "60-99": 0.273
+    # Type 2 diabetes (the dominant case at ~95% of US diabetics per the
+    # CDC National Diabetes Statistics Report) typically presents in mid
+    # adulthood. Pediatric T1 onsets are handled implicitly: patients
+    # younger than 35 fall into the "just diagnosed today" branch.
+    onset_age:
+      min: 35
+      max: 70
     emits:
       - resource_type: Encounter
         spec_id: diabetes_followup_visit

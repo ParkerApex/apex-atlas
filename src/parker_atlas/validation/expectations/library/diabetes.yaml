@@ -65,3 +65,14 @@ metrics:
     20-39: 0.036
     40-59: 0.177
     60-99: 0.273
+- id: diabetes_metformin_rate
+  kind: emit_presence_rate
+  condition_code: '73211009'
+  condition_system: http://snomed.info/sct
+  tolerance:
+    kind: wilson
+    confidence: 99
+  emit_resource_type: MedicationRequest
+  target: 0.7
+  emit_code: '860975'
+  emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm

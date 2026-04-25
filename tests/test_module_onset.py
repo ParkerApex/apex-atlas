@@ -14,7 +14,6 @@ from parker_atlas.cli import app
 from parker_atlas.modules import (
     ModuleError,
     OnsetAgeRange,
-    load_module,
     load_module_from_str,
     run_module,
 )
@@ -142,27 +141,33 @@ class TestOnsetEndToEnd:
                     hits += 1
         assert hits >= 1, "expected at least one hypertensive bundle in 20 patients"
 
-    def test_other_modules_without_onset_age_omit_onset_datetime(self, tmp_path):
-        # Diabetes module does not yet declare onset_age (v0.2.0).
-        result = runner.invoke(
-            app,
-            [
-                "generate",
-                "--patients", "20",
-                "--seed", "42",
-                "--module", "diabetes",
-                "--out", str(tmp_path),
-            ],
-        )
-        assert result.exit_code == 0, result.output
-
-        for f in sorted(tmp_path.glob("*.json")):
-            data = json.loads(f.read_text())
-            for entry in data["entry"]:
-                if entry["resource"]["resourceType"] == "Condition":
-                    assert "onsetDateTime" not in entry["resource"], (
-                        f"unexpected onsetDateTime on diabetes Condition in {f.name}"
-                    )
+    def test_all_bundled_modules_now_carry_onset_datetime(self, tmp_path):
+        # Every bundled module declares onset_age, so every Condition
+        # emitted by the runtime should carry onsetDateTime. Verifies
+        # the fan-out across the library.
+        for module_name in ("diabetes", "hypercholesterolemia", "asthma", "obesity"):
+            out = tmp_path / module_name
+            result = runner.invoke(
+                app,
+                [
+                    "generate",
+                    "--patients", "30",
+                    "--seed", "42",
+                    "--module", module_name,
+                    "--out", str(out),
+                ],
+            )
+            assert result.exit_code == 0, result.output
+            had_condition = False
+            for f in sorted(out.glob("*.json")):
+                data = json.loads(f.read_text())
+                for entry in data["entry"]:
+                    if entry["resource"]["resourceType"] == "Condition":
+                        had_condition = True
+                        assert "onsetDateTime" in entry["resource"], (
+                            f"{module_name} Condition missing onsetDateTime in {f.name}"
+                        )
+            assert had_condition, f"no Conditions emitted by {module_name} in 30 patients"
 
     def test_onset_dates_are_reproducible_with_seed(self, tmp_path):
         out1, out2 = tmp_path / "a", tmp_path / "b"

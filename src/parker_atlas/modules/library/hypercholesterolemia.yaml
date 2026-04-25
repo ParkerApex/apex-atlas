@@ -1,5 +1,5 @@
 module: hypercholesterolemia
-version: 0.2.0
+version: 0.3.0
 description: >
   High total cholesterol (≥240 mg/dL) prevalence by age bracket.
   Probability-module flavor — each bracket maps to a Bernoulli rate.
@@ -49,6 +49,12 @@ conditions:
       "20-39": 0.075
       "40-59": 0.157
       "60-99": 0.114
+    # Most adult hyperlipidemia diagnoses arise from routine lipid
+    # screening between age 30 and 70 (USPSTF recommends starting at 35
+    # for men, 40 for women, but earlier with risk factors).
+    onset_age:
+      min: 30
+      max: 70
     emits:
       - resource_type: Encounter
         spec_id: cholesterol_followup_visit
