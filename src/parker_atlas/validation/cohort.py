@@ -39,8 +39,8 @@ from parker_atlas.validation.expectations import (
 @dataclass(frozen=True, slots=True)
 class MetricResult:
     metric_id: str
-    bracket: tuple[int, int]
-    sex: str | None  # None for age_bracket stratification; "female"/"male" for sex_and_age
+    bracket: tuple[int, int] | None  # None when stratify_by="cohort"
+    sex: str | None                  # None unless stratify_by="sex_and_age"
     n: int
     actual: float
     target: float
@@ -80,37 +80,66 @@ def _find_bracket(
     return None
 
 
-def _extract_patient_and_conditions(
+def _extract_patient_and_resources(
     bundle: dict[str, Any],
-) -> tuple[dict[str, Any] | None, list[dict[str, Any]]]:
+) -> tuple[dict[str, Any] | None, dict[str, list[dict[str, Any]]]]:
+    """Return (Patient, dict mapping resourceType → list of resources)."""
     patient: dict[str, Any] | None = None
-    conditions: list[dict[str, Any]] = []
+    by_type: dict[str, list[dict[str, Any]]] = {}
     for entry in bundle.get("entry", []) or []:
         res = entry.get("resource") or {}
         rtype = res.get("resourceType")
+        if rtype is None:
+            continue
         if rtype == "Patient" and patient is None:
             patient = res
-        elif rtype == "Condition":
-            conditions.append(res)
-    return patient, conditions
+        by_type.setdefault(rtype, []).append(res)
+    return patient, by_type
 
 
-def _condition_codes(conditions: list[dict[str, Any]]) -> set[str]:
+def _resource_codes(resource: dict[str, Any]) -> set[str]:
+    """Return the set of terminology codes identifying this resource."""
+    rtype = resource.get("resourceType")
     codes: set[str] = set()
-    for cond in conditions:
-        for coding in (cond.get("code") or {}).get("coding", []) or []:
-            code = coding.get("code")
-            if code:
-                codes.add(code)
+    if rtype in ("Condition", "Observation"):
+        for coding in (resource.get("code") or {}).get("coding", []) or []:
+            if coding.get("code"):
+                codes.add(coding["code"])
+    elif rtype == "MedicationRequest":
+        med = resource.get("medicationCodeableConcept") or {}
+        for coding in med.get("coding", []) or []:
+            if coding.get("code"):
+                codes.add(coding["code"])
+    elif rtype == "Encounter":
+        for type_entry in resource.get("type") or []:
+            for coding in (type_entry or {}).get("coding", []) or []:
+                if coding.get("code"):
+                    codes.add(coding["code"])
     return codes
+
+
+def _codes_by_type(by_type: dict[str, list[dict[str, Any]]]) -> dict[str, set[str]]:
+    """Aggregate codes per resource type for one patient."""
+    out: dict[str, set[str]] = {}
+    for rtype, resources in by_type.items():
+        codes: set[str] = set()
+        for res in resources:
+            codes.update(_resource_codes(res))
+        out[rtype] = codes
+    return out
 
 
 def _load_cohort(
     path: Path, report: CohortReport, reference_date: date
-) -> list[tuple[int, str, set[str]]]:
-    """Return (age, sex, condition_codes) per patient. Mutates report."""
+) -> list[tuple[int, str, set[str], dict[str, set[str]]]]:
+    """Return (age, sex, condition_codes, codes_by_resource_type) per patient.
+
+    `codes_by_resource_type` lets the harness check emit-presence metrics —
+    e.g., "of patients with this Condition, how many have a MedicationRequest
+    of this RxNorm code?"
+    """
     files = sorted(path.rglob("*.json")) if path.is_dir() else [path]
-    patients: list[tuple[int, str, set[str]]] = []
+    patients: list[tuple[int, str, set[str], dict[str, set[str]]]] = []
     for f in files:
         try:
             data = json.loads(f.read_text(encoding="utf-8"))
@@ -121,12 +150,14 @@ def _load_cohort(
             # Structural validator is the right tool for non-Bundle shapes.
             continue
         report.bundles_scanned += 1
-        patient, conditions = _extract_patient_and_conditions(data)
+        patient, by_type = _extract_patient_and_resources(data)
         if patient is None or "birthDate" not in patient:
             continue
         age = _age_years(patient["birthDate"], reference_date)
         sex = str(patient.get("gender", ""))
-        patients.append((age, sex, _condition_codes(conditions)))
+        codes_by_type = _codes_by_type(by_type)
+        condition_codes = codes_by_type.get("Condition", set())
+        patients.append((age, sex, condition_codes, codes_by_type))
     report.total_patients = len(patients)
     return patients
 
@@ -201,13 +232,59 @@ def _record_prevalence(
     )
 
 
-def _evaluate_metric(
+def _evaluate_emit_presence(
     metric: Metric,
-    patients: list[tuple[int, str, set[str]]],
+    patients: list[tuple[int, str, set[str], dict[str, set[str]]]],
     *,
     min_samples: int,
     report: CohortReport,
 ) -> None:
+    assert metric.emit_presence is not None and metric.target is not None
+    presence = metric.emit_presence
+    target = metric.target
+
+    has_emit: list[bool] = []
+    for _age, _sex, condition_codes, codes_by_type in patients:
+        if metric.condition_code not in condition_codes:
+            continue
+        codes_for_type = codes_by_type.get(presence.resource_type, set())
+        if presence.code is None:
+            has_emit.append(len(codes_for_type) > 0)
+        else:
+            has_emit.append(presence.code in codes_for_type)
+
+    n = len(has_emit)
+    if n < min_samples:
+        report.skipped.append(
+            f"{metric.id}: N={n} patients with condition < min_samples ({min_samples})"
+        )
+        return
+    actual = sum(has_emit) / n
+    within, half = _check_tolerance(metric.tolerance, actual, target, n)
+    report.results.append(
+        MetricResult(
+            metric_id=metric.id,
+            bracket=None,
+            sex=None,
+            n=n,
+            actual=actual,
+            target=target,
+            tolerance=half,
+            within_tolerance=within,
+        )
+    )
+
+
+def _evaluate_metric(
+    metric: Metric,
+    patients: list[tuple[int, str, set[str], dict[str, set[str]]]],
+    *,
+    min_samples: int,
+    report: CohortReport,
+) -> None:
+    if metric.kind == "emit_presence_rate":
+        _evaluate_emit_presence(metric, patients, min_samples=min_samples, report=report)
+        return
     if metric.kind != "conditional_prevalence":
         report.skipped.append(f"{metric.id}: unsupported kind {metric.kind!r}")
         return
@@ -215,7 +292,7 @@ def _evaluate_metric(
     if metric.stratify_by == "age_bracket":
         buckets: dict[tuple[int, int], list[bool]] = defaultdict(list)
         bracket_keys = tuple(metric.targets.keys())
-        for age, _sex, codes in patients:
+        for age, _sex, codes, _by_type in patients:
             bracket = _find_bracket(age, bracket_keys)
             if bracket is None:
                 continue
@@ -239,7 +316,7 @@ def _evaluate_metric(
         }
         for sex, brackets in metric.targets_by_sex.items():
             bracket_keys = tuple(brackets.keys())
-            for age, p_sex, codes in patients:
+            for age, p_sex, codes, _by_type in patients:
                 if p_sex != sex:
                     continue
                 bracket = _find_bracket(age, bracket_keys)

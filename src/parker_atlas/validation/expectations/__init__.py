@@ -60,18 +60,32 @@ SEX_STRATA = ("female", "male")
 
 
 @dataclass(frozen=True, slots=True)
+class EmitPresenceFilter:
+    """For emit_presence_rate: identifies which emitted resource counts."""
+
+    resource_type: str  # "Encounter" | "Observation" | "MedicationRequest"
+    code: str | None = None        # if set, only resources with this code count
+    code_system: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class Metric:
     id: str
-    kind: str                     # "conditional_prevalence"
-    condition_code: str           # terminology code (SNOMED/ICD-10/etc.)
+    kind: str                     # "conditional_prevalence" | "emit_presence_rate"
+    condition_code: str           # terminology code identifying the denominator condition
     condition_system: str
-    stratify_by: str              # "age_bracket" | "sex_and_age"
+    stratify_by: str              # "age_bracket" | "sex_and_age" | "cohort"
     tolerance: Tolerance
     # For stratify_by="age_bracket": `targets` holds {bracket: rate}.
     # For stratify_by="sex_and_age": `targets` is empty and
     # `targets_by_sex` holds {sex: {bracket: rate}}.
+    # For stratify_by="cohort" (emit_presence_rate kind): both are
+    # empty; `target` carries the single rate.
     targets: dict[tuple[int, int], float]
     targets_by_sex: dict[str, dict[tuple[int, int], float]] | None = None
+    # Used only by emit_presence_rate.
+    emit_presence: EmitPresenceFilter | None = None
+    target: float | None = None
 
 
 PROVENANCE_LEVELS = ("placeholder", "sourced", "verified")
@@ -142,17 +156,60 @@ def _parse_bracket(s: str) -> tuple[int, int]:
         raise ExpectationError(f"invalid bracket {s!r}; expected 'LOW-HIGH'") from exc
 
 
+def _parse_emit_presence_metric(raw: dict[str, Any]) -> Metric:
+    for required in ("id", "kind", "condition_code", "tolerance", "emit_resource_type", "target"):
+        if required not in raw:
+            raise ExpectationError(
+                f"emit_presence_rate metric missing required key: {required}"
+            )
+    target = float(raw["target"])
+    if not 0.0 <= target <= 1.0:
+        raise ExpectationError(
+            f"emit_presence_rate target {target} must be in [0, 1]"
+        )
+    presence = EmitPresenceFilter(
+        resource_type=str(raw["emit_resource_type"]),
+        code=str(raw["emit_code"]) if raw.get("emit_code") else None,
+        code_system=str(raw["emit_code_system"]) if raw.get("emit_code_system") else None,
+    )
+    if presence.resource_type not in ("Encounter", "Observation", "MedicationRequest"):
+        raise ExpectationError(
+            f"unsupported emit_resource_type {presence.resource_type!r}; "
+            f"choices: Encounter, Observation, MedicationRequest"
+        )
+    return Metric(
+        id=str(raw["id"]),
+        kind="emit_presence_rate",
+        condition_code=str(raw["condition_code"]),
+        condition_system=str(raw.get("condition_system", "")),
+        stratify_by="cohort",
+        tolerance=_parse_tolerance(raw["tolerance"]),
+        targets={},
+        emit_presence=presence,
+        target=target,
+    )
+
+
 def _parse_metric(raw: dict[str, Any]) -> Metric:
-    for required in ("id", "kind", "condition_code", "stratify_by", "tolerance", "targets"):
+    for required in ("id", "kind", "condition_code", "tolerance"):
+        if required not in raw:
+            raise ExpectationError(f"metric missing required key: {required}")
+
+    if raw["kind"] == "emit_presence_rate":
+        return _parse_emit_presence_metric(raw)
+
+    if raw["kind"] != "conditional_prevalence":
+        raise ExpectationError(
+            f"unsupported metric kind {raw['kind']!r}; "
+            f"choices: conditional_prevalence, emit_presence_rate"
+        )
+
+    for required in ("stratify_by", "targets"):
         if required not in raw:
             raise ExpectationError(f"metric missing required key: {required}")
 
     tolerance = _parse_tolerance(raw["tolerance"])
 
-    if raw["kind"] != "conditional_prevalence":
-        raise ExpectationError(
-            f"unsupported metric kind {raw['kind']!r}; only 'conditional_prevalence' is implemented"
-        )
     stratify_by = str(raw["stratify_by"])
     if stratify_by not in ("age_bracket", "sex_and_age"):
         raise ExpectationError(
