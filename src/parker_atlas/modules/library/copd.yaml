@@ -1,0 +1,107 @@
+module: copd
+version: 0.1.0
+description: >
+  Chronic obstructive pulmonary disease (COPD) prevalence by sex-and-age
+  bracket. Probability-module flavor — each (sex, age) cell maps to a
+  Bernoulli rate.
+
+  Prevalence is sourced from NCHS Data Brief 332 (Wheaton et al, 2019):
+  age-adjusted COPD prevalence among US adults 18+ was 6.2% in 2017
+  (5.4% in men, 6.9% in women), with a strong age gradient — 11.6% at
+  65+. The brief reports prevalence by age × sex; pediatric (0-17) is
+  treated as 0 since the diagnostic definition (post-bronchodilator
+  FEV1/FVC < 0.70) is age-tied to adulthood.
+
+  When a patient is positive, the module emits:
+  - A pulmonology follow-up Encounter
+  - An FEV1/FVC ratio Observation in the 0.50-0.69 range, the
+    GOLD-criterion zone for confirmed COPD (post-bronchodilator)
+  - A tiotropium MedicationRequest in 60% of cases, approximating the
+    rate of long-acting muscarinic antagonist (LAMA) prescribing for
+    moderate-to-severe COPD per GOLD 2024 (the exact rate is a future
+    ingestion)
+cites:
+  - source: >
+      Wheaton AG, Liu Y, Croft JB, VanFrank B, Croxton TL, Punturieri A,
+      Postow L, Greenlund KJ. Chronic Obstructive Pulmonary Disease and
+      Smoking Status — United States, 2017. NCHS Data Brief No. 332.
+      National Center for Health Statistics. November 2019.
+    url: https://www.cdc.gov/nchs/products/databriefs/db332.htm
+    summary: >
+      US adults aged 18+ COPD prevalence (BRFSS 2017, age-adjusted):
+      6.2% overall; 5.4% men, 6.9% women. Strong age gradient: 3.2% at
+      18-44, 7.6% at 45-64, 11.6% at 65+.
+  - source: >
+      Global Initiative for Chronic Obstructive Lung Disease (GOLD).
+      Global Strategy for Prevention, Diagnosis, and Management of COPD:
+      2024 Report.
+    url: https://goldcopd.org/2024-gold-report/
+    summary: >
+      Diagnostic threshold: post-bronchodilator FEV1/FVC < 0.70.
+      Severity grades by FEV1% predicted: GOLD 1 ≥80%, GOLD 2 50-79%,
+      GOLD 3 30-49%, GOLD 4 <30%. Long-acting bronchodilators (LAMA
+      and/or LABA) are first-line for symptomatic stable COPD.
+conditions:
+  - id: copd
+    code:
+      system: http://snomed.info/sct
+      code: "13645005"
+      display: Chronic obstructive lung disease (disorder)
+    prevalence:
+      female:
+        "0-17": 0.0
+        "18-39": 0.025
+        "40-59": 0.066
+        "60-99": 0.121
+      male:
+        "0-17": 0.0
+        "18-39": 0.022
+        "40-59": 0.058
+        "60-99": 0.111
+    # COPD onset is concentrated in middle and later adulthood, driven
+    # by cumulative cigarette-smoke exposure or alpha-1 antitrypsin
+    # deficiency. The 40-70 range covers the bulk of clinical onsets.
+    onset_age:
+      min: 40
+      max: 70
+    emits:
+      - resource_type: Encounter
+        spec_id: copd_followup_visit
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "13645005"
+          display: Chronic obstructive lung disease
+
+      # FEV1/FVC ratio — the GOLD diagnostic criterion. Post-
+      # bronchodilator < 0.70 is the threshold; the 0.50-0.69 range
+      # covers the bulk of confirmed-COPD presentations (excluding
+      # very-severe disease at < 0.50).
+      - resource_type: Observation
+        spec_id: copd_fev1_fvc_ratio
+        link_to: copd_followup_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "19926-5"
+          display: FEV1/FVC
+        value_range: {low: 0.50, high: 0.69, precision: 2}
+        unit: "{ratio}"
+        unit_code: "{ratio}"
+
+      - resource_type: MedicationRequest
+        spec_id: copd_tiotropium
+        link_to: copd_followup_visit
+        probability: 0.60
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "1546430"
+          display: tiotropium bromide 0.018 MG Inhalation Powder
+        reason:
+          system: http://snomed.info/sct
+          code: "13645005"
+          display: Chronic obstructive lung disease
