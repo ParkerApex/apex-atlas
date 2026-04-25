@@ -1,0 +1,52 @@
+module: obesity
+version: 0.1.0
+source:
+  name: NCHS Data Brief 508 (NHANES Aug 2021 – Aug 2023)
+  provenance: sourced
+  url: https://www.cdc.gov/nchs/products/databriefs/db508.htm
+  note: 'Prevalence of obesity (BMI ≥30) in US adults aged 20+ from NCHS
+
+    Data Brief 508. Crude age-stratified percentages divided by 100.
+
+
+    The brief reports no significant difference between men (39.2%)
+
+    and women (41.3%) overall, so the module is not sex-stratified.
+
+    A future module revision could add a sex_and_age metric if
+
+    finer-grained tables are ingested.
+
+
+    The 0-19 bracket is a placeholder: pediatric obesity is reported
+
+    in a separate brief with different definitions; ingestion of
+
+    NCHS Data Brief 509 (children/adolescents) is future work.
+
+    '
+  citations:
+  - source: 'Emmerich SD, Fryar CD, Stierman B, Ogden CL. Obesity and Severe Obesity Prevalence in Adults:
+      United States, August 2021–August 2023. NCHS Data Brief no. 508, September 2024.
+
+      '
+    url: https://www.cdc.gov/nchs/products/databriefs/db508.htm
+    version: NCHS Data Brief No. 508 (September 2024)
+    accessed: '2026-04-25'
+    table: 'Table 1: Prevalence of obesity in adults age 20+ by age group'
+    note: '20-39: 35.5%, 40-59: 46.4%, 60+: 38.9%. Numbers extracted via webfetch on 2026-04-25.
+
+      '
+metrics:
+- id: adult_obesity_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '414916001'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    20-39: 0.355
+    40-59: 0.464
+    60-99: 0.389

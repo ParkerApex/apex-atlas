@@ -1,0 +1,57 @@
+module: asthma
+version: 0.1.0
+description: >
+  Current asthma prevalence by coarse age bracket. Probability-module
+  flavor — each bracket maps to a Bernoulli rate.
+
+  Prevalence is sourced from CDC FastStats (NHIS 2019-2024): 6.5% in
+  children <18 and 8.6% in adults 18+. The brief does not publish
+  finer-grained adult age brackets or sex stratification at this
+  level of granularity, so this module uses just two brackets.
+  Refinement awaits ingestion from the underlying NHIS detailed tables.
+
+  When a patient is positive, the module emits an ambulatory
+  Encounter and (in 75% of cases) an albuterol MedicationRequest —
+  the standard rescue inhaler for asthma. Module emits no Observation
+  because peak-flow ranges vary substantially with patient size and
+  age; a future version with body-size-conditioned distributions can
+  add it.
+cites:
+  - source: CDC NCHS FastStats — Asthma (NHIS 2019-2024)
+    url: https://www.cdc.gov/nchs/fastats/asthma.htm
+    summary: >
+      US current-asthma prevalence: 8.6% adults (18+), 6.5% children
+      (<18). Source: National Health Interview Survey (NHIS) 2019-2024.
+conditions:
+  - id: current_asthma
+    code:
+      system: http://snomed.info/sct
+      code: "195967001"
+      display: Asthma (disorder)
+    prevalence:
+      "0-17": 0.065
+      "18-99": 0.086
+    emits:
+      - resource_type: Encounter
+        spec_id: asthma_followup_visit
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "195967001"
+          display: Asthma
+
+      - resource_type: MedicationRequest
+        spec_id: asthma_albuterol_inhaler
+        probability: 0.75
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "745679"
+          display: Albuterol Sulfate 0.83 MG/ML Inhalation Solution
+        reason:
+          system: http://snomed.info/sct
+          code: "195967001"
+          display: Asthma
