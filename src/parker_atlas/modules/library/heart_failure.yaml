@@ -1,0 +1,105 @@
+module: heart_failure
+version: 0.1.0
+description: >
+  Heart failure (HF) prevalence by sex-and-age bracket. Probability-
+  module flavor — each (sex, age) cell maps to a Bernoulli rate.
+
+  Prevalence rates are sourced from the AHA Heart Disease and Stroke
+  Statistics — 2024 Update (Tsao et al, Circulation 2024). HF affects
+  ~6.7M US adults (~2.5% prevalence overall, sharply age-stratified
+  with ~10% prevalence in adults 65+). The 60-99 bracket is a weighted
+  blend of AHA's reported 60-79 and 80+ buckets (~70/30 by population
+  share) since Atlas's demographic age_sex.csv tops out at 60-99.
+
+  When a patient is positive, the module emits:
+  - A cardiology follow-up Encounter
+  - An NT-proBNP Observation (LOINC 33762-6) in the 400-2000 pg/mL
+    range, the broad zone for diagnosed HF (cutoffs: <300 normal,
+    >900 likely HF for adults 50-75; the synthetic range covers most
+    confirmed cases)
+  - A metoprolol succinate MedicationRequest in 70% of cases — beta-
+    blockers are first-line guideline-directed medical therapy (GDMT)
+    for HFrEF per the 2022 AHA/ACC/HFSA guideline (the exact cohort
+    rate is a future ingestion)
+
+  Pediatric HF (cardiomyopathy, congenital heart disease) is not in
+  scope; the 0-17 bracket is set to 0.
+cites:
+  - source: >
+      Tsao CW, Aday AW, Almarzooq ZI, et al. Heart Disease and Stroke
+      Statistics — 2024 Update: A Report from the American Heart
+      Association. Circulation 2024;149(8):e347-e913.
+    url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001209
+    summary: >
+      US adults heart failure prevalence (NHANES 2017-2020): ~6.7M
+      adults; ~2.5% overall. Age × sex breakdown: 20-39 ~0.5%;
+      40-59 men 2.0% / women 1.5%; 60-79 men 7.7% / women 5.5%;
+      80+ men 12.8% / women 14.5%.
+  - source: >
+      Heidenreich PA, Bozkurt B, Aguilar D, et al. 2022 AHA/ACC/HFSA
+      Guideline for the Management of Heart Failure. Journal of the
+      American College of Cardiology 2022;79(17):e263-e421.
+    url: https://www.jacc.org/doi/10.1016/j.jacc.2021.12.012
+    summary: >
+      Beta-blockers (carvedilol, metoprolol succinate, bisoprolol) are
+      Class I (Level A) guideline-directed therapy for HFrEF.
+conditions:
+  - id: heart_failure
+    code:
+      system: http://snomed.info/sct
+      code: "84114007"
+      display: Heart failure (disorder)
+    prevalence:
+      female:
+        "0-17": 0.0
+        "18-39": 0.005
+        "40-59": 0.015
+        "60-99": 0.082
+      male:
+        "0-17": 0.0
+        "18-39": 0.005
+        "40-59": 0.020
+        "60-99": 0.092
+    onset_age:
+      min: 55
+      max: 80
+    emits:
+      - resource_type: Encounter
+        spec_id: hf_cardiology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "84114007"
+          display: Heart failure
+
+      - resource_type: Observation
+        spec_id: hf_nt_probnp
+        when: today
+        link_to: hf_cardiology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "33762-6"
+          display: NT-proBNP
+        value_range: {low: 400, high: 2000, precision: 0}
+        unit: pg/mL
+        unit_code: pg/mL
+
+      - resource_type: MedicationRequest
+        spec_id: hf_metoprolol
+        when: today
+        link_to: hf_cardiology_visit
+        probability: 0.70
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "866412"
+          display: Metoprolol Succinate 25 MG Extended Release Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "84114007"
+          display: Heart failure

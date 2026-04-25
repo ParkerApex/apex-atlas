@@ -1,0 +1,50 @@
+module: heart_failure
+version: 0.1.0
+source:
+  name: AHA Heart Disease and Stroke Statistics — 2024 Update (Tsao et al, Circulation 2024)
+  provenance: sourced
+  url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001209
+  note: >
+    US adults heart failure prevalence by age × sex from the AHA 2024
+    Update (drawing on NHANES 2017-2020). Numbers are crude prevalence
+    proportions. Atlas's 60-99 bracket aggregates AHA's 60-79 + 80+
+    sub-buckets weighted by population share (~70/30), so cohort harness
+    targets sit roughly mid-range between the two AHA strata.
+  citations:
+    - source: >
+        Tsao CW, Aday AW, Almarzooq ZI, et al. Heart Disease and Stroke
+        Statistics — 2024 Update: A Report from the American Heart
+        Association. Circulation 2024;149(8):e347-e913.
+      url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001209
+      version: AHA 2024 Update
+      accessed: '2026-04-25'
+      table: 'Chart 17-1 / Table 17-1: HF prevalence by age and sex.'
+metrics:
+  - id: hf_prevalence_by_sex_and_age
+    kind: conditional_prevalence
+    condition_code: '84114007'
+    condition_system: http://snomed.info/sct
+    stratify_by: sex_and_age
+    tolerance:
+      kind: wilson
+      confidence: 99
+    targets:
+      female:
+        18-39: 0.005
+        40-59: 0.015
+        60-99: 0.082
+      male:
+        18-39: 0.005
+        40-59: 0.020
+        60-99: 0.092
+  - id: hf_metoprolol_rate
+    kind: emit_presence_rate
+    condition_code: '84114007'
+    condition_system: http://snomed.info/sct
+    tolerance:
+      kind: wilson
+      confidence: 99
+    emit_resource_type: MedicationRequest
+    target: 0.70
+    emit_code: '866412'
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm
