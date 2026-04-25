@@ -8,10 +8,12 @@ Concerns" profile, referencing a Patient by fullUrl.
 from __future__ import annotations
 
 import uuid
+from datetime import date, datetime
 from typing import Any
 
 from fhir.resources.R4B.condition import Condition as _Condition
 
+from parker_atlas.fhir._datetime import fhir_datetime
 from parker_atlas.gpx import GPX
 from parker_atlas.modules.runtime import Coding
 
@@ -39,8 +41,16 @@ def build_condition_resource(
     patient_fullurl: str,
     condition_spec_id: str,
     code: Coding,
+    *,
+    onset_date: date | datetime | None = None,
 ) -> dict[str, Any]:
-    """Build a US Core Problem-List-Item Condition referencing the patient."""
+    """Build a US Core Problem-List-Item Condition referencing the patient.
+
+    `onset_date`, when provided, populates Condition.onsetDateTime — the
+    moment the condition is recorded as having begun. Used by modules that
+    declare an `onset_age` range to give synthetic patients a realistic
+    diagnosis history rather than every condition starting "today".
+    """
     resource: dict[str, Any] = {
         "resourceType": "Condition",
         "id": condition_id(gpx, condition_spec_id),
@@ -89,5 +99,7 @@ def build_condition_resource(
         },
         "subject": {"reference": patient_fullurl},
     }
+    if onset_date is not None:
+        resource["onsetDateTime"] = fhir_datetime(onset_date)
     _Condition.model_validate(resource)
     return resource

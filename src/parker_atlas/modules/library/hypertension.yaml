@@ -1,5 +1,5 @@
 module: hypertension
-version: 0.3.0
+version: 0.4.0
 description: >
   Essential hypertension module. Probability-module flavor: each
   (age, sex) cell maps to a Bernoulli rate that decides whether the
@@ -51,6 +51,13 @@ conditions:
         "18-39": 0.300
         "40-59": 0.559
         "60-99": 0.727
+    # Per NHANES Brief 511 cumulative-incidence figures, most adult-onset
+    # hypertension is diagnosed between the early 30s and mid-60s.
+    # Patients younger than 25 who fire positive (rare; mostly the 0-17
+    # placeholder bracket) are treated as just diagnosed.
+    onset_age:
+      min: 25
+      max: 65
     emits:
       - resource_type: Encounter
         spec_id: htn_followup_visit

@@ -42,6 +42,7 @@ from __future__ import annotations
 
 import random
 from dataclasses import dataclass
+from datetime import date, timedelta
 from importlib import resources
 from typing import Any
 
@@ -113,6 +114,14 @@ EmitSpec = EncounterEmit | ObservationEmit | MedicationRequestEmit
 
 
 @dataclass(frozen=True, slots=True)
+class OnsetAgeRange:
+    """Patient age (years) at which a condition typically presents."""
+
+    min: int
+    max: int
+
+
+@dataclass(frozen=True, slots=True)
 class ConditionSpec:
     """One condition a module can assign to a patient."""
 
@@ -125,6 +134,9 @@ class ConditionSpec:
     prevalence_by_sex: dict[str, dict[tuple[int, int], float]] | None = None
     # Additional resources emitted when the condition fires for a patient.
     emits: tuple[EmitSpec, ...] = ()
+    # If set, runtime samples a per-patient onset age and computes a
+    # Condition.onsetDateTime relative to the simulation's reference date.
+    onset_age: OnsetAgeRange | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -182,6 +194,10 @@ class Diagnosis:
 
     condition: ConditionSpec
     sampled_resources: tuple[SampledResource, ...] = ()
+    # Date the condition is recorded as having begun for this patient.
+    # None means the module did not declare an onset_age range; the FHIR
+    # Condition will be emitted without onsetDateTime in that case.
+    onset_date: date | None = None
 
 
 class ModuleError(ValueError):
@@ -336,6 +352,19 @@ def _parse_emit(raw: dict[str, Any], ctx: str) -> EmitSpec:
     )
 
 
+def _parse_onset_age(raw: dict[str, Any], context: str) -> OnsetAgeRange:
+    for required in ("min", "max"):
+        if required not in raw:
+            raise ModuleError(f"{context}: onset_age missing {required!r}")
+    lo = int(raw["min"])
+    hi = int(raw["max"])
+    if lo < 0:
+        raise ModuleError(f"{context}: onset_age.min {lo} must be >= 0")
+    if hi < lo:
+        raise ModuleError(f"{context}: onset_age.max {hi} < min {lo}")
+    return OnsetAgeRange(min=lo, max=hi)
+
+
 def _parse_condition(raw: dict[str, Any]) -> ConditionSpec:
     code = _parse_coding(raw["code"], f"condition {raw.get('id')!r}.code")
     prevalence, by_sex = _parse_prevalence(raw.get("prevalence", {}))
@@ -350,12 +379,18 @@ def _parse_condition(raw: dict[str, Any]) -> ConditionSpec:
         raise ModuleError(
             f"condition {raw.get('id')!r}: at most one Encounter emit per condition"
         )
+    onset_age = (
+        _parse_onset_age(raw["onset_age"], f"condition {raw.get('id')!r}.onset_age")
+        if raw.get("onset_age")
+        else None
+    )
     return ConditionSpec(
         id=raw["id"],
         code=code,
         prevalence_by_bracket=prevalence,
         prevalence_by_sex=by_sex,
         emits=emits,
+        onset_age=onset_age,
     )
 
 
@@ -499,10 +534,38 @@ def _sample_emits(
     return tuple(out)
 
 
+def _sample_onset_date(
+    onset_age: OnsetAgeRange,
+    current_age: int,
+    today: date,
+    rng: random.Random,
+) -> date:
+    """Sample a Condition.onsetDateTime for a patient currently `current_age` years old.
+
+    If the patient is younger than `onset_age.min`, the condition is
+    treated as just diagnosed (onset = today). Otherwise the onset age
+    is sampled uniformly in [min, min(max, current_age)] and the date
+    is computed by subtracting the implied years from `today`.
+    """
+    lo = onset_age.min
+    hi = min(onset_age.max, current_age)
+    if hi < lo:
+        return today
+    onset_age_years = rng.randint(lo, hi)
+    years_ago = current_age - onset_age_years
+    return today - timedelta(days=365 * years_ago)
+
+
 def run_module(
-    module: Module, age_years: int, sex: str, rng: random.Random
+    module: Module,
+    age_years: int,
+    sex: str,
+    rng: random.Random,
+    *,
+    today: date | None = None,
 ) -> list[Diagnosis]:
     """Run a probability module for one patient; return sampled diagnoses."""
+    today = today or date.today()
     out: list[Diagnosis] = []
     for cond in module.conditions:
         p = _lookup_prevalence(cond, age_years, sex)
@@ -510,5 +573,16 @@ def run_module(
             continue
         if rng.random() < p:
             sampled = _sample_emits(cond, rng)
-            out.append(Diagnosis(condition=cond, sampled_resources=sampled))
+            onset_date = (
+                _sample_onset_date(cond.onset_age, age_years, today, rng)
+                if cond.onset_age
+                else None
+            )
+            out.append(
+                Diagnosis(
+                    condition=cond,
+                    sampled_resources=sampled,
+                    onset_date=onset_date,
+                )
+            )
     return out

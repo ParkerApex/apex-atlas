@@ -399,13 +399,20 @@ def generate(
         extras: list[dict] = []
         age_years = (today - demo.birth_date).days // 365
         for mod in active_modules:
-            for dx in run_module(mod, age_years=age_years, sex=demo.gender.value, rng=rng):
+            for dx in run_module(
+                mod,
+                age_years=age_years,
+                sex=demo.gender.value,
+                rng=rng,
+                today=today,
+            ):
                 extras.append(
                     build_condition_resource(
                         gpx=gpx,
                         patient_fullurl=patient_url,
                         condition_spec_id=dx.condition.id,
                         code=dx.condition.code,
+                        onset_date=dx.onset_date,
                     )
                 )
                 condition_counter[dx.condition.code.display] += 1
@@ -577,7 +584,7 @@ def status() -> None:
         ("atlas generate",        "[green]implemented[/green]",    "M1"),
         ("atlas validate",        "[green]structural[/green]",     "M1"),
         ("atlas validate --cohort","[green]first cut[/green]",      "M2"),
-        ("Module runtime",        "[green]multi-resource[/green]", "M2"),
+        ("Module runtime",        "[green]multi-res + onset[/green]", "M2"),
         ("Module library",        "[green]5 modules[/green]",      "M2"),
         ("Fidelity harness",      "[green]5 modules[/green]",      "M2"),
         ("LLM authoring",         "[dim]not started[/dim]",        "M3"),
