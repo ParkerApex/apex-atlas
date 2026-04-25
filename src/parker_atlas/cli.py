@@ -15,7 +15,7 @@ from collections import Counter
 from datetime import date
 from enum import Enum
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 from rich.console import Console
@@ -378,11 +378,11 @@ def generate(
     if patients < 1:
         err_console.print("[red]--patients must be >= 1[/red]")
         raise typer.Exit(code=1)
-    if format is not OutputFormat.FHIR_R4:
+    if format not in (OutputFormat.FHIR_R4, OutputFormat.NDJSON):
         err_console.print(
             f"[yellow]--format={format.value}[/yellow] is not yet supported. "
-            f"Milestone 1 implements only fhir-r4; ndjson and parquet land in Milestone 5, "
-            f"fhir-r5 after."
+            f"Currently implemented: fhir-r4 (one Bundle per patient) and "
+            f"ndjson (one file per resourceType, FHIR Bulk Data style)."
         )
         raise typer.Exit(code=2)
     if profile is not Profile.US_CORE_6_1:
@@ -413,63 +413,89 @@ def generate(
     condition_counter: Counter[str] = Counter()
     summary_brackets = _summary_brackets()
 
+    # NDJSON writer state — one open file per resourceType, lazily opened
+    # on first encounter, closed in the finally block below. Matches the
+    # FHIR Bulk Data Access ($export) convention.
+    ndjson_files: dict[str, Any] = {}
+
     description = f"Generating {patients} patient{'s' if patients != 1 else ''}"
-    for _ in track(range(patients), description=description, console=console):
-        demo = sample_demographics(rng, today=today)
-        gpx = allocator.allocate()
-        patient = build_patient_resource(gpx, demo)
-        patient_url = fullurl_for_gpx(gpx)
+    try:
+        for _ in track(range(patients), description=description, console=console):
+            demo = sample_demographics(rng, today=today)
+            gpx = allocator.allocate()
+            patient = build_patient_resource(gpx, demo)
+            patient_url = fullurl_for_gpx(gpx)
 
-        extras: list[dict] = []
-        age_years = (today - demo.birth_date).days // 365
-        # Track conditions fired across all modules for this patient. The
-        # cross-module `requires` syntax (e.g. hypertension:essential_hypertension)
-        # is satisfied against this set; same-module `requires` use a
-        # separate per-module set inside run_module.
-        patient_fired: set[str] = set()
-        for mod in active_modules:
-            diagnoses = run_module(
-                mod,
-                age_years=age_years,
-                sex=demo.gender.value,
-                rng=rng,
-                today=today,
-                external_fired=patient_fired,
-            )
-            for dx in diagnoses:
-                patient_fired.add(f"{mod.name}:{dx.condition.id}")
-            for dx in diagnoses:
-                extras.append(
-                    build_condition_resource(
-                        gpx=gpx,
-                        patient_fullurl=patient_url,
-                        condition_spec_id=dx.condition.id,
-                        code=dx.condition.code,
-                        onset_date=dx.onset_date,
-                    )
+            extras: list[dict] = []
+            age_years = (today - demo.birth_date).days // 365
+            # Track conditions fired across all modules for this patient. The
+            # cross-module `requires` syntax (e.g. hypertension:essential_hypertension)
+            # is satisfied against this set; same-module `requires` use a
+            # separate per-module set inside run_module.
+            patient_fired: set[str] = set()
+            for mod in active_modules:
+                diagnoses = run_module(
+                    mod,
+                    age_years=age_years,
+                    sex=demo.gender.value,
+                    rng=rng,
+                    today=today,
+                    external_fired=patient_fired,
                 )
-                condition_counter[dx.condition.code.display] += 1
-                extras.extend(
-                    _build_emitted_resources(
-                        gpx=gpx,
-                        patient_url=patient_url,
-                        diagnosis=dx,
+                for dx in diagnoses:
+                    patient_fired.add(f"{mod.name}:{dx.condition.id}")
+                for dx in diagnoses:
+                    extras.append(
+                        build_condition_resource(
+                            gpx=gpx,
+                            patient_fullurl=patient_url,
+                            condition_spec_id=dx.condition.id,
+                            code=dx.condition.code,
+                            onset_date=dx.onset_date,
+                        )
                     )
-                )
+                    condition_counter[dx.condition.code.display] += 1
+                    extras.extend(
+                        _build_emitted_resources(
+                            gpx=gpx,
+                            patient_url=patient_url,
+                            diagnosis=dx,
+                        )
+                    )
 
-        bundle = build_bundle(gpx, patient, extras)
-        (out / f"{gpx}.json").write_text(json.dumps(bundle, indent=2))
+            if format is OutputFormat.FHIR_R4:
+                bundle = build_bundle(gpx, patient, extras)
+                (out / f"{gpx}.json").write_text(json.dumps(bundle, indent=2))
+            else:  # NDJSON
+                for resource in (patient, *extras):
+                    rtype = resource["resourceType"]
+                    fh = ndjson_files.get(rtype)
+                    if fh is None:
+                        fh = (out / f"{rtype}.ndjson").open("w", encoding="utf-8")
+                        ndjson_files[rtype] = fh
+                    fh.write(json.dumps(resource) + "\n")
 
-        bracket = _bracket_for_age(age_years, summary_brackets)
-        if bracket is not None:
-            age_counter[bracket] += 1
-        sex_counter[demo.gender.value] += 1
-        race_counter[race_display(demo.race)] += 1
+            bracket = _bracket_for_age(age_years, summary_brackets)
+            if bracket is not None:
+                age_counter[bracket] += 1
+            sex_counter[demo.gender.value] += 1
+            race_counter[race_display(demo.race)] += 1
+    finally:
+        for fh in ndjson_files.values():
+            fh.close()
 
-    console.print(
-        f"[green]✓[/green] Wrote {patients} patient bundle"
-        f"{'s' if patients != 1 else ''} to [bold]{out}[/bold]"
-    )
+    if format is OutputFormat.FHIR_R4:
+        console.print(
+            f"[green]✓[/green] Wrote {patients} patient bundle"
+            f"{'s' if patients != 1 else ''} to [bold]{out}[/bold]"
+        )
+    else:  # NDJSON
+        rtypes = sorted(ndjson_files.keys())
+        console.print(
+            f"[green]✓[/green] Wrote {patients} patient"
+            f"{'s' if patients != 1 else ''} to [bold]{out}[/bold] "
+            f"as NDJSON ({', '.join(f'{rt}.ndjson' for rt in rtypes)})"
+        )
 
     if summary:
         _print_generate_summary(
