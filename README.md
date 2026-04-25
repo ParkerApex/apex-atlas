@@ -52,7 +52,7 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | `atlas validate`           | ✅ Structural    | Schema validation + US Core Patient/Condition minimums                   |
 | `atlas validate --cohort`  | ✅ First cut     | Fidelity harness: aggregate metrics vs. declared expectation w/ tolerance |
 | `atlas modules`            | ✅ Implemented   | List bundled modules, show details (`atlas modules --show NAME`)         |
-| Clinical module runtime    | ✅ Multi-resource | Probability module can emit Encounter + Observation + MedicationRequest |
+| Clinical module runtime    | ✅ Multi-resource + onset | Modules emit Encounter + Observation + MedicationRequest; `onset_age` populates Condition.onsetDateTime |
 | Module library             | ✅ 5 modules    | hypertension / diabetes / hypercholesterolemia / asthma / obesity (all sourced) |
 | Fidelity expectations      | ✅ 5 modules    | NCHS Data Briefs 511, 516, 363, 508 + FastStats Asthma — sourced            |
 | LLM-assisted authoring     | ⏳ Not started   | Milestone 3                                                              |
