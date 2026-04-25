@@ -160,6 +160,10 @@ class ConditionSpec:
     # If set, runtime samples a per-patient onset age and computes a
     # Condition.onsetDateTime relative to the simulation's reference date.
     onset_age: OnsetAgeRange | None = None
+    # Spec ids of sibling conditions (in this same module) that must fire
+    # for this condition to be eligible. Used for comorbidity rules like
+    # "hypertensive nephropathy" requiring "essential_hypertension".
+    requires: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -413,7 +417,9 @@ def _parse_onset_age(raw: dict[str, Any], context: str) -> OnsetAgeRange:
     return OnsetAgeRange(min=lo, max=hi)
 
 
-def _parse_condition(raw: dict[str, Any]) -> ConditionSpec:
+def _parse_condition(
+    raw: dict[str, Any], *, prior_condition_ids: set[str]
+) -> ConditionSpec:
     code = _parse_coding(raw["code"], f"condition {raw.get('id')!r}.code")
     prevalence, by_sex = _parse_prevalence(raw.get("prevalence", {}))
     emits_raw = raw.get("emits") or ()
@@ -421,6 +427,22 @@ def _parse_condition(raw: dict[str, Any]) -> ConditionSpec:
         _parse_emit(e, f"condition {raw.get('id')!r}.emits[{i}]")
         for i, e in enumerate(emits_raw)
     )
+    requires_raw = raw.get("requires") or ()
+    if isinstance(requires_raw, str):
+        # Convenience: allow a bare string for single-dependency case.
+        requires_raw = [requires_raw]
+    requires = tuple(str(r) for r in requires_raw)
+    for r in requires:
+        if r == raw.get("id"):
+            raise ModuleError(
+                f"condition {raw.get('id')!r}: requires={r!r} cannot reference itself"
+            )
+        if r not in prior_condition_ids:
+            raise ModuleError(
+                f"condition {raw.get('id')!r}: requires={r!r} must reference an "
+                f"earlier-declared sibling condition. Conditions seen so far: "
+                f"{sorted(prior_condition_ids) or '(none)'}."
+            )
     encounter_specs = {e.spec_id for e in emits if isinstance(e, EncounterEmit)}
     duplicate_specs: list[str] = []
     seen: set[str] = set()
@@ -454,6 +476,7 @@ def _parse_condition(raw: dict[str, Any]) -> ConditionSpec:
         prevalence_by_sex=by_sex,
         emits=emits,
         onset_age=onset_age,
+        requires=requires,
     )
 
 
@@ -471,7 +494,18 @@ def load_module_from_str(yaml_text: str) -> Module:
             raise ModuleError(f"missing required key: {required}")
 
     cites = tuple(Citation(**c) for c in data.get("cites") or [])
-    conditions = tuple(_parse_condition(c) for c in data["conditions"])
+
+    parsed_conditions: list[ConditionSpec] = []
+    seen_condition_ids: set[str] = set()
+    for c in data["conditions"]:
+        cond = _parse_condition(c, prior_condition_ids=seen_condition_ids)
+        if cond.id in seen_condition_ids:
+            raise ModuleError(
+                f"duplicate condition id {cond.id!r} in module {data.get('module')!r}"
+            )
+        parsed_conditions.append(cond)
+        seen_condition_ids.add(cond.id)
+    conditions = tuple(parsed_conditions)
 
     return Module(
         name=str(data["module"]),
@@ -671,7 +705,11 @@ def run_module(
     """Run a probability module for one patient; return sampled diagnoses."""
     today = today or date.today()
     out: list[Diagnosis] = []
+    fired_ids: set[str] = set()
     for cond in module.conditions:
+        # Comorbidity gate: skip if any required sibling condition didn't fire.
+        if cond.requires and not all(r in fired_ids for r in cond.requires):
+            continue
         p = _lookup_prevalence(cond, age_years, sex)
         if p is None:
             continue
@@ -689,4 +727,5 @@ def run_module(
                     onset_date=onset_date,
                 )
             )
+            fired_ids.add(cond.id)
     return out
