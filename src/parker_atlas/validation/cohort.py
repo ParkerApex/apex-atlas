@@ -22,6 +22,7 @@ from __future__ import annotations
 
 import json
 import math
+import uuid
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import date
@@ -129,15 +130,13 @@ def _codes_by_type(by_type: dict[str, list[dict[str, Any]]]) -> dict[str, set[st
     return out
 
 
-def _load_cohort(
+# Same URL namespace fhir/bundle.py uses to mint per-Patient fullUrls.
+_URL_NAMESPACE = uuid.UUID("6ba7b811-9dad-11d1-80b4-00c04fd430c8")
+
+
+def _load_cohort_bundles(
     path: Path, report: CohortReport, reference_date: date
 ) -> list[tuple[int, str, set[str], dict[str, set[str]]]]:
-    """Return (age, sex, condition_codes, codes_by_resource_type) per patient.
-
-    `codes_by_resource_type` lets the harness check emit-presence metrics —
-    e.g., "of patients with this Condition, how many have a MedicationRequest
-    of this RxNorm code?"
-    """
     files = sorted(path.rglob("*.json")) if path.is_dir() else [path]
     patients: list[tuple[int, str, set[str], dict[str, set[str]]]] = []
     for f in files:
@@ -158,6 +157,92 @@ def _load_cohort(
         codes_by_type = _codes_by_type(by_type)
         condition_codes = codes_by_type.get("Condition", set())
         patients.append((age, sex, condition_codes, codes_by_type))
+    return patients
+
+
+def _load_cohort_ndjson(
+    path: Path, report: CohortReport, reference_date: date
+) -> list[tuple[int, str, set[str], dict[str, set[str]]]]:
+    """Read NDJSON output (one file per resourceType) and group by Patient.
+
+    Patient.ndjson is the spine. Each Patient.id is the GPX string;
+    Atlas's bundle writer used `urn:uuid:<uuid5(URL_NAMESPACE, gpx)>` as
+    the per-Patient fullUrl, and other resources reference that fullUrl
+    via subject.reference. We rebuild the same urn:uuid mapping here
+    from each Patient.id so the cohort harness can group resources back
+    to their owners.
+    """
+    patient_file = path / "Patient.ndjson"
+    if not patient_file.is_file():
+        return []
+
+    patient_by_url: dict[str, dict[str, Any]] = {}
+    for lineno, line in enumerate(
+        patient_file.read_text(encoding="utf-8").splitlines(), start=1
+    ):
+        if not line.strip():
+            continue
+        try:
+            patient = json.loads(line)
+        except json.JSONDecodeError as exc:
+            report.parse_errors.append(
+                (patient_file, f"line {lineno}: {exc}")
+            )
+            continue
+        if "id" not in patient:
+            continue
+        url = f"urn:uuid:{uuid.uuid5(_URL_NAMESPACE, str(patient['id']))}"
+        patient_by_url[url] = patient
+    report.bundles_scanned = len(patient_by_url)
+
+    codes_by_patient: dict[str, dict[str, set[str]]] = {
+        url: {} for url in patient_by_url
+    }
+    for f in sorted(path.glob("*.ndjson")):
+        if f.stem == "Patient":
+            continue
+        for lineno, line in enumerate(
+            f.read_text(encoding="utf-8").splitlines(), start=1
+        ):
+            if not line.strip():
+                continue
+            try:
+                resource = json.loads(line)
+            except json.JSONDecodeError as exc:
+                report.parse_errors.append((f, f"line {lineno}: {exc}"))
+                continue
+            ref = (resource.get("subject") or {}).get("reference", "")
+            if ref not in patient_by_url:
+                continue  # orphan resource — silently skipped
+            rtype = resource.get("resourceType", "")
+            bucket = codes_by_patient[ref].setdefault(rtype, set())
+            bucket.update(_resource_codes(resource))
+
+    patients: list[tuple[int, str, set[str], dict[str, set[str]]]] = []
+    for url, patient in patient_by_url.items():
+        if "birthDate" not in patient:
+            continue
+        age = _age_years(patient["birthDate"], reference_date)
+        sex = str(patient.get("gender", ""))
+        codes_by_type = codes_by_patient[url]
+        condition_codes = codes_by_type.get("Condition", set())
+        patients.append((age, sex, condition_codes, codes_by_type))
+    return patients
+
+
+def _load_cohort(
+    path: Path, report: CohortReport, reference_date: date
+) -> list[tuple[int, str, set[str], dict[str, set[str]]]]:
+    """Dispatch to the bundle or NDJSON loader based on what's at `path`.
+
+    `codes_by_resource_type` lets the harness check emit-presence metrics —
+    e.g., "of patients with this Condition, how many have a MedicationRequest
+    of this RxNorm code?"
+    """
+    if path.is_dir() and (path / "Patient.ndjson").exists():
+        patients = _load_cohort_ndjson(path, report, reference_date)
+    else:
+        patients = _load_cohort_bundles(path, report, reference_date)
     report.total_patients = len(patients)
     return patients
 
