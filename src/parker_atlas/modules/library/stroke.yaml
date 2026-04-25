@@ -1,0 +1,106 @@
+module: stroke
+version: 0.1.0
+description: >
+  Stroke (cerebrovascular accident) prevalence by sex-and-age bracket.
+  Probability-module flavor — each (sex, age) cell maps to a Bernoulli
+  rate.
+
+  Prevalence rates are sourced from the AHA Heart Disease and Stroke
+  Statistics — 2024 Update (Tsao et al, Circulation 2024). Stroke
+  affects ~7.6M US adults (~2.7% prevalence). Atlas's 60-99 bracket
+  aggregates AHA's 60-79 + 80+ sub-buckets weighted ~70/30 by
+  population share.
+
+  When a patient is positive, the module emits:
+  - A neurology follow-up Encounter
+  - An NIHSS total-score Observation (LOINC 70182-1) in the 1-15 range,
+    covering the spectrum from minor stroke (1-4) through moderate-
+    severe (16-20 cap; severe is rarer at the chronic / follow-up
+    visit level)
+  - An aspirin MedicationRequest in 65% of cases — antiplatelet
+    therapy is Class I (Level A) for secondary prevention of non-
+    cardioembolic ischemic stroke per the 2021 AHA/ASA Guideline for
+    the Prevention of Stroke
+
+  Pediatric stroke (perinatal stroke, sickle cell disease) is rare
+  and out of scope; the 0-17 bracket is set to 0.
+cites:
+  - source: >
+      Tsao CW, Aday AW, Almarzooq ZI, et al. Heart Disease and Stroke
+      Statistics — 2024 Update: A Report from the American Heart
+      Association. Circulation 2024;149(8):e347-e913.
+    url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001209
+    summary: >
+      US adults stroke prevalence: ~7.6M (~2.7%). Age × sex breakdown
+      (NHANES 2017-2020): 20-39 ~0.6%; 40-59 men 2.6% / women 2.2%;
+      60-79 men 8.3% / women 6.8%; 80+ men 14.0% / women 14.5%.
+  - source: >
+      Kleindorfer DO, Towfighi A, Chaturvedi S, et al. 2021 Guideline
+      for the Prevention of Stroke in Patients with Stroke and Transient
+      Ischemic Attack: A Guideline from the American Heart Association/
+      American Stroke Association. Stroke 2021;52(7):e364-e467.
+    url: https://www.ahajournals.org/doi/10.1161/STR.0000000000000375
+    summary: >
+      Antiplatelet therapy (aspirin 81-325 mg, clopidogrel 75 mg, or
+      aspirin/dipyridamole) is Class I (Level A) for secondary
+      prevention of non-cardioembolic ischemic stroke.
+conditions:
+  - id: stroke
+    code:
+      system: http://snomed.info/sct
+      code: "230690007"
+      display: Cerebrovascular accident (disorder)
+    prevalence:
+      female:
+        "0-17": 0.0
+        "18-39": 0.005
+        "40-59": 0.022
+        "60-99": 0.094
+      male:
+        "0-17": 0.0
+        "18-39": 0.006
+        "40-59": 0.026
+        "60-99": 0.099
+    onset_age:
+      min: 50
+      max: 80
+    emits:
+      - resource_type: Encounter
+        spec_id: stroke_neurology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "230690007"
+          display: Cerebrovascular accident
+
+      - resource_type: Observation
+        spec_id: stroke_nihss
+        when: today
+        link_to: stroke_neurology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "70182-1"
+          display: NIH stroke scale total
+        value_range: {low: 1, high: 15, precision: 0}
+        unit: "{score}"
+        unit_code: "{score}"
+
+      - resource_type: MedicationRequest
+        spec_id: stroke_aspirin
+        when: today
+        link_to: stroke_neurology_visit
+        probability: 0.65
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "243670"
+          display: Aspirin 81 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "230690007"
+          display: Cerebrovascular accident
