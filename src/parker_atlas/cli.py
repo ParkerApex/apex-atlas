@@ -448,10 +448,12 @@ def generate(
 
             extras: list[dict] = []
             age_years = (today - demo.birth_date).days // 365
-            # Track conditions fired across all modules for this patient. The
-            # cross-module `requires` syntax (e.g. hypertension:essential_hypertension)
-            # is satisfied against this set; same-module `requires` use a
-            # separate per-module set inside run_module.
+            # First pass: run every active module to collect this patient's
+            # full set of fired diagnoses, in the order modules were run.
+            # Cross-module `requires` (e.g. hypertension:essential_hypertension)
+            # is satisfied against the running `patient_fired` set; same-module
+            # `requires` uses a separate per-run set inside run_module.
+            all_dx_in_order: list[tuple[str, Any]] = []
             patient_fired: set[str] = set()
             for mod in active_modules:
                 diagnoses = run_module(
@@ -464,52 +466,59 @@ def generate(
                 )
                 for dx in diagnoses:
                     patient_fired.add(f"{mod.name}:{dx.condition.id}")
-                for dx in diagnoses:
+                    all_dx_in_order.append((mod.name, dx))
+
+            # Second pass: build FHIR resources for each diagnosis. Notes (if
+            # enabled) get the full problem list via NoteContext.diagnoses,
+            # with the focused dx surfaced as primary_diagnosis.
+            all_diagnoses = tuple(dx for _, dx in all_dx_in_order)
+            for mod_name, dx in all_dx_in_order:
+                extras.append(
+                    build_condition_resource(
+                        gpx=gpx,
+                        patient_fullurl=patient_url,
+                        condition_spec_id=dx.condition.id,
+                        code=dx.condition.code,
+                        onset_date=dx.onset_date,
+                    )
+                )
+                condition_counter[dx.condition.code.display] += 1
+                dx_emits = _build_emitted_resources(
+                    gpx=gpx,
+                    patient_url=patient_url,
+                    diagnosis=dx,
+                )
+                extras.extend(dx_emits)
+                if with_notes:
+                    # Anchor the note to the first Encounter emitted for
+                    # this diagnosis (typically the diagnosis or follow-up
+                    # visit). If the module emits no Encounter, the note
+                    # is patient-scoped only.
+                    encounter_url: str | None = None
+                    for r in dx_emits:
+                        if r["resourceType"] == "Encounter":
+                            encounter_url = fullurl_for_resource(gpx, r)
+                            break
+                    ctx = NoteContext(
+                        patient_display_name=(
+                            f"{demo.family_name}, {demo.given_name}"
+                        ),
+                        age_years=age_years,
+                        sex=demo.gender.value,
+                        today=today,
+                        diagnoses=all_diagnoses,
+                        primary_diagnosis=dx,
+                    )
                     extras.append(
-                        build_condition_resource(
+                        build_document_reference_resource(
                             gpx=gpx,
                             patient_fullurl=patient_url,
-                            condition_spec_id=dx.condition.id,
-                            code=dx.condition.code,
-                            onset_date=dx.onset_date,
+                            doc_spec_id=f"progress_{mod_name}_{dx.condition.id}",
+                            note_text=build_progress_note_text(ctx),
+                            authored_on=today,
+                            encounter_fullurl=encounter_url,
                         )
                     )
-                    condition_counter[dx.condition.code.display] += 1
-                    dx_emits = _build_emitted_resources(
-                        gpx=gpx,
-                        patient_url=patient_url,
-                        diagnosis=dx,
-                    )
-                    extras.extend(dx_emits)
-                    if with_notes:
-                        # Anchor the note to the first Encounter emitted for
-                        # this diagnosis (typically the diagnosis or follow-up
-                        # visit). If the module emits no Encounter, the note
-                        # is patient-scoped only.
-                        encounter_url: str | None = None
-                        for r in dx_emits:
-                            if r["resourceType"] == "Encounter":
-                                encounter_url = fullurl_for_resource(gpx, r)
-                                break
-                        ctx = NoteContext(
-                            patient_display_name=(
-                                f"{demo.family_name}, {demo.given_name}"
-                            ),
-                            age_years=age_years,
-                            sex=demo.gender.value,
-                            today=today,
-                            diagnoses=(dx,),
-                        )
-                        extras.append(
-                            build_document_reference_resource(
-                                gpx=gpx,
-                                patient_fullurl=patient_url,
-                                doc_spec_id=f"progress_{mod.name}_{dx.condition.id}",
-                                note_text=build_progress_note_text(ctx),
-                                authored_on=today,
-                                encounter_fullurl=encounter_url,
-                            )
-                        )
 
             if format is OutputFormat.FHIR_R4:
                 bundle = build_bundle(gpx, patient, extras)
