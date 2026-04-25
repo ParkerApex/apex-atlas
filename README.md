@@ -48,7 +48,7 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | FHIR Encounter builder     | ✅ Implemented   | US Core Encounter: outpatient / inpatient / emergency / home / virtual    |
 | FHIR MedicationRequest     | ✅ Implemented   | US Core MedicationRequest with inline medicationCodeableConcept           |
 | FHIR Bundle assembly       | ✅ Implemented   | Transaction Bundle, one file per patient                                 |
-| `atlas generate`           | ✅ Implemented   | `--format fhir-r4` (one Bundle per patient) or `--format ndjson` (Bulk-style)  |
+| `atlas generate`           | ✅ Implemented   | `--format fhir-r4` / `--format ndjson` / `--format parquet`              |
 | `atlas validate`           | ✅ Structural    | Schema validation + US Core Patient/Condition minimums                   |
 | `atlas validate --cohort`  | ✅ First cut     | Fidelity harness: aggregate metrics vs. declared expectation w/ tolerance |
 | `atlas modules`            | ✅ Implemented   | List bundled modules, show details (`atlas modules --show NAME`)         |
@@ -56,8 +56,10 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | Module library             | ✅ 6 modules    | 5 sourced (HTN / DM / lipids / asthma / obesity) + complications (placeholder cross-module demo) |
 | Fidelity expectations      | ✅ 6 modules    | 5 sourced + complications (placeholder cross-module fidelity check)        |
 | Cross-module dependencies  | ✅ Implemented  | `requires: module:cond_id` + `emit_resource_type: Condition` for harness gating |
+| State-machine progressions | ✅ One-hop      | `progressions: [{to, after_years, probability}]` declarative transitions |
+| Clinical note generation   | ✅ Template     | `--with-notes`: DocumentReference + inline markdown progress note per condition |
 | LLM-assisted authoring     | ⏳ Not started   | Milestone 3                                                              |
-| Clinical note generation   | ⏳ Not started   | Milestone 4                                                              |
+| LLM-assisted note authoring| ⏳ Not started   | Milestone 4 — `NoteStrategy.LLM` API surface in place                    |
 
 See [`docs/roadmap.md`](./docs/roadmap.md) for timeline and exit criteria.
 
@@ -111,6 +113,23 @@ atlas generate --patients 500 --seed 42 --module hypertension \
 ls ./bulk
 # Condition.ndjson  Encounter.ndjson  MedicationRequest.ndjson
 # Observation.ndjson  Patient.ndjson
+```
+
+Or columnar Parquet (one file per resourceType, with `id`,
+`subject_reference`, and `raw_json` columns) for analytics tools that
+prefer DataFrames:
+
+```bash
+atlas generate --patients 500 --seed 42 --module hypertension \
+    --format parquet --out ./parquet
+```
+
+Attach a template-based progress note (FHIR DocumentReference, inline
+markdown) per fired condition:
+
+```bash
+atlas generate --patients 100 --seed 42 --module hypertension \
+    --with-notes --out ./cohort-with-notes
 ```
 
 Check that a cohort's aggregate statistics match the module's declared

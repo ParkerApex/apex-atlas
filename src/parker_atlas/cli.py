@@ -26,6 +26,7 @@ from parker_atlas import __version__
 from parker_atlas.core.demographics import race_display, sample_demographics
 from parker_atlas.fhir.bundle import build_bundle, fullurl_for_gpx, fullurl_for_resource
 from parker_atlas.fhir.condition import build_condition_resource
+from parker_atlas.fhir.document_reference import build_document_reference_resource
 from parker_atlas.fhir.encounter import build_encounter_resource
 from parker_atlas.fhir.medication_request import build_medication_request_resource
 from parker_atlas.fhir.observation import (
@@ -34,6 +35,7 @@ from parker_atlas.fhir.observation import (
     build_observation_resource,
 )
 from parker_atlas.fhir.patient import build_patient_resource
+from parker_atlas.notes import NoteContext, build_progress_note_text
 from parker_atlas.gpx import Allocator, Category
 from parker_atlas.modules import (
     ModuleError,
@@ -373,6 +375,7 @@ def generate(
     profile: Annotated[Profile, typer.Option(help="FHIR profile to conform to.")] = Profile.US_CORE_6_1,
     seed: Annotated[int | None, typer.Option(help="RNG seed for reproducibility.")] = None,
     summary: Annotated[bool, typer.Option("--summary", help="Print cohort demographics and condition summary after generation.")] = False,
+    with_notes: Annotated[bool, typer.Option("--with-notes", help="Emit one DocumentReference (template-based progress note) per fired condition.")] = False,
 ) -> None:
     """Generate a synthetic FHIR patient population."""
     if patients < 1:
@@ -472,13 +475,41 @@ def generate(
                         )
                     )
                     condition_counter[dx.condition.code.display] += 1
-                    extras.extend(
-                        _build_emitted_resources(
-                            gpx=gpx,
-                            patient_url=patient_url,
-                            diagnosis=dx,
-                        )
+                    dx_emits = _build_emitted_resources(
+                        gpx=gpx,
+                        patient_url=patient_url,
+                        diagnosis=dx,
                     )
+                    extras.extend(dx_emits)
+                    if with_notes:
+                        # Anchor the note to the first Encounter emitted for
+                        # this diagnosis (typically the diagnosis or follow-up
+                        # visit). If the module emits no Encounter, the note
+                        # is patient-scoped only.
+                        encounter_url: str | None = None
+                        for r in dx_emits:
+                            if r["resourceType"] == "Encounter":
+                                encounter_url = fullurl_for_resource(gpx, r)
+                                break
+                        ctx = NoteContext(
+                            patient_display_name=(
+                                f"{demo.family_name}, {demo.given_name}"
+                            ),
+                            age_years=age_years,
+                            sex=demo.gender.value,
+                            today=today,
+                            diagnoses=(dx,),
+                        )
+                        extras.append(
+                            build_document_reference_resource(
+                                gpx=gpx,
+                                patient_fullurl=patient_url,
+                                doc_spec_id=f"progress_{mod.name}_{dx.condition.id}",
+                                note_text=build_progress_note_text(ctx),
+                                authored_on=today,
+                                encounter_fullurl=encounter_url,
+                            )
+                        )
 
             if format is OutputFormat.FHIR_R4:
                 bundle = build_bundle(gpx, patient, extras)

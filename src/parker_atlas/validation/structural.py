@@ -29,6 +29,7 @@ from typing import Any
 
 from fhir.resources.R4B.bundle import Bundle as _Bundle
 from fhir.resources.R4B.condition import Condition as _Condition
+from fhir.resources.R4B.documentreference import DocumentReference as _DocRef
 from fhir.resources.R4B.encounter import Encounter as _Encounter
 from fhir.resources.R4B.medicationrequest import MedicationRequest as _MedReq
 from fhir.resources.R4B.observation import Observation as _Observation
@@ -50,6 +51,7 @@ _FHIR_R4B_CLASSES: dict[str, type] = {
     "Encounter": _Encounter,
     "Observation": _Observation,
     "MedicationRequest": _MedReq,
+    "DocumentReference": _DocRef,
 }
 
 
@@ -164,6 +166,24 @@ def _validate_encounter(encounter: dict[str, Any], report: FileReport) -> None:
         )
 
 
+def _validate_document_reference(doc: dict[str, Any], report: FileReport) -> None:
+    # Base FHIR DocumentReference required elements (US Core conformance is
+    # a future tightening; see the builder docstring).
+    for required in ("status", "content", "subject"):
+        if not doc.get(required):
+            report.errors.append(
+                f"DocumentReference.{required}: required by FHIR R4."
+            )
+    contents = doc.get("content") or []
+    if contents and not any(
+        (c.get("attachment") or {}).get("data") for c in contents
+    ):
+        report.warnings.append(
+            "DocumentReference.content[].attachment.data: Atlas notes embed "
+            "inline base64 content; missing data field."
+        )
+
+
 def _validate_observation(observation: dict[str, Any], report: FileReport) -> None:
     # US Core Observation required elements (shared across vital-signs,
     # blood-pressure, and lab-result profiles).
@@ -222,6 +242,8 @@ def _validate_bundle(bundle: dict[str, Any], report: FileReport) -> None:
             _validate_encounter(resource, report)
         elif rtype == "MedicationRequest":
             _validate_medication_request(resource, report)
+        elif rtype == "DocumentReference":
+            _validate_document_reference(resource, report)
         elif rtype is None:
             report.errors.append(f"entry[{i}]: missing resourceType")
         else:
@@ -259,6 +281,8 @@ def _validate_resource_dict(
         _validate_encounter(resource, report)
     elif rtype == "MedicationRequest":
         _validate_medication_request(resource, report)
+    elif rtype == "DocumentReference":
+        _validate_document_reference(resource, report)
 
 
 def _validate_ndjson_file(path: Path) -> FileReport:
