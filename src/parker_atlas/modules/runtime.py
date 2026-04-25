@@ -80,6 +80,12 @@ class ObservationComponentEmit:
     unit_code: str | None = None  # defaults to unit
 
 
+# Allowed `when` values on emits. "today" → simulation reference date.
+# "onset" → the diagnosis's sampled onset_date (falls back to today if
+# the condition has no onset_age).
+ALLOWED_EMIT_WHEN = ("today", "onset")
+
+
 @dataclass(frozen=True, slots=True)
 class EncounterEmit:
     spec_id: str
@@ -87,6 +93,7 @@ class EncounterEmit:
     type_code: Coding
     reason_code: Coding | None = None
     probability: float = 1.0
+    when: str = "today"
 
 
 @dataclass(frozen=True, slots=True)
@@ -100,6 +107,7 @@ class ObservationEmit:
     unit_code: str | None = None
     components: tuple[ObservationComponentEmit, ...] = ()
     probability: float = 1.0
+    when: str = "today"
 
 
 @dataclass(frozen=True, slots=True)
@@ -108,6 +116,7 @@ class MedicationRequestEmit:
     medication_code: Coding
     reason_code: Coding | None = None
     probability: float = 1.0
+    when: str = "today"
 
 
 EmitSpec = EncounterEmit | ObservationEmit | MedicationRequestEmit
@@ -165,6 +174,8 @@ class SampledEncounter:
     encounter_class: str
     type_code: Coding
     reason_code: Coding | None
+    effective_date: date
+    when: str  # "today" | "onset"
 
 
 @dataclass(frozen=True, slots=True)
@@ -176,6 +187,8 @@ class SampledObservation:
     unit: str | None
     unit_code: str | None
     components: tuple[SampledComponent, ...]
+    effective_date: date
+    when: str
 
 
 @dataclass(frozen=True, slots=True)
@@ -183,6 +196,8 @@ class SampledMedicationRequest:
     spec_id: str
     medication_code: Coding
     reason_code: Coding | None
+    effective_date: date
+    when: str
 
 
 SampledResource = SampledEncounter | SampledObservation | SampledMedicationRequest
@@ -265,6 +280,16 @@ def _parse_probability(raw: dict[str, Any], context: str) -> float:
     return p
 
 
+def _parse_when(raw: dict[str, Any], context: str) -> str:
+    when = str(raw.get("when", "today"))
+    if when not in ALLOWED_EMIT_WHEN:
+        raise ModuleError(
+            f"{context}: when={when!r} not supported; "
+            f"choices: {list(ALLOWED_EMIT_WHEN)}"
+        )
+    return when
+
+
 def _parse_observation_component(raw: dict[str, Any], ctx: str) -> ObservationComponentEmit:
     for req in ("code", "value_range", "unit"):
         if req not in raw:
@@ -306,6 +331,7 @@ def _parse_observation_emit(raw: dict[str, Any], ctx: str) -> ObservationEmit:
         unit_code=str(raw["unit_code"]) if has_value and raw.get("unit_code") else None,
         components=components,
         probability=_parse_probability(raw, ctx),
+        when=_parse_when(raw, ctx),
     )
 
 
@@ -320,6 +346,7 @@ def _parse_encounter_emit(raw: dict[str, Any], ctx: str) -> EncounterEmit:
         type_code=_parse_coding(raw["type"], f"{ctx}.type"),
         reason_code=_parse_coding(reason, f"{ctx}.reason") if reason else None,
         probability=_parse_probability(raw, ctx),
+        when=_parse_when(raw, ctx),
     )
 
 
@@ -333,6 +360,7 @@ def _parse_medication_request_emit(raw: dict[str, Any], ctx: str) -> MedicationR
         medication_code=_parse_coding(raw["medication"], f"{ctx}.medication"),
         reason_code=_parse_coding(reason, f"{ctx}.reason") if reason else None,
         probability=_parse_probability(raw, ctx),
+        when=_parse_when(raw, ctx),
     )
 
 
@@ -469,8 +497,18 @@ def _sample_value(rng: random.Random, rng_range: ValueRange) -> float:
     return round(v, rng_range.precision)
 
 
+def _resolve_when(when: str, today: date, onset_date: date | None) -> date:
+    """Map a `when` keyword to the actual effective date for a sampled emit."""
+    if when == "onset" and onset_date is not None:
+        return onset_date
+    return today
+
+
 def _sample_observation(
-    emit: ObservationEmit, rng: random.Random
+    emit: ObservationEmit,
+    rng: random.Random,
+    *,
+    effective_date: date,
 ) -> SampledObservation:
     if emit.components:
         components = tuple(
@@ -490,6 +528,8 @@ def _sample_observation(
             unit=None,
             unit_code=None,
             components=components,
+            effective_date=effective_date,
+            when=emit.when,
         )
     assert emit.value_range is not None and emit.unit is not None
     return SampledObservation(
@@ -500,16 +540,23 @@ def _sample_observation(
         unit=emit.unit,
         unit_code=emit.unit_code or emit.unit,
         components=(),
+        effective_date=effective_date,
+        when=emit.when,
     )
 
 
 def _sample_emits(
-    cond: ConditionSpec, rng: random.Random
+    cond: ConditionSpec,
+    rng: random.Random,
+    *,
+    today: date,
+    onset_date: date | None,
 ) -> tuple[SampledResource, ...]:
     out: list[SampledResource] = []
     for emit in cond.emits:
         if rng.random() >= emit.probability:
             continue
+        eff = _resolve_when(emit.when, today, onset_date)
         if isinstance(emit, EncounterEmit):
             out.append(
                 SampledEncounter(
@@ -517,16 +564,20 @@ def _sample_emits(
                     encounter_class=emit.encounter_class,
                     type_code=emit.type_code,
                     reason_code=emit.reason_code,
+                    effective_date=eff,
+                    when=emit.when,
                 )
             )
         elif isinstance(emit, ObservationEmit):
-            out.append(_sample_observation(emit, rng))
+            out.append(_sample_observation(emit, rng, effective_date=eff))
         elif isinstance(emit, MedicationRequestEmit):
             out.append(
                 SampledMedicationRequest(
                     spec_id=emit.spec_id,
                     medication_code=emit.medication_code,
                     reason_code=emit.reason_code,
+                    effective_date=eff,
+                    when=emit.when,
                 )
             )
         else:  # pragma: no cover — defensive
@@ -572,12 +623,12 @@ def run_module(
         if p is None:
             continue
         if rng.random() < p:
-            sampled = _sample_emits(cond, rng)
             onset_date = (
                 _sample_onset_date(cond.onset_age, age_years, today, rng)
                 if cond.onset_age
                 else None
             )
+            sampled = _sample_emits(cond, rng, today=today, onset_date=onset_date)
             out.append(
                 Diagnosis(
                     condition=cond,

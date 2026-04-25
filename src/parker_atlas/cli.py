@@ -87,18 +87,20 @@ def _build_emitted_resources(
     gpx,
     patient_url: str,
     diagnosis,
-    effective,
 ) -> list[dict]:
     """Convert a Diagnosis's sampled resources into FHIR dicts.
 
-    If the diagnosis emits an Encounter, all Observations and
-    MedicationRequests in the same emit block reference that Encounter
-    by fullUrl. Without an Encounter they stand alone.
+    Each sampled resource carries its own `effective_date` and `when`. If
+    a diagnosis emits an Encounter, Observations and MedicationRequests
+    sharing the same `when` reference it by fullUrl; emits with a
+    different `when` (e.g., today's BP reading attached to a
+    diagnosis-time Encounter) stand alone.
     """
     built: list[dict] = []
 
     # Emit the Encounter first (if any) so we can link other resources to it.
     encounter_url: str | None = None
+    encounter_when: str | None = None
     for sr in diagnosis.sampled_resources:
         if isinstance(sr, SampledEncounter):
             enc = build_encounter_resource(
@@ -107,17 +109,21 @@ def _build_emitted_resources(
                 encounter_spec_id=sr.spec_id,
                 class_code=sr.encounter_class,
                 type_code=sr.type_code,
-                period_start=effective,
-                period_end=effective,
+                period_start=sr.effective_date,
+                period_end=sr.effective_date,
                 reason_code=sr.reason_code,
             )
             built.append(enc)
             encounter_url = fullurl_for_resource(gpx, enc)
+            encounter_when = sr.when
             break  # parser enforces at most one Encounter per condition
 
     for sr in diagnosis.sampled_resources:
         if isinstance(sr, SampledEncounter):
             continue  # already handled
+        # Only link when both resources happened "at the same time" per
+        # the module's declared timing.
+        link = encounter_url if (encounter_when and sr.when == encounter_when) else None
         if isinstance(sr, SampledObservation):
             if sr.components:
                 components = tuple(
@@ -133,7 +139,7 @@ def _build_emitted_resources(
                     observation_spec_id=sr.spec_id,
                     category=sr.category,
                     code=sr.code,
-                    effective=effective,
+                    effective=sr.effective_date,
                     components=components,
                 )
             else:
@@ -144,15 +150,15 @@ def _build_emitted_resources(
                     observation_spec_id=sr.spec_id,
                     category=sr.category,
                     code=sr.code,
-                    effective=effective,
+                    effective=sr.effective_date,
                     value=Quantity(
                         value=sr.value,
                         unit=sr.unit,
                         code=sr.unit_code or sr.unit,
                     ),
                 )
-            if encounter_url is not None:
-                obs["encounter"] = {"reference": encounter_url}
+            if link is not None:
+                obs["encounter"] = {"reference": link}
             built.append(obs)
         elif isinstance(sr, SampledMedicationRequest):
             med = build_medication_request_resource(
@@ -160,9 +166,9 @@ def _build_emitted_resources(
                 patient_fullurl=patient_url,
                 medication_spec_id=sr.spec_id,
                 medication_code=sr.medication_code,
-                authored_on=effective,
+                authored_on=sr.effective_date,
                 reason_code=sr.reason_code,
-                encounter_fullurl=encounter_url,
+                encounter_fullurl=link,
             )
             built.append(med)
 
@@ -421,7 +427,6 @@ def generate(
                         gpx=gpx,
                         patient_url=patient_url,
                         diagnosis=dx,
-                        effective=today,
                     )
                 )
 
@@ -584,7 +589,7 @@ def status() -> None:
         ("atlas generate",        "[green]implemented[/green]",    "M1"),
         ("atlas validate",        "[green]structural[/green]",     "M1"),
         ("atlas validate --cohort","[green]first cut[/green]",      "M2"),
-        ("Module runtime",        "[green]multi-res + onset[/green]", "M2"),
+        ("Module runtime",        "[green]time-aware emits[/green]", "M2"),
         ("Module library",        "[green]5 modules[/green]",      "M2"),
         ("Fidelity harness",      "[green]5 modules[/green]",      "M2"),
         ("LLM authoring",         "[dim]not started[/dim]",        "M3"),
