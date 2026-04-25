@@ -1,5 +1,5 @@
 module: diabetes
-version: 0.5.0
+version: 0.6.0
 description: >
   Total diabetes prevalence (both diagnosed and undiagnosed, types 1
   and 2 combined) by age bracket. Probability-module flavor — each
@@ -83,10 +83,10 @@ conditions:
     onset_age:
       min: 35
       max: 70
-    # One-hop progression to diabetic CKD, anchored to UKPDS 64
-    # (cumulative incidence of clinically-relevant CKD at 10 yr) and
-    # USRDS 2023 ADR (diabetes = leading cause of ESRD). Probability is
-    # a placeholder mid-estimate; clean rate ingest is issue #1.
+    # One-hop progression to diabetic CKD. The bundled
+    # `diabetes.progressions.yaml` overlay supersedes this rate at load
+    # time with the sourced 20% (KDIGO 2024 / USRDS 2023 / UKPDS 64);
+    # this inline block is the fallback when the overlay is absent.
     progressions:
       - to: diabetic_ckd
         after_years: 10

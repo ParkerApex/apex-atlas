@@ -1,9 +1,16 @@
 module: hypertension
-version: 0.7.0
+version: 0.8.0
 description: >
   Essential hypertension module. Probability-module flavor: each
   (age, sex) cell maps to a Bernoulli rate that decides whether the
   patient is hypertensive.
+
+  v0.8 introduces a sourced progressions overlay. The inline
+  `progressions:` block on essential_hypertension is now superseded at
+  load time by `hypertension.progressions.yaml`, which carries
+  KDIGO 2024 / USRDS 2023 / Hsu 2005 / Fox 2004 citations and is
+  produced by `atlas ingest progression`. The inline rate remains as
+  a fallback when the overlay is absent.
 
   When a patient is positive, the module now emits a small encounter-
   level record in addition to the Condition:
@@ -77,10 +84,11 @@ conditions:
     onset_age:
       min: 25
       max: 65
-    # One-hop progression to hypertensive CKD, anchored to Fox et al.
-    # (Framingham Offspring) range of 10-13% cumulative CKD incidence
-    # among hypertensives over ~10 years. Probability is a placeholder
-    # mid-estimate; the exact rate from KDIGO / USRDS is a follow-up.
+    # One-hop progression to hypertensive CKD. The bundled
+    # `hypertension.progressions.yaml` overlay supersedes this rate at
+    # load time with the sourced 10.5% (KDIGO 2024 / USRDS 2023 / Hsu
+    # 2005 / Fox 2004); this inline block is the fallback when the
+    # overlay is absent.
     progressions:
       - to: hypertensive_ckd
         after_years: 10
