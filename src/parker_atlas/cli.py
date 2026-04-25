@@ -90,17 +90,21 @@ def _build_emitted_resources(
 ) -> list[dict]:
     """Convert a Diagnosis's sampled resources into FHIR dicts.
 
-    Each sampled resource carries its own `effective_date` and `when`. If
-    a diagnosis emits an Encounter, Observations and MedicationRequests
-    sharing the same `when` reference it by fullUrl; emits with a
-    different `when` (e.g., today's BP reading attached to a
-    diagnosis-time Encounter) stand alone.
+    Linking rules:
+    - If a non-Encounter resource declares an explicit `link_to`, it
+      references the Encounter with that spec_id. (The parser already
+      validated the spec_id exists.)
+    - Otherwise, if exactly one Encounter was emitted *and* the
+      resource's `when` matches the Encounter's `when`, link to it
+      (preserves single-encounter backward compatibility).
+    - Otherwise, no Encounter link.
     """
     built: list[dict] = []
 
-    # Emit the Encounter first (if any) so we can link other resources to it.
-    encounter_url: str | None = None
-    encounter_when: str | None = None
+    # First pass: build all Encounters and collect their fullUrls keyed
+    # by spec_id so other emits can resolve link_to.
+    encounter_urls: dict[str, str] = {}
+    sampled_encounters: list = []
     for sr in diagnosis.sampled_resources:
         if isinstance(sr, SampledEncounter):
             enc = build_encounter_resource(
@@ -114,16 +118,29 @@ def _build_emitted_resources(
                 reason_code=sr.reason_code,
             )
             built.append(enc)
-            encounter_url = fullurl_for_resource(gpx, enc)
-            encounter_when = sr.when
-            break  # parser enforces at most one Encounter per condition
+            encounter_urls[sr.spec_id] = fullurl_for_resource(gpx, enc)
+            sampled_encounters.append(sr)
+
+    # Default-link target: only meaningful when there's exactly one
+    # Encounter (otherwise auto-linking would be ambiguous).
+    default_url: str | None = None
+    default_when: str | None = None
+    if len(sampled_encounters) == 1:
+        only = sampled_encounters[0]
+        default_url = encounter_urls[only.spec_id]
+        default_when = only.when
+
+    def _resolve_link(sr) -> str | None:
+        if sr.link_to is not None:
+            return encounter_urls.get(sr.link_to)
+        if default_url is not None and sr.when == default_when:
+            return default_url
+        return None
 
     for sr in diagnosis.sampled_resources:
         if isinstance(sr, SampledEncounter):
             continue  # already handled
-        # Only link when both resources happened "at the same time" per
-        # the module's declared timing.
-        link = encounter_url if (encounter_when and sr.when == encounter_when) else None
+        link = _resolve_link(sr)
         if isinstance(sr, SampledObservation):
             if sr.components:
                 components = tuple(

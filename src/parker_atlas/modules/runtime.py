@@ -108,6 +108,10 @@ class ObservationEmit:
     components: tuple[ObservationComponentEmit, ...] = ()
     probability: float = 1.0
     when: str = "today"
+    # Explicit Encounter to reference; spec_id of an EncounterEmit within
+    # the same condition. None falls back to the default-link behavior
+    # (single-encounter conditions auto-link if `when` matches).
+    link_to: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -117,6 +121,7 @@ class MedicationRequestEmit:
     reason_code: Coding | None = None
     probability: float = 1.0
     when: str = "today"
+    link_to: str | None = None
 
 
 EmitSpec = EncounterEmit | ObservationEmit | MedicationRequestEmit
@@ -189,6 +194,7 @@ class SampledObservation:
     components: tuple[SampledComponent, ...]
     effective_date: date
     when: str
+    link_to: str | None  # spec_id of the Encounter to reference, if any
 
 
 @dataclass(frozen=True, slots=True)
@@ -198,6 +204,7 @@ class SampledMedicationRequest:
     reason_code: Coding | None
     effective_date: date
     when: str
+    link_to: str | None
 
 
 SampledResource = SampledEncounter | SampledObservation | SampledMedicationRequest
@@ -332,6 +339,7 @@ def _parse_observation_emit(raw: dict[str, Any], ctx: str) -> ObservationEmit:
         components=components,
         probability=_parse_probability(raw, ctx),
         when=_parse_when(raw, ctx),
+        link_to=str(raw["link_to"]) if raw.get("link_to") else None,
     )
 
 
@@ -361,6 +369,7 @@ def _parse_medication_request_emit(raw: dict[str, Any], ctx: str) -> MedicationR
         reason_code=_parse_coding(reason, f"{ctx}.reason") if reason else None,
         probability=_parse_probability(raw, ctx),
         when=_parse_when(raw, ctx),
+        link_to=str(raw["link_to"]) if raw.get("link_to") else None,
     )
 
 
@@ -401,12 +410,27 @@ def _parse_condition(raw: dict[str, Any]) -> ConditionSpec:
         _parse_emit(e, f"condition {raw.get('id')!r}.emits[{i}]")
         for i, e in enumerate(emits_raw)
     )
-    # At most one Encounter per condition (the one all other resources link to).
-    encounter_count = sum(1 for e in emits if isinstance(e, EncounterEmit))
-    if encounter_count > 1:
+    encounter_specs = {e.spec_id for e in emits if isinstance(e, EncounterEmit)}
+    duplicate_specs: list[str] = []
+    seen: set[str] = set()
+    for e in emits:
+        if e.spec_id in seen:
+            duplicate_specs.append(e.spec_id)
+        seen.add(e.spec_id)
+    if duplicate_specs:
         raise ModuleError(
-            f"condition {raw.get('id')!r}: at most one Encounter emit per condition"
+            f"condition {raw.get('id')!r}: duplicate emit spec_ids: "
+            f"{sorted(set(duplicate_specs))}"
         )
+    # Each link_to must reference an Encounter declared in this condition.
+    for e in emits:
+        if isinstance(e, ObservationEmit | MedicationRequestEmit) and e.link_to is not None:
+            if e.link_to not in encounter_specs:
+                raise ModuleError(
+                    f"condition {raw.get('id')!r}: emit {e.spec_id!r} link_to={e.link_to!r} "
+                    f"does not match any Encounter spec_id in this condition "
+                    f"(available: {sorted(encounter_specs)})"
+                )
     onset_age = (
         _parse_onset_age(raw["onset_age"], f"condition {raw.get('id')!r}.onset_age")
         if raw.get("onset_age")
@@ -530,6 +554,7 @@ def _sample_observation(
             components=components,
             effective_date=effective_date,
             when=emit.when,
+            link_to=emit.link_to,
         )
     assert emit.value_range is not None and emit.unit is not None
     return SampledObservation(
@@ -542,6 +567,7 @@ def _sample_observation(
         components=(),
         effective_date=effective_date,
         when=emit.when,
+        link_to=emit.link_to,
     )
 
 
@@ -578,6 +604,7 @@ def _sample_emits(
                     reason_code=emit.reason_code,
                     effective_date=eff,
                     when=emit.when,
+                    link_to=emit.link_to,
                 )
             )
         else:  # pragma: no cover — defensive
