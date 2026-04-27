@@ -54,8 +54,8 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | `atlas validate --cohort`  | ✅ First cut     | Fidelity harness: aggregate metrics vs. declared expectation w/ tolerance |
 | `atlas modules`            | ✅ Implemented   | List bundled modules, show details (`atlas modules --show NAME`)         |
 | Clinical module runtime    | ✅ Time-aware emits | Conditions sampled with onset date; emits declare `when: today \| onset` for relative timing |
-| Module library             | ✅ 7 modules    | 6 sourced (HTN / DM / lipids / asthma / obesity / COPD) + complications (placeholder cross-module demo) |
-| Fidelity expectations      | ✅ 7 modules    | 6 sourced + complications (placeholder cross-module fidelity check)        |
+| Module library             | ✅ 11 modules   | 10 sourced (HTN / DM / lipids / asthma / obesity / COPD / HF / IHD / stroke / depression) + complications (placeholder cross-module demo) |
+| Fidelity expectations      | ✅ 11 modules   | 10 sourced + complications (placeholder cross-module fidelity check)       |
 | Cross-module dependencies  | ✅ Implemented  | `requires: module:cond_id` + `emit_resource_type: Condition` for harness gating |
 | State-machine progressions | ✅ One-hop      | `progressions: [{to, after_years, probability}]`; HTN→CKD, DM→CKD, DM→retinopathy with sourced overlays |
 | Clinical note generation   | ✅ Template     | `--with-notes`: DocumentReference + inline markdown progress note per condition |

@@ -188,13 +188,14 @@ class TestMultiEncounterEndToEnd:
             # different dates and we can pin links by date. Patients
             # younger than 25 have onset == today, so both observations
             # share the same date — skip that linking sub-check.
+            today_str = date.today().isoformat()
             cond = entries_by_type["Condition"][0]["resource"]
-            if cond["onsetDateTime"] != "2026-04-25":
+            if cond["onsetDateTime"] != today_str:
                 for o in obs_entries:
                     r = o["resource"]
                     ref = r["encounter"]["reference"]
                     eff = r["effectiveDateTime"]
-                    if eff == "2026-04-25":
+                    if eff == today_str:
                         assert ref == fu_url, (
                             f"{f.name}: today's BP not linked to followup"
                         )
