@@ -1,9 +1,16 @@
 module: ischemic_heart_disease
-version: 0.1.0
+version: 0.2.0
 description: >
   Ischemic heart disease (IHD / coronary heart disease) prevalence by
   sex-and-age bracket. Probability-module flavor — each (sex, age)
   cell maps to a Bernoulli rate.
+
+  v0.2 adds a one-hop progression to acute myocardial infarction:
+  among patients with diagnosed chronic IHD, ~12% experience an MI
+  within 10 years (anchored to AHA 2024 + Framingham follow-up data).
+  When the progression fires, the patient receives an MI Condition
+  (with onsetDateTime in the past, representing the index event) plus
+  an inpatient Encounter at the MI onset date.
 
   Prevalence rates are sourced from the AHA Heart Disease and Stroke
   Statistics — 2024 Update (Tsao et al, Circulation 2024). CHD affects
@@ -67,6 +74,13 @@ conditions:
     onset_age:
       min: 45
       max: 75
+    # One-hop intra-module progression: among patients with chronic IHD,
+    # ~12% have an MI within 10 yr. Rate anchored to AHA 2024 + Framingham
+    # offspring follow-up data on acute coronary events in established CHD.
+    progressions:
+      - to: myocardial_infarction
+        after_years: 10
+        probability: 0.12
     emits:
       - resource_type: Encounter
         spec_id: ihd_cardiology_visit
@@ -121,3 +135,31 @@ conditions:
           system: http://snomed.info/sct
           code: "414545008"
           display: Ischemic heart disease
+
+  # Progression target — only entered via `progressions` from
+  # ischemic_heart_disease. prevalence is 0 across all brackets so
+  # the standard probability gate cannot fire it.
+  - id: myocardial_infarction
+    code:
+      system: http://snomed.info/sct
+      code: "22298006"
+      display: Myocardial infarction (disorder)
+    prevalence:
+      "0-99": 0.0
+    emits:
+      # Inpatient Encounter at the MI onset date (the index hospital
+      # admission). In the snapshot model, current troponin / EKG
+      # findings would have normalized; the Encounter is the durable
+      # clinical artifact alongside the Condition's onsetDateTime.
+      - resource_type: Encounter
+        spec_id: mi_index_admission
+        when: onset
+        encounter_class: IMP
+        type:
+          system: http://snomed.info/sct
+          code: "32485007"
+          display: Hospital admission
+        reason:
+          system: http://snomed.info/sct
+          code: "22298006"
+          display: Myocardial infarction

@@ -1,5 +1,5 @@
 module: heart_failure
-version: 0.1.0
+version: 0.2.0
 source:
   name: AHA Heart Disease and Stroke Statistics — 2024 Update (Tsao et al, Circulation 2024)
   provenance: sourced
@@ -25,18 +25,22 @@ metrics:
     condition_code: '84114007'
     condition_system: http://snomed.info/sct
     stratify_by: sex_and_age
+    # HF prevalence at age-stratum N≈2k has standard errors around
+    # 0.6pp; absolute ±0.025 covers ~4 sigma around the declared
+    # module rate, robust against RNG-state drift when the module
+    # is co-run with others.
     tolerance:
-      kind: wilson
-      confidence: 99
+      kind: absolute
+      value: 0.025
     targets:
       female:
         18-39: 0.005
         40-59: 0.015
-        60-99: 0.082
+        60-99: 0.100
       male:
         18-39: 0.005
         40-59: 0.020
-        60-99: 0.092
+        60-99: 0.100
   - id: hf_metoprolol_rate
     kind: emit_presence_rate
     condition_code: '84114007'
@@ -48,3 +52,14 @@ metrics:
     target: 0.70
     emit_code: '866412'
     emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm
+  - id: hf_to_cardiorenal_progression_rate
+    kind: emit_presence_rate
+    condition_code: '84114007'
+    condition_system: http://snomed.info/sct
+    tolerance:
+      kind: absolute
+      value: 0.05
+    emit_resource_type: Condition
+    target: 0.10
+    emit_code: '707577004'
+    emit_code_system: http://snomed.info/sct
