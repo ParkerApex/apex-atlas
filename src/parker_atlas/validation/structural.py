@@ -34,6 +34,7 @@ from fhir.resources.R4B.encounter import Encounter as _Encounter
 from fhir.resources.R4B.medicationrequest import MedicationRequest as _MedReq
 from fhir.resources.R4B.observation import Observation as _Observation
 from fhir.resources.R4B.patient import Patient as _Patient
+from fhir.resources.R4B.procedure import Procedure as _Procedure
 
 from parker_atlas.fhir.patient import (
     US_CORE_BIRTHSEX_URL,
@@ -52,6 +53,7 @@ _FHIR_R4B_CLASSES: dict[str, type] = {
     "Observation": _Observation,
     "MedicationRequest": _MedReq,
     "DocumentReference": _DocRef,
+    "Procedure": _Procedure,
 }
 
 
@@ -166,6 +168,24 @@ def _validate_encounter(encounter: dict[str, Any], report: FileReport) -> None:
         )
 
 
+def _validate_procedure(procedure: dict[str, Any], report: FileReport) -> None:
+    # US Core Procedure required elements.
+    for required in ("status", "code", "subject"):
+        if not procedure.get(required):
+            report.errors.append(f"Procedure.{required}: required by US Core.")
+    # performed[x] is must-support per US Core.
+    if not (
+        procedure.get("performedDateTime")
+        or procedure.get("performedPeriod")
+        or procedure.get("performedString")
+        or procedure.get("performedAge")
+        or procedure.get("performedRange")
+    ):
+        report.warnings.append(
+            "Procedure.performed[x]: must support per US Core (recommended)."
+        )
+
+
 def _validate_document_reference(doc: dict[str, Any], report: FileReport) -> None:
     # Base FHIR DocumentReference required elements (US Core conformance is
     # a future tightening; see the builder docstring).
@@ -244,6 +264,8 @@ def _validate_bundle(bundle: dict[str, Any], report: FileReport) -> None:
             _validate_medication_request(resource, report)
         elif rtype == "DocumentReference":
             _validate_document_reference(resource, report)
+        elif rtype == "Procedure":
+            _validate_procedure(resource, report)
         elif rtype is None:
             report.errors.append(f"entry[{i}]: missing resourceType")
         else:
@@ -283,6 +305,8 @@ def _validate_resource_dict(
         _validate_medication_request(resource, report)
     elif rtype == "DocumentReference":
         _validate_document_reference(resource, report)
+    elif rtype == "Procedure":
+        _validate_procedure(resource, report)
 
 
 def _validate_ndjson_file(path: Path) -> FileReport:

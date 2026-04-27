@@ -1,5 +1,5 @@
 module: heart_failure
-version: 0.2.0
+version: 0.3.0
 source:
   name: AHA Heart Disease and Stroke Statistics — 2024 Update (Tsao et al, Circulation 2024)
   provenance: sourced
@@ -62,4 +62,15 @@ metrics:
     emit_resource_type: Condition
     target: 0.10
     emit_code: '707577004'
+    emit_code_system: http://snomed.info/sct
+  - id: hf_echocardiogram_rate
+    kind: emit_presence_rate
+    condition_code: '84114007'
+    condition_system: http://snomed.info/sct
+    tolerance:
+      kind: absolute
+      value: 0.05
+    emit_resource_type: Procedure
+    target: 0.85
+    emit_code: '40701008'
     emit_code_system: http://snomed.info/sct

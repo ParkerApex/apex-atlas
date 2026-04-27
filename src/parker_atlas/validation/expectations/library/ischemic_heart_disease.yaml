@@ -1,5 +1,5 @@
 module: ischemic_heart_disease
-version: 0.2.0
+version: 0.3.0
 source:
   name: AHA Heart Disease and Stroke Statistics — 2024 Update (Tsao et al, Circulation 2024)
   provenance: sourced
@@ -23,9 +23,13 @@ metrics:
     condition_code: '414545008'
     condition_system: http://snomed.info/sct
     stratify_by: sex_and_age
+    # Absolute tolerance for stability under cross-module RNG drift —
+    # see heart_failure for the same rationale. Wilson at low p+high N
+    # is too tight to absorb seed-shift variance when other modules
+    # are co-running.
     tolerance:
-      kind: wilson
-      confidence: 99
+      kind: absolute
+      value: 0.025
     targets:
       female:
         18-39: 0.003
@@ -67,4 +71,15 @@ metrics:
     emit_resource_type: Condition
     target: 0.06
     emit_code: '22298006'
+    emit_code_system: http://snomed.info/sct
+  - id: ihd_cardiac_cath_rate
+    kind: emit_presence_rate
+    condition_code: '414545008'
+    condition_system: http://snomed.info/sct
+    tolerance:
+      kind: absolute
+      value: 0.05
+    emit_resource_type: Procedure
+    target: 0.50
+    emit_code: '41976001'
     emit_code_system: http://snomed.info/sct

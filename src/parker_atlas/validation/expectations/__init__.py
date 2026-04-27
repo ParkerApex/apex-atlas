@@ -177,10 +177,11 @@ def _parse_emit_presence_metric(raw: dict[str, Any]) -> Metric:
         "Observation",
         "MedicationRequest",
         "Condition",
+        "Procedure",
     ):
         raise ExpectationError(
             f"unsupported emit_resource_type {presence.resource_type!r}; "
-            f"choices: Encounter, Observation, MedicationRequest, Condition"
+            f"choices: Encounter, Observation, MedicationRequest, Condition, Procedure"
         )
     return Metric(
         id=str(raw["id"]),
