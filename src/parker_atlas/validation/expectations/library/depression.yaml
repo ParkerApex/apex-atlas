@@ -1,0 +1,49 @@
+module: depression
+version: 0.1.0
+source:
+  name: NCHS Data Brief 379 (Villarroel & Terlizzi, NHIS 2019)
+  provenance: sourced
+  url: https://www.cdc.gov/nchs/products/databriefs/db379.htm
+  note: >
+    US adults 18+ prevalence of moderate-to-severe depressive symptoms
+    (PHQ-8 score ≥10) by age × sex from NCHS Data Brief 379.
+    Pediatric (0-17) targets are placeholder approximations averaging
+    childhood (~0%) and adolescent (~5%, NCHS DB 470) prevalence.
+  citations:
+    - source: >
+        Villarroel MA, Terlizzi EP. Symptoms of Depression Among Adults:
+        United States, 2019. NCHS Data Brief No. 379. National Center
+        for Health Statistics. September 2020.
+      url: https://www.cdc.gov/nchs/products/databriefs/db379.htm
+      version: NCHS Data Brief No. 379
+      accessed: '2026-04-25'
+      table: 'Tables 1-2: Prevalence of depressive symptoms by age and sex.'
+metrics:
+  - id: depression_prevalence_by_sex_and_age
+    kind: conditional_prevalence
+    condition_code: '370143000'
+    condition_system: http://snomed.info/sct
+    stratify_by: sex_and_age
+    tolerance:
+      kind: wilson
+      confidence: 99
+    targets:
+      female:
+        18-39: 0.114
+        40-59: 0.098
+        60-99: 0.080
+      male:
+        18-39: 0.077
+        40-59: 0.069
+        60-99: 0.054
+  - id: depression_sertraline_rate
+    kind: emit_presence_rate
+    condition_code: '370143000'
+    condition_system: http://snomed.info/sct
+    tolerance:
+      kind: wilson
+      confidence: 99
+    emit_resource_type: MedicationRequest
+    target: 0.50
+    emit_code: '313700'
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm

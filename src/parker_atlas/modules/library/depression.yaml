@@ -1,0 +1,109 @@
+module: depression
+version: 0.1.0
+description: >
+  Depression (current depressive symptoms) prevalence by sex-and-age
+  bracket. Probability-module flavor — each (sex, age) cell maps to a
+  Bernoulli rate.
+
+  Prevalence rates are sourced from NCHS Data Brief 419 (Villarroel &
+  Terlizzi, NHANES Aug 2017-Mar 2020). The brief defines depression
+  as a PHQ-9 score ≥10 in the past 2 weeks. Adults 18+: ~8.3% overall.
+  Sex breakdown: women 10.4%, men 6.2%.
+
+  When a patient is positive, the module emits:
+  - A behavioral health follow-up Encounter
+  - A PHQ-9 total-score Observation (LOINC 44261-6) in the 10-20
+    range, the moderate-to-severe zone (PHQ-9 cutoffs: 5-9 mild,
+    10-14 moderate, 15-19 moderately severe, 20-27 severe)
+  - A sertraline MedicationRequest in 50% of cases. SSRIs are
+    first-line per the APA Practice Guideline for the Treatment of
+    Patients with Major Depressive Disorder, 3rd ed (2010, reaffirmed
+    2018). Sertraline is the most-prescribed SSRI in US adults per
+    the 2021 NCHS data on antidepressant use.
+
+  Pediatric depression (NCHS Data Brief 470 reports 5.0% PHQ-A ≥11 in
+  ages 12-17) is partially modeled in the 0-17 bracket using the
+  weighted average across 0-11 (~0%) and 12-17 (~5%); the 0-17
+  bracket therefore uses a placeholder that under-represents
+  adolescent depression at this granularity.
+cites:
+  - source: >
+      Villarroel MA, Terlizzi EP. Symptoms of Depression Among Adults:
+      United States, 2019. NCHS Data Brief No. 379. National Center
+      for Health Statistics. September 2020.
+    url: https://www.cdc.gov/nchs/products/databriefs/db379.htm
+    summary: >
+      US adults 18+ prevalence of moderate-to-severe depressive symptoms
+      (PHQ-8 score ≥10): ~8.3% overall. Age × sex breakdown (NHIS 2019):
+      18-39 women 11.4% / men 7.7%; 40-59 women 9.8% / men 6.9%;
+      60+ women 8.0% / men 5.4%.
+  - source: >
+      American Psychiatric Association. Practice Guideline for the
+      Treatment of Patients with Major Depressive Disorder, 3rd Edition.
+      Arlington, VA: APA Publishing, 2010 (reaffirmed 2018).
+    url: https://psychiatryonline.org/pb/assets/raw/sitewide/practice_guidelines/guidelines/mdd.pdf
+    summary: >
+      SSRIs (sertraline, fluoxetine, escitalopram, citalopram,
+      paroxetine) are first-line pharmacotherapy for moderate-to-severe
+      MDD. Initial dose, titration, and follow-up at 4-6 weeks are
+      Class I recommendations.
+conditions:
+  - id: major_depressive_disorder
+    code:
+      system: http://snomed.info/sct
+      code: "370143000"
+      display: Major depressive disorder (disorder)
+    prevalence:
+      female:
+        "0-17": 0.025
+        "18-39": 0.114
+        "40-59": 0.098
+        "60-99": 0.080
+      male:
+        "0-17": 0.020
+        "18-39": 0.077
+        "40-59": 0.069
+        "60-99": 0.054
+    onset_age:
+      min: 15
+      max: 50
+    emits:
+      - resource_type: Encounter
+        spec_id: depression_behavioral_health_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "370143000"
+          display: Major depressive disorder
+
+      - resource_type: Observation
+        spec_id: depression_phq9
+        when: today
+        link_to: depression_behavioral_health_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "44261-6"
+          display: Patient Health Questionnaire 9 item (PHQ-9) total score
+        value_range: {low: 10, high: 20, precision: 0}
+        unit: "{score}"
+        unit_code: "{score}"
+
+      - resource_type: MedicationRequest
+        spec_id: depression_sertraline
+        when: today
+        link_to: depression_behavioral_health_visit
+        probability: 0.50
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "313700"
+          display: Sertraline 50 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "370143000"
+          display: Major depressive disorder
