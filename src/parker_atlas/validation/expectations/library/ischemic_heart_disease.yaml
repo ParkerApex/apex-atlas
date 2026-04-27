@@ -1,5 +1,5 @@
 module: ischemic_heart_disease
-version: 0.1.0
+version: 0.2.0
 source:
   name: AHA Heart Disease and Stroke Statistics — 2024 Update (Tsao et al, Circulation 2024)
   provenance: sourced
@@ -40,8 +40,8 @@ metrics:
     condition_code: '414545008'
     condition_system: http://snomed.info/sct
     tolerance:
-      kind: wilson
-      confidence: 99
+      kind: absolute
+      value: 0.05
     emit_resource_type: MedicationRequest
     target: 0.75
     emit_code: '617311'
@@ -51,9 +51,20 @@ metrics:
     condition_code: '414545008'
     condition_system: http://snomed.info/sct
     tolerance:
-      kind: wilson
-      confidence: 99
+      kind: absolute
+      value: 0.05
     emit_resource_type: MedicationRequest
     target: 0.60
     emit_code: '243670'
     emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm
+  - id: ihd_to_mi_progression_rate
+    kind: emit_presence_rate
+    condition_code: '414545008'
+    condition_system: http://snomed.info/sct
+    tolerance:
+      kind: absolute
+      value: 0.04
+    emit_resource_type: Condition
+    target: 0.06
+    emit_code: '22298006'
+    emit_code_system: http://snomed.info/sct

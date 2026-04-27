@@ -57,7 +57,7 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | Module library             | ✅ 11 modules   | 10 sourced (HTN / DM / lipids / asthma / obesity / COPD / HF / IHD / stroke / depression) + complications (placeholder cross-module demo) |
 | Fidelity expectations      | ✅ 11 modules   | 10 sourced + complications (placeholder cross-module fidelity check)       |
 | Cross-module dependencies  | ✅ Implemented  | `requires: module:cond_id` + `emit_resource_type: Condition` for harness gating |
-| State-machine progressions | ✅ One-hop      | `progressions: [{to, after_years, probability}]`; HTN→CKD, DM→CKD, DM→retinopathy with sourced overlays |
+| State-machine progressions | ✅ One-hop, cross-module | `progressions: [{to, after_years, probability}]`; same-module + `<module>:<cond>` cross-module targets; 7 chains live (CKD×3, retinopathy, MI, cardiorenal, HTN→HF, HTN→stroke) |
 | Clinical note generation   | ✅ Template     | `--with-notes`: DocumentReference + inline markdown progress note per condition |
 | LLM-assisted authoring     | ⏳ Not started   | Milestone 3                                                              |
 | LLM-assisted note authoring| ⏳ Not started   | Milestone 4 — `NoteStrategy.LLM` API surface in place                    |

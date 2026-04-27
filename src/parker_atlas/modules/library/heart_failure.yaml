@@ -1,15 +1,24 @@
 module: heart_failure
-version: 0.1.0
+version: 0.2.0
 description: >
   Heart failure (HF) prevalence by sex-and-age bracket. Probability-
   module flavor — each (sex, age) cell maps to a Bernoulli rate.
 
+  v0.2 adds a one-hop progression to cardiorenal syndrome (kidney
+  dysfunction secondary to heart failure): among patients with chronic
+  HF, ~25% develop clinically-relevant CKD within 10 years (anchored
+  to Damman et al, J Am Coll Cardiol 2014 and KDIGO 2024 narrative on
+  cardiorenal interactions). When the progression fires, the patient
+  receives a cardiorenal-syndrome Condition plus a nephrology
+  follow-up Encounter and an eGFR Observation.
+
   Prevalence rates are sourced from the AHA Heart Disease and Stroke
   Statistics — 2024 Update (Tsao et al, Circulation 2024). HF affects
   ~6.7M US adults (~2.5% prevalence overall, sharply age-stratified
-  with ~10% prevalence in adults 65+). The 60-99 bracket is a weighted
-  blend of AHA's reported 60-79 and 80+ buckets (~70/30 by population
-  share) since Atlas's demographic age_sex.csv tops out at 60-99.
+  with ~10% prevalence in adults 65+). Atlas's demographic age_sex.csv
+  samples uniformly across ages 60-99 within the bracket, so the
+  60-99 target is the average of AHA's 60-79 and 80+ subbuckets:
+  women (5.5% + 14.5%)/2 = 10%, men (7.7% + 12.8%)/2 = 10%.
 
   When a patient is positive, the module emits:
   - A cardiology follow-up Encounter
@@ -54,15 +63,24 @@ conditions:
         "0-17": 0.0
         "18-39": 0.005
         "40-59": 0.015
-        "60-99": 0.082
+        "60-99": 0.100
       male:
         "0-17": 0.0
         "18-39": 0.005
         "40-59": 0.020
-        "60-99": 0.092
+        "60-99": 0.100
     onset_age:
       min: 55
       max: 80
+    # One-hop intra-module progression: among chronic HF patients,
+    # ~25% develop clinically-relevant CKD within 10 yr. Damman 2014
+    # JACC meta-analysis pooled CKD prevalence ~32% in HF cohorts;
+    # KDIGO 2024 narrative on cardiorenal interactions confirms HF
+    # as an independent driver of incident CKD.
+    progressions:
+      - to: cardiorenal_syndrome
+        after_years: 10
+        probability: 0.25
     emits:
       - resource_type: Encounter
         spec_id: hf_cardiology_visit
@@ -103,3 +121,44 @@ conditions:
           system: http://snomed.info/sct
           code: "84114007"
           display: Heart failure
+
+  # Progression target — only entered via `progressions` from
+  # heart_failure. prevalence is 0 across all brackets so the standard
+  # probability gate cannot fire it.
+  - id: cardiorenal_syndrome
+    code:
+      system: http://snomed.info/sct
+      code: "707577004"
+      display: Cardiorenal syndrome (disorder)
+    prevalence:
+      "0-99": 0.0
+    emits:
+      # Nephrology follow-up Encounter at the cardiorenal onset date.
+      - resource_type: Encounter
+        spec_id: cardiorenal_nephro_visit
+        when: onset
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "707577004"
+          display: Cardiorenal syndrome
+
+      # eGFR Observation in the CKD-stage range (eGFR 30-59 covers
+      # stages 3a-3b, the most common presentation of cardiorenal
+      # CKD per Damman 2014).
+      - resource_type: Observation
+        spec_id: cardiorenal_egfr
+        when: onset
+        link_to: cardiorenal_nephro_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "33914-3"
+          display: Glomerular filtration rate/1.73 sq M.predicted (MDRD)
+        value_range: {low: 30, high: 59, precision: 0}
+        unit: mL/min/{1.73_m2}
+        unit_code: mL/min/{1.73_m2}
