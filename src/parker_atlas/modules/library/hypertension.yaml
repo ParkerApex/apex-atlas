@@ -1,16 +1,24 @@
 module: hypertension
-version: 0.8.0
+version: 0.9.0
 description: >
   Essential hypertension module. Probability-module flavor: each
   (age, sex) cell maps to a Bernoulli rate that decides whether the
   patient is hypertensive.
 
-  v0.8 introduces a sourced progressions overlay. The inline
-  `progressions:` block on essential_hypertension is now superseded at
+  v0.8 introduced a sourced progressions overlay. The inline
+  `progressions:` block on essential_hypertension is superseded at
   load time by `hypertension.progressions.yaml`, which carries
   KDIGO 2024 / USRDS 2023 / Hsu 2005 / Fox 2004 citations and is
   produced by `atlas ingest progression`. The inline rate remains as
   a fallback when the overlay is absent.
+
+  v0.9 adds two cross-module progressions: HTN → heart_failure (10y,
+  ~7%, anchored to Levy 1996 Framingham) and HTN → stroke (10y, ~4%,
+  anchored to Lewington 2002 prospective-meta-analysis). When either
+  progression fires, the target module's full emit cascade runs
+  (cardiology Encounter + NT-proBNP for HF; neurology Encounter +
+  NIHSS for stroke). Cross-module progressions only fire when the
+  target module is also active in the same `atlas generate` run.
 
   When a patient is positive, the module now emits a small encounter-
   level record in addition to the Condition:
@@ -84,15 +92,29 @@ conditions:
     onset_age:
       min: 25
       max: 65
-    # One-hop progression to hypertensive CKD. The bundled
-    # `hypertension.progressions.yaml` overlay supersedes this rate at
-    # load time with the sourced 10.5% (KDIGO 2024 / USRDS 2023 / Hsu
-    # 2005 / Fox 2004); this inline block is the fallback when the
-    # overlay is absent.
+    # One-hop progressions:
+    # - hypertensive_ckd (same-module): the bundled
+    #   `hypertension.progressions.yaml` overlay supersedes the rate
+    #   at load time with the sourced 10.5% (KDIGO 2024 / USRDS 2023 /
+    #   Hsu 2005 / Fox 2004).
+    # - heart_failure:heart_failure (cross-module): Levy 1996 Framingham
+    #   reports cumulative HF incidence ~5-8% at 10 yr in HTN patients.
+    # - stroke:stroke (cross-module): Lewington 2002 prospective-meta-
+    #   analysis (1M adults) shows BP-attributable stroke incidence ~3-5%
+    #   at 10 yr in untreated/under-treated HTN.
+    # Cross-module targets only fire when the target module is also
+    # active; they go through the same time + Bernoulli gates as
+    # same-module progressions.
     progressions:
       - to: hypertensive_ckd
         after_years: 10
         probability: 0.10
+      - to: heart_failure:heart_failure
+        after_years: 10
+        probability: 0.07
+      - to: stroke:stroke
+        after_years: 10
+        probability: 0.04
     emits:
       # === Diagnosis day ===
       - resource_type: Encounter

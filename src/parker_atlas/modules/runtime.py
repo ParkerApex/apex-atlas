@@ -154,9 +154,18 @@ class ProgressionSpec:
     decides whether the target condition also fires. Progressed onset is
     `source.onset_date + after_years`, never in the future. No chains:
     progressions of progressions are not evaluated in the same run.
+
+    `to` may be either:
+      - `<condition_id>` — a sibling condition in the source module
+        (run_module handles this directly).
+      - `<module_name>:<condition_id>` — a condition in a different
+        active module. Evaluated by `apply_cross_module_progressions`
+        after every module has run, so cross-module targets see a
+        complete picture of which conditions already fired and avoid
+        double-counting.
     """
 
-    to: str  # spec_id of a sibling condition in the same module
+    to: str
     after_years: int
     probability: float
 
@@ -538,6 +547,17 @@ def _parse_condition(
             f"{sorted({t for t in progression_targets if progression_targets.count(t) > 1})}"
         )
     for p in progressions:
+        # Cross-module targets (`<module>:<cond>`) are validated at
+        # cross-module-pass time, not parse time.
+        if ":" in p.to:
+            mod_part, _, cond_part = p.to.partition(":")
+            if not mod_part or not cond_part:
+                raise ModuleError(
+                    f"condition {raw.get('id')!r}: progression.to={p.to!r} "
+                    f"must be either a sibling condition id or "
+                    f"`module_name:condition_id` (got malformed value)"
+                )
+            continue
         if p.to == raw.get("id"):
             raise ModuleError(
                 f"condition {raw.get('id')!r}: progression.to={p.to!r} cannot "
@@ -583,10 +603,13 @@ def load_module_from_str(yaml_text: str) -> Module:
     conditions = tuple(parsed_conditions)
 
     # Progression targets may be forward-references — validate after the
-    # full condition set is known.
+    # full condition set is known. Cross-module targets are deferred to
+    # cross-module-pass time, when the full module registry is available.
     all_ids = {c.id for c in conditions}
     for c in conditions:
         for p in c.progressions:
+            if ":" in p.to:
+                continue  # cross-module — validated at run time
             if p.to not in all_ids:
                 raise ModuleError(
                     f"condition {c.id!r}: progression.to={p.to!r} must reference "
@@ -939,14 +962,18 @@ def run_module(
             )
             fired_ids.add(cond.id)
 
-    # Second pass: progressions. One hop only — progressions of progressions
-    # are not evaluated this run (avoids author-introduced cycles and keeps
-    # the minimal flavor predictable). Iterate a snapshot so newly-added
-    # diagnoses don't seed further hops.
+    # Second pass: same-module progressions. One hop only — progressions
+    # of progressions are not evaluated this run (avoids author-introduced
+    # cycles and keeps the minimal flavor predictable). Cross-module
+    # targets (`<module>:<cond>`) are deferred to
+    # `apply_cross_module_progressions`, which runs after every module
+    # has finished its prevalence + same-module pass.
     for source_dx in list(fired_dx.values()):
         if not source_dx.condition.progressions or source_dx.onset_date is None:
             continue
         for prog in source_dx.condition.progressions:
+            if ":" in prog.to:
+                continue  # cross-module, deferred
             if prog.to in fired_dx:
                 continue  # already fired via its own prevalence
             progressed_onset = source_dx.onset_date + timedelta(
@@ -968,3 +995,83 @@ def run_module(
 
     # Preserve declaration order so callers see deterministic ordering.
     return [fired_dx[c.id] for c in module.conditions if c.id in fired_dx]
+
+
+def apply_cross_module_progressions(
+    diagnoses_by_module: dict[str, list[Diagnosis]],
+    modules_by_name: dict[str, Module],
+    rng: random.Random,
+    today: date,
+) -> dict[str, list[Diagnosis]]:
+    """Apply cross-module progressions across the patient's full diagnosis set.
+
+    For each fired diagnosis whose condition declares a progression with
+    a `<module>:<cond>` target, fire the target condition in the target
+    module's diagnosis list (subject to the same time + Bernoulli gates
+    as same-module progressions). Same-module progressions are NOT
+    re-processed here — `run_module` already handled them.
+
+    Returns a new mapping with the additions merged in. The function does
+    not chain: a cross-module diagnosis fired here does NOT itself drive
+    further progressions in the same call.
+    """
+    fired_keys: set[tuple[str, str]] = {
+        (mod_name, dx.condition.id)
+        for mod_name, dxs in diagnoses_by_module.items()
+        for dx in dxs
+    }
+
+    # Snapshot the source diagnoses before mutating the result, so that
+    # newly-added cross-module hits don't seed additional progressions
+    # (one-hop semantics, matching same-module behavior).
+    sources: list[tuple[str, Diagnosis]] = [
+        (mod_name, dx)
+        for mod_name, dxs in diagnoses_by_module.items()
+        for dx in dxs
+    ]
+
+    additions: dict[str, list[Diagnosis]] = {}
+
+    for _source_mod, source_dx in sources:
+        if source_dx.onset_date is None:
+            continue
+        for prog in source_dx.condition.progressions:
+            if ":" not in prog.to:
+                continue  # same-module — already handled
+            target_mod_name, _, target_cond_id = prog.to.partition(":")
+            if not target_mod_name or not target_cond_id:
+                continue
+            if (target_mod_name, target_cond_id) in fired_keys:
+                continue
+            target_module = modules_by_name.get(target_mod_name)
+            if target_module is None:
+                continue  # target module not active in this run
+            target_cond = next(
+                (c for c in target_module.conditions if c.id == target_cond_id),
+                None,
+            )
+            if target_cond is None:
+                continue
+            progressed_onset = source_dx.onset_date + timedelta(
+                days=prog.after_years * 365
+            )
+            if progressed_onset > today:
+                continue
+            if rng.random() >= prog.probability:
+                continue
+            sampled = _sample_emits(
+                target_cond, rng, today=today, onset_date=progressed_onset
+            )
+            additions.setdefault(target_mod_name, []).append(
+                Diagnosis(
+                    condition=target_cond,
+                    sampled_resources=sampled,
+                    onset_date=progressed_onset,
+                )
+            )
+            fired_keys.add((target_mod_name, target_cond_id))
+
+    result = {k: list(v) for k, v in diagnoses_by_module.items()}
+    for mod_name, new_dxs in additions.items():
+        result.setdefault(mod_name, []).extend(new_dxs)
+    return result

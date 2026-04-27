@@ -42,6 +42,7 @@ from parker_atlas.modules import (
     SampledEncounter,
     SampledMedicationRequest,
     SampledObservation,
+    apply_cross_module_progressions,
     list_bundled_modules,
     load_module,
     run_module,
@@ -453,7 +454,8 @@ def generate(
             # Cross-module `requires` (e.g. hypertension:essential_hypertension)
             # is satisfied against the running `patient_fired` set; same-module
             # `requires` uses a separate per-run set inside run_module.
-            all_dx_in_order: list[tuple[str, Any]] = []
+            diagnoses_by_module: dict[str, list] = {}
+            module_order: list[str] = []
             patient_fired: set[str] = set()
             for mod in active_modules:
                 diagnoses = run_module(
@@ -464,9 +466,29 @@ def generate(
                     today=today,
                     external_fired=patient_fired,
                 )
+                module_order.append(mod.name)
+                diagnoses_by_module[mod.name] = list(diagnoses)
                 for dx in diagnoses:
                     patient_fired.add(f"{mod.name}:{dx.condition.id}")
-                    all_dx_in_order.append((mod.name, dx))
+
+            # Cross-module progressions: a fired condition in module A may
+            # carry a `to: <module B>:<cond>` progression. After every
+            # module's prevalence + same-module pass is complete, we walk
+            # the full diagnosis set and fire cross-module targets that
+            # pass the time + Bernoulli gates.
+            modules_by_name = {m.name: m for m in active_modules}
+            diagnoses_by_module = apply_cross_module_progressions(
+                diagnoses_by_module,
+                modules_by_name=modules_by_name,
+                rng=rng,
+                today=today,
+            )
+
+            all_dx_in_order: list[tuple[str, Any]] = [
+                (mod_name, dx)
+                for mod_name in module_order
+                for dx in diagnoses_by_module.get(mod_name, [])
+            ]
 
             # Second pass: build FHIR resources for each diagnosis. Notes (if
             # enabled) get the full problem list via NoteContext.diagnoses,
