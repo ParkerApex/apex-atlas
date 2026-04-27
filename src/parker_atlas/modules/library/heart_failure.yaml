@@ -1,5 +1,5 @@
 module: heart_failure
-version: 0.2.0
+version: 0.3.0
 description: >
   Heart failure (HF) prevalence by sex-and-age bracket. Probability-
   module flavor — each (sex, age) cell maps to a Bernoulli rate.
@@ -117,6 +117,24 @@ conditions:
           system: http://www.nlm.nih.gov/research/umls/rxnorm
           code: "866412"
           display: Metoprolol Succinate 25 MG Extended Release Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "84114007"
+          display: Heart failure
+
+      # Echocardiogram — gold-standard imaging for HF assessment of
+      # ejection fraction, chamber sizes, and valve function. The 2022
+      # AHA/ACC/HFSA guideline marks transthoracic echo as Class I
+      # (Level C-LD) at HF diagnosis and serial follow-up.
+      - resource_type: Procedure
+        spec_id: hf_echocardiogram
+        when: today
+        link_to: hf_cardiology_visit
+        probability: 0.85
+        code:
+          system: http://snomed.info/sct
+          code: "40701008"
+          display: Echocardiography (procedure)
         reason:
           system: http://snomed.info/sct
           code: "84114007"

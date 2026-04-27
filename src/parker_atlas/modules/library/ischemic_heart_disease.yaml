@@ -1,5 +1,5 @@
 module: ischemic_heart_disease
-version: 0.2.0
+version: 0.3.0
 description: >
   Ischemic heart disease (IHD / coronary heart disease) prevalence by
   sex-and-age bracket. Probability-module flavor — each (sex, age)
@@ -131,6 +131,27 @@ conditions:
           system: http://www.nlm.nih.gov/research/umls/rxnorm
           code: "243670"
           display: Aspirin 81 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "414545008"
+          display: Ischemic heart disease
+
+      # Diagnostic / left-heart catheterization — the canonical
+      # confirmatory procedure for IHD with anginal symptoms or a
+      # positive stress test. ACC/AHA Class I in patients with
+      # high-pretest-probability stable angina. Estimated ~50% of
+      # confirmed-CHD patients receive cath at some point in their
+      # course (lower in stable medically-managed patients, higher
+      # in symptomatic / interventional cohorts).
+      - resource_type: Procedure
+        spec_id: ihd_cardiac_cath
+        when: today
+        link_to: ihd_cardiology_visit
+        probability: 0.50
+        code:
+          system: http://snomed.info/sct
+          code: "41976001"
+          display: Cardiac catheterization (procedure)
         reason:
           system: http://snomed.info/sct
           code: "414545008"

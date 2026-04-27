@@ -133,7 +133,17 @@ class MedicationRequestEmit:
     link_to: str | None = None
 
 
-EmitSpec = EncounterEmit | ObservationEmit | MedicationRequestEmit
+@dataclass(frozen=True, slots=True)
+class ProcedureEmit:
+    spec_id: str
+    code: Coding                     # SNOMED CT procedure code
+    reason_code: Coding | None = None
+    probability: float = 1.0
+    when: str = "today"
+    link_to: str | None = None
+
+
+EmitSpec = EncounterEmit | ObservationEmit | MedicationRequestEmit | ProcedureEmit
 
 
 @dataclass(frozen=True, slots=True)
@@ -250,7 +260,22 @@ class SampledMedicationRequest:
     link_to: str | None
 
 
-SampledResource = SampledEncounter | SampledObservation | SampledMedicationRequest
+@dataclass(frozen=True, slots=True)
+class SampledProcedure:
+    spec_id: str
+    code: Coding
+    reason_code: Coding | None
+    effective_date: date
+    when: str
+    link_to: str | None
+
+
+SampledResource = (
+    SampledEncounter
+    | SampledObservation
+    | SampledMedicationRequest
+    | SampledProcedure
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -418,6 +443,21 @@ def _parse_medication_request_emit(raw: dict[str, Any], ctx: str) -> MedicationR
     )
 
 
+def _parse_procedure_emit(raw: dict[str, Any], ctx: str) -> ProcedureEmit:
+    for req in ("spec_id", "code"):
+        if req not in raw:
+            raise ModuleError(f"{ctx}: Procedure emit missing {req!r}")
+    reason = raw.get("reason")
+    return ProcedureEmit(
+        spec_id=str(raw["spec_id"]),
+        code=_parse_coding(raw["code"], f"{ctx}.code"),
+        reason_code=_parse_coding(reason, f"{ctx}.reason") if reason else None,
+        probability=_parse_probability(raw, ctx),
+        when=_parse_when(raw, ctx),
+        link_to=str(raw["link_to"]) if raw.get("link_to") else None,
+    )
+
+
 def _parse_emit(raw: dict[str, Any], ctx: str) -> EmitSpec:
     if "resource_type" not in raw:
         raise ModuleError(f"{ctx}: emit missing `resource_type`")
@@ -428,9 +468,11 @@ def _parse_emit(raw: dict[str, Any], ctx: str) -> EmitSpec:
         return _parse_observation_emit(raw, ctx)
     if rtype == "MedicationRequest":
         return _parse_medication_request_emit(raw, ctx)
+    if rtype == "Procedure":
+        return _parse_procedure_emit(raw, ctx)
     raise ModuleError(
         f"{ctx}: unsupported resource_type {rtype!r}; "
-        f"choices: Encounter, Observation, MedicationRequest"
+        f"choices: Encounter, Observation, MedicationRequest, Procedure"
     )
 
 
@@ -518,7 +560,7 @@ def _parse_condition(
         )
     # Each link_to must reference an Encounter declared in this condition.
     for e in emits:
-        if isinstance(e, ObservationEmit | MedicationRequestEmit) and e.link_to is not None:
+        if isinstance(e, ObservationEmit | MedicationRequestEmit | ProcedureEmit) and e.link_to is not None:
             if e.link_to not in encounter_specs:
                 raise ModuleError(
                     f"condition {raw.get('id')!r}: emit {e.spec_id!r} link_to={e.link_to!r} "
@@ -875,6 +917,17 @@ def _sample_emits(
                 SampledMedicationRequest(
                     spec_id=emit.spec_id,
                     medication_code=emit.medication_code,
+                    reason_code=emit.reason_code,
+                    effective_date=eff,
+                    when=emit.when,
+                    link_to=emit.link_to,
+                )
+            )
+        elif isinstance(emit, ProcedureEmit):
+            out.append(
+                SampledProcedure(
+                    spec_id=emit.spec_id,
+                    code=emit.code,
                     reason_code=emit.reason_code,
                     effective_date=eff,
                     when=emit.when,

@@ -1,5 +1,5 @@
 module: stroke
-version: 0.1.0
+version: 0.2.0
 description: >
   Stroke (cerebrovascular accident) prevalence by sex-and-age bracket.
   Probability-module flavor — each (sex, age) cell maps to a Bernoulli
@@ -100,6 +100,25 @@ conditions:
           system: http://www.nlm.nih.gov/research/umls/rxnorm
           code: "243670"
           display: Aspirin 81 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "230690007"
+          display: Cerebrovascular accident
+
+      # MRI of the brain — the standard imaging study for stroke
+      # diagnosis and stroke-mimic exclusion (preferred over CT for
+      # subacute and chronic stroke per the 2019 AHA/ASA Guidelines
+      # for the Early Management of AIS). Most chronic-stroke patients
+      # have at least one prior MRI on the chart.
+      - resource_type: Procedure
+        spec_id: stroke_mri_brain
+        when: today
+        link_to: stroke_neurology_visit
+        probability: 0.80
+        code:
+          system: http://snomed.info/sct
+          code: "698580004"
+          display: Magnetic resonance imaging of brain (procedure)
         reason:
           system: http://snomed.info/sct
           code: "230690007"

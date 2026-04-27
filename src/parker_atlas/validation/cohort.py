@@ -102,7 +102,7 @@ def _resource_codes(resource: dict[str, Any]) -> set[str]:
     """Return the set of terminology codes identifying this resource."""
     rtype = resource.get("resourceType")
     codes: set[str] = set()
-    if rtype in ("Condition", "Observation"):
+    if rtype in ("Condition", "Observation", "Procedure"):
         for coding in (resource.get("code") or {}).get("coding", []) or []:
             if coding.get("code"):
                 codes.add(coding["code"])

@@ -1,5 +1,5 @@
 module: stroke
-version: 0.1.0
+version: 0.2.0
 source:
   name: AHA Heart Disease and Stroke Statistics — 2024 Update (Tsao et al, Circulation 2024)
   provenance: sourced
@@ -46,3 +46,14 @@ metrics:
     target: 0.65
     emit_code: '243670'
     emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm
+  - id: stroke_mri_brain_rate
+    kind: emit_presence_rate
+    condition_code: '230690007'
+    condition_system: http://snomed.info/sct
+    tolerance:
+      kind: absolute
+      value: 0.05
+    emit_resource_type: Procedure
+    target: 0.80
+    emit_code: '698580004'
+    emit_code_system: http://snomed.info/sct

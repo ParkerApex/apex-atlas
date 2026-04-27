@@ -48,6 +48,7 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | FHIR Observation builder   | ✅ Implemented   | Vital signs, labs, blood pressure (multi-component) — US Core profiles    |
 | FHIR Encounter builder     | ✅ Implemented   | US Core Encounter: outpatient / inpatient / emergency / home / virtual    |
 | FHIR MedicationRequest     | ✅ Implemented   | US Core MedicationRequest with inline medicationCodeableConcept           |
+| FHIR Procedure builder     | ✅ Implemented   | US Core Procedure 6.1; HF echo / IHD cath / stroke MRI live in modules    |
 | FHIR Bundle assembly       | ✅ Implemented   | Transaction Bundle, one file per patient                                 |
 | `atlas generate`           | ✅ Implemented   | `--format fhir-r4` / `--format ndjson` / `--format parquet`              |
 | `atlas validate`           | ✅ Structural    | Schema validation + US Core Patient/Condition minimums                   |

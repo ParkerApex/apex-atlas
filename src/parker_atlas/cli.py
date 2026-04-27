@@ -35,6 +35,7 @@ from parker_atlas.fhir.observation import (
     build_observation_resource,
 )
 from parker_atlas.fhir.patient import build_patient_resource
+from parker_atlas.fhir.procedure import build_procedure_resource
 from parker_atlas.notes import NoteContext, build_progress_note_text
 from parker_atlas.gpx import Allocator, Category
 from parker_atlas.modules import (
@@ -42,6 +43,7 @@ from parker_atlas.modules import (
     SampledEncounter,
     SampledMedicationRequest,
     SampledObservation,
+    SampledProcedure,
     apply_cross_module_progressions,
     list_bundled_modules,
     load_module,
@@ -191,6 +193,17 @@ def _build_emitted_resources(
                 encounter_fullurl=link,
             )
             built.append(med)
+        elif isinstance(sr, SampledProcedure):
+            proc = build_procedure_resource(
+                gpx=gpx,
+                patient_fullurl=patient_url,
+                procedure_spec_id=sr.spec_id,
+                code=sr.code,
+                performed_date=sr.effective_date,
+                reason_code=sr.reason_code,
+                encounter_fullurl=link,
+            )
+            built.append(proc)
 
     return built
 
