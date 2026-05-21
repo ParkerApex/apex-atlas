@@ -32,6 +32,22 @@ class CategoryWeight:
     weight: float
 
 
+@dataclass(frozen=True, slots=True)
+class PayerRow:
+    payer_id: str
+    name: str
+    payer_type: str
+    weight_within_type: float
+
+
+@dataclass(frozen=True, slots=True)
+class PayerMixRow:
+    age_low: int
+    age_high: int
+    payer_type: str
+    weight: float
+
+
 _PACKAGE = "parker_atlas.references.tables"
 
 
@@ -77,9 +93,37 @@ def load_names() -> dict[str, tuple[str, ...]]:
     return {pool: tuple(names) for pool, names in pools.items()}
 
 
+@lru_cache(maxsize=1)
+def load_payers() -> tuple[PayerRow, ...]:
+    return tuple(
+        PayerRow(
+            payer_id=r["payer_id"],
+            name=r["name"],
+            payer_type=r["payer_type"],
+            weight_within_type=float(r["weight_within_type"]),
+        )
+        for r in _read_csv("payers.csv")
+    )
+
+
+@lru_cache(maxsize=1)
+def load_payer_mix() -> tuple[PayerMixRow, ...]:
+    return tuple(
+        PayerMixRow(
+            age_low=int(r["age_low"]),
+            age_high=int(r["age_high"]),
+            payer_type=r["payer_type"],
+            weight=float(r["weight"]),
+        )
+        for r in _read_csv("payer_mix.csv")
+    )
+
+
 def clear_cache() -> None:
     """Clear all memoized loaders. Primarily for tests."""
     load_age_sex.cache_clear()
     load_race.cache_clear()
     load_ethnicity.cache_clear()
     load_names.cache_clear()
+    load_payers.cache_clear()
+    load_payer_mix.cache_clear()
