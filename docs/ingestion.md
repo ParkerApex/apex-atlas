@@ -1,6 +1,6 @@
 # Ingesting external data
 
-Parker Atlas's runtime loaders read CSVs and YAML files from inside the
+APEX Atlas's runtime loaders read CSVs and YAML files from inside the
 package. Real-world data (NHANES, CDC BRFSS, US Census ACS, SEER)
 doesn't arrive in that shape. The `atlas ingest` commands bridge that
 gap — they consume a clean CSV you prepare (from whatever tooling fits
@@ -19,7 +19,7 @@ currently supported:
 ## Why CSV + metadata
 
 - Every data source has its own native format (XPT, SAS, PUMS CSV, API).
-  Parker Atlas doesn't bundle parsers for each; users transform source
+  APEX Atlas doesn't bundle parsers for each; users transform source
   data into Atlas's CSV shape with whatever tooling they prefer
   (Stata, R, Python notebook, SQL query).
 - Citations, provenance tier, and tolerance policy belong with the

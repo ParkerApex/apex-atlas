@@ -1,6 +1,6 @@
-# Parker Atlas Commercial License
+# APEX Atlas Commercial License
 
-Parker Atlas is dual-licensed. The open-source Apache 2.0 license covers most use cases. The Parker Atlas Commercial License is available for organizations whose requirements go beyond what Apache 2.0 provides.
+APEX Atlas is dual-licensed. The open-source Apache 2.0 license covers most use cases. The APEX Atlas Commercial License is available for organizations whose requirements go beyond what Apache 2.0 provides.
 
 ## When you need a commercial license
 
@@ -8,10 +8,10 @@ Choose the commercial license if any of the following apply:
 
 - **Validated releases** — you need signed, cryptographically-verifiable releases with provenance attestation suitable for regulated environments
 - **Service level agreements** — you need guaranteed response times on bugs, security issues, or technical support
-- **Indemnification** — you need legal indemnification against intellectual property claims arising from use of Parker Atlas
+- **Indemnification** — you need legal indemnification against intellectual property claims arising from use of APEX Atlas
 - **Custom clinical modules** — you need Parker Health to develop, review, or sign off on proprietary disease modules under contract
-- **Competing platform embedding** — you intend to embed Parker Atlas within a commercial healthcare data platform that competes with Parker APEX
-- **Training data pipelines at scale** — you need commercial support for production ML pipelines consuming Parker Atlas output at very high volume
+- **Competing platform embedding** — you intend to embed APEX Atlas within a commercial healthcare data platform that competes with APEX
+- **Training data pipelines at scale** — you need commercial support for production ML pipelines consuming APEX Atlas output at very high volume
 
 ## What you do not need a commercial license for
 
