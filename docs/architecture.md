@@ -1,8 +1,8 @@
-# Parker Atlas Architecture
+# APEX Atlas Architecture
 
 ## Overview
 
-Parker Atlas is a modular synthetic patient generator organized around four layers: a simulation core, a clinical module runtime, a FHIR output pipeline, and an LLM-assisted authoring toolchain. Each layer has clear interfaces so that components can be replaced or extended independently.
+APEX Atlas is a modular synthetic patient generator organized around four layers: a simulation core, a clinical module runtime, a FHIR output pipeline, and an LLM-assisted authoring toolchain. Each layer has clear interfaces so that components can be replaced or extended independently.
 
 ```
                     ┌─────────────────────────────────────┐
@@ -40,7 +40,7 @@ Parker Atlas is a modular synthetic patient generator organized around four laye
 ## Package layout
 
 ```
-parker-atlas/
+apex-atlas/
 ├── src/parker_atlas/
 │   ├── core/            # Simulation engine
 │   │   ├── patient.py      # Patient lifecycle object
@@ -83,7 +83,7 @@ parker-atlas/
 
 ## Design principles
 
-**License cleanliness.** Parker Atlas is built exclusively from public, redistributable sources. No credentialed dataset (MIMIC, UK Biobank, etc.) touches the training or generation pipeline. This is enforced by a data provenance manifest reviewed on every release.
+**License cleanliness.** APEX Atlas is built exclusively from public, redistributable sources. No credentialed dataset (MIMIC, UK Biobank, etc.) touches the training or generation pipeline. This is enforced by a data provenance manifest reviewed on every release.
 
 **FHIR-first, not FHIR-after.** Internal patient state is modeled to map cleanly to FHIR resources. Generators produce FHIR resources directly rather than translating from an internal schema.
 
@@ -167,9 +167,9 @@ The LLM provider is abstracted; Parker's reference implementation supports Anthr
 
 ## Non-goals
 
-- Parker Atlas does not simulate healthcare economics, reimbursement, or claims adjudication at payer-level detail. These can be added as modules but are not core.
-- Parker Atlas does not generate medical images. Imaging is referenced by DICOM identifiers; actual pixel synthesis is out of scope for v1.
-- Parker Atlas does not replace domain-specific generators (genomic simulators, pharmacokinetic models). It can interoperate with them via standard FHIR references.
+- APEX Atlas does not simulate healthcare economics, reimbursement, or claims adjudication at payer-level detail. These can be added as modules but are not core.
+- APEX Atlas does not generate medical images. Imaging is referenced by DICOM identifiers; actual pixel synthesis is out of scope for v1.
+- APEX Atlas does not replace domain-specific generators (genomic simulators, pharmacokinetic models). It can interoperate with them via standard FHIR references.
 
 ## Roadmap
 

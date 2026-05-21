@@ -1,6 +1,6 @@
-# Contributing to Parker Atlas
+# Contributing to APEX Atlas
 
-Thank you for considering a contribution. Parker Atlas is built by a community of engineers, clinicians, and researchers, and we welcome both code and clinical-domain contributions.
+Thank you for considering a contribution. APEX Atlas is built by a community of engineers, clinicians, and researchers, and we welcome both code and clinical-domain contributions.
 
 ## Types of contributions we welcome
 
@@ -13,7 +13,7 @@ Thank you for considering a contribution. Parker Atlas is built by a community o
 
 ## Contributor License Agreement
 
-All contributors must sign the Parker Atlas Contributor License Agreement (CLA) before their contributions can be merged. The CLA grants Parker Health the right to distribute contributions under both the Apache 2.0 license and the Parker Atlas Commercial License. Your copyright remains yours.
+All contributors must sign the APEX Atlas Contributor License Agreement (CLA) before their contributions can be merged. The CLA grants Parker Health the right to distribute contributions under both the Apache 2.0 license and the APEX Atlas Commercial License. Your copyright remains yours.
 
 The CLA bot will prompt you on your first pull request.
 
@@ -21,8 +21,8 @@ The CLA bot will prompt you on your first pull request.
 
 ```bash
 # Clone
-git clone https://github.com/ParkerApex/parker-atlas.git
-cd parker-atlas
+git clone https://github.com/ParkerApex/apex-atlas.git
+cd apex-atlas
 
 # Create a virtual environment
 python -m venv .venv
@@ -48,7 +48,7 @@ Run `ruff check` and `mypy src/` before submitting a pull request. CI will enfor
 
 ## Clinical module contributions
 
-Clinical modules are the heart of Parker Atlas. If you are a licensed healthcare professional contributing a module, please:
+Clinical modules are the heart of APEX Atlas. If you are a licensed healthcare professional contributing a module, please:
 
 1. Follow the module authoring guide in `docs/authoring/module_dsl.md`.
 2. Cite public epidemiological sources for all prevalence, incidence, and progression rates.
@@ -63,8 +63,8 @@ Do not open public issues for security vulnerabilities. Email `security@parkerap
 
 ## Code of Conduct
 
-Parker Atlas follows the [Contributor Covenant v2.1](https://www.contributor-covenant.org/). Be respectful, be welcoming, and assume good faith.
+APEX Atlas follows the [Contributor Covenant v2.1](https://www.contributor-covenant.org/). Be respectful, be welcoming, and assume good faith.
 
 ## Questions
 
-For general questions, open a [GitHub Discussion](https://github.com/ParkerApex/parker-atlas/discussions). For commercial licensing, contact `licensing@parkerapex.com`.
+For general questions, open a [GitHub Discussion](https://github.com/ParkerApex/apex-atlas/discussions). For commercial licensing, contact `licensing@parkerapex.com`.

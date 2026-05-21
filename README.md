@@ -49,6 +49,10 @@ APEX Atlas is in early development. The current repository is a scaffold — mos
 | FHIR Encounter builder     | ✅ Implemented   | US Core Encounter: outpatient / inpatient / emergency / home / virtual    |
 | FHIR MedicationRequest     | ✅ Implemented   | US Core MedicationRequest with inline medicationCodeableConcept           |
 | FHIR Procedure builder     | ✅ Implemented   | US Core Procedure 6.1; HF echo / IHD cath / stroke MRI live in modules    |
+| FHIR AllergyIntolerance    | ✅ Implemented   | US Core AllergyIntolerance builder + YAML emit support                    |
+| FHIR Immunization          | ✅ Implemented   | US Core Immunization builder + YAML emit support                          |
+| FHIR DiagnosticReport      | ✅ Implemented   | Groups related Observations, e.g. lipid panel / CBC / BMP                 |
+| Claim + EOB                | ✅ First cut     | `--with-claims`: one Claim + ExplanationOfBenefit per covered Encounter   |
 | FHIR Bundle assembly       | ✅ Implemented   | Transaction Bundle, one file per patient                                 |
 | `atlas generate`           | ✅ Implemented   | `--format fhir-r4` / `--format ndjson` / `--format parquet`              |
 | `atlas validate`           | ✅ Structural    | Schema validation + US Core Patient/Condition minimums                   |
@@ -145,6 +149,14 @@ per payer across the cohort:
 ```bash
 atlas generate --patients 500 --seed 42 --module hypertension \
     --with-coverage --out ./cohort-with-coverage
+```
+
+Emit synthetic professional Claims and adjudicated ExplanationOfBenefit
+resources for covered Encounters:
+
+```bash
+atlas generate --patients 500 --seed 42 --module hypertension \
+    --with-coverage --with-claims --out ./cohort-with-claims
 ```
 
 Attach a Practitioner + Location + facility Organization to every

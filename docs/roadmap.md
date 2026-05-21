@@ -1,4 +1,4 @@
-# Parker Atlas Roadmap
+# APEX Atlas Roadmap
 
 This roadmap describes the path from initial scaffold to public v1.0 release. Dates are indicative; actual delivery depends on team capacity and clinical reviewer availability.
 
