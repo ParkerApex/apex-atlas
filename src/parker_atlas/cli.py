@@ -31,7 +31,12 @@ from parker_atlas.fhir.coverage import build_coverage_resource
 from parker_atlas.fhir.insurance_plan import build_insurance_plan_resource
 from parker_atlas.fhir.organization import build_payer_organization_resource
 from parker_atlas.fhir.document_reference import build_document_reference_resource
+from parker_atlas.core.provider import sample_care_team
 from parker_atlas.fhir.encounter import build_encounter_resource
+from parker_atlas.fhir.location import build_location_resource
+from parker_atlas.fhir.organization import build_facility_organization_resource
+from parker_atlas.fhir.practitioner import build_practitioner_resource
+from parker_atlas.fhir.practitioner_role import build_practitioner_role_resource
 from parker_atlas.fhir.medication_request import build_medication_request_resource
 from parker_atlas.fhir.observation import (
     ObservationComponent,
@@ -91,11 +96,81 @@ class Profile(str, Enum):
     BASE = "base"
 
 
+def _build_provider_resources(
+    *,
+    gpx,
+    care_team,
+    bundle_emitted_ids: set[str],
+) -> tuple[list[dict], str, str, str]:
+    """Build (or reuse) the Practitioner/facility-Org/Location/Role for a care team.
+
+    Returns (new_resources, practitioner_url, location_url, facility_org_url).
+    Resources whose deterministic id is already in `bundle_emitted_ids`
+    are reused (URL returned but resource not duplicated). Caller is
+    responsible for adding new resources to the bundle and updating the
+    per-bundle dedup set.
+    """
+    new_resources: list[dict] = []
+
+    prac = care_team.practitioner
+    loc = care_team.location
+
+    facility_org = build_facility_organization_resource(
+        npi=loc.facility_npi,
+        name=loc.facility_name,
+        org_role=loc.facility_role,  # type: ignore[arg-type]
+    )
+    facility_org_url = fullurl_for_resource(gpx, facility_org)
+    if facility_org["id"] not in bundle_emitted_ids:
+        new_resources.append(facility_org)
+        bundle_emitted_ids.add(facility_org["id"])
+
+    practitioner = build_practitioner_resource(
+        npi=prac.npi, family=prac.family, given=prac.given, prefix=prac.prefix
+    )
+    practitioner_url = fullurl_for_resource(gpx, practitioner)
+    if practitioner["id"] not in bundle_emitted_ids:
+        new_resources.append(practitioner)
+        bundle_emitted_ids.add(practitioner["id"])
+
+    location = build_location_resource(
+        facility_npi=loc.facility_npi,
+        location_name=loc.location_name,
+        location_type_code=loc.location_type_code,
+        location_type_display=loc.location_type_display,
+        line=loc.line,
+        city=loc.city,
+        state=loc.state,
+        postal_code=loc.postal_code,
+        facility_organization_fullurl=facility_org_url,
+    )
+    location_url = fullurl_for_resource(gpx, location)
+    if location["id"] not in bundle_emitted_ids:
+        new_resources.append(location)
+        bundle_emitted_ids.add(location["id"])
+
+    role = build_practitioner_role_resource(
+        practitioner_npi=prac.npi,
+        facility_npi=loc.facility_npi,
+        taxonomy_code=prac.taxonomy_code,
+        taxonomy_display=prac.taxonomy_display,
+        practitioner_fullurl=practitioner_url,
+        facility_organization_fullurl=facility_org_url,
+    )
+    if role["id"] not in bundle_emitted_ids:
+        new_resources.append(role)
+        bundle_emitted_ids.add(role["id"])
+
+    return new_resources, practitioner_url, location_url, facility_org_url
+
+
 def _build_emitted_resources(
     *,
     gpx,
     patient_url: str,
     diagnosis,
+    provider_rng=None,
+    bundle_emitted_ids: set[str] | None = None,
 ) -> list[dict]:
     """Convert a Diagnosis's sampled resources into FHIR dicts.
 
@@ -116,6 +191,21 @@ def _build_emitted_resources(
     sampled_encounters: list = []
     for sr in diagnosis.sampled_resources:
         if isinstance(sr, SampledEncounter):
+            practitioner_url: str | None = None
+            location_url: str | None = None
+            service_provider_url: str | None = None
+            if provider_rng is not None and bundle_emitted_ids is not None:
+                care_team = sample_care_team(
+                    provider_rng, class_code=sr.encounter_class
+                )
+                provider_res, practitioner_url, location_url, service_provider_url = (
+                    _build_provider_resources(
+                        gpx=gpx,
+                        care_team=care_team,
+                        bundle_emitted_ids=bundle_emitted_ids,
+                    )
+                )
+                built.extend(provider_res)
             enc = build_encounter_resource(
                 gpx=gpx,
                 patient_fullurl=patient_url,
@@ -125,6 +215,9 @@ def _build_emitted_resources(
                 period_start=sr.effective_date,
                 period_end=sr.effective_date,
                 reason_code=sr.reason_code,
+                practitioner_fullurl=practitioner_url,
+                location_fullurl=location_url,
+                service_provider_fullurl=service_provider_url,
             )
             built.append(enc)
             encounter_urls[sr.spec_id] = fullurl_for_resource(gpx, enc)
@@ -395,6 +488,7 @@ def generate(
     summary: Annotated[bool, typer.Option("--summary", help="Print cohort demographics and condition summary after generation.")] = False,
     with_notes: Annotated[bool, typer.Option("--with-notes", help="Emit one DocumentReference (template-based progress note) per fired condition.")] = False,
     with_coverage: Annotated[bool, typer.Option("--with-coverage", help="Sample a payer per patient and emit Coverage + payer Organization + InsurancePlan resources.")] = False,
+    with_providers: Annotated[bool, typer.Option("--with-providers", help="Sample a Practitioner + facility Organization + Location per encounter; attach as Encounter.participant / .location / .serviceProvider.")] = False,
 ) -> None:
     """Generate a synthetic FHIR patient population."""
     if patients < 1:
@@ -457,6 +551,13 @@ def generate(
     # include the payer Org + Plan so cross-Bundle refs resolve.
     emitted_payer_ids_ndjson: set[str] = set()
 
+    # Provider-side resources (Practitioner, PractitionerRole, Location,
+    # facility Organization) are likewise deterministic-id'd and merge
+    # cleanly on ingest. NDJSON/Parquet dedupe by resource id (one row
+    # per provider/location/role across the whole run); Bundles always
+    # self-contain the rows used by their Encounters.
+    emitted_provider_ids_ndjson: set[str] = set()
+
     # Parquet writer state — accumulate rows per resourceType in memory,
     # flushed to one file per resourceType at the end. Schema is uniform:
     # id, subject_reference (nullable; null for Patient), raw_json. The
@@ -474,6 +575,13 @@ def generate(
 
             extras: list[dict] = []
             age_years = (today - demo.birth_date).days // 365
+
+            # Per-Bundle set tracking provider-side resource ids already
+            # emitted into this patient's extras. Lets multiple Encounters
+            # in the same Bundle share the same Practitioner/Location
+            # without duplicate entries.
+            bundle_provider_ids: set[str] = set()
+            provider_rng = rng if with_providers else None
 
             # Payer assignment + Coverage emission. Org + Plan have stable
             # (payer-scoped, not patient-scoped) ids so they merge on ingest.
@@ -567,6 +675,8 @@ def generate(
                     gpx=gpx,
                     patient_url=patient_url,
                     diagnosis=dx,
+                    provider_rng=provider_rng,
+                    bundle_emitted_ids=bundle_provider_ids,
                 )
                 extras.extend(dx_emits)
                 if with_notes:
@@ -606,27 +716,50 @@ def generate(
             elif format is OutputFormat.NDJSON:
                 for resource in (patient, *extras):
                     rtype = resource["resourceType"]
+                    rid = resource.get("id", "")
                     if (
                         patient_payer_id is not None
                         and rtype in ("Organization", "InsurancePlan")
                         and patient_payer_id in emitted_payer_ids_ndjson
                     ):
                         continue
+                    if rtype in (
+                        "Practitioner",
+                        "PractitionerRole",
+                        "Location",
+                        "Organization",
+                    ) and rid in emitted_provider_ids_ndjson:
+                        continue
                     fh = ndjson_files.get(rtype)
                     if fh is None:
                         fh = (out / f"{rtype}.ndjson").open("w", encoding="utf-8")
                         ndjson_files[rtype] = fh
                     fh.write(json.dumps(resource) + "\n")
+                    if rtype in (
+                        "Practitioner",
+                        "PractitionerRole",
+                        "Location",
+                        "Organization",
+                    ):
+                        emitted_provider_ids_ndjson.add(rid)
                 if patient_payer_id is not None:
                     emitted_payer_ids_ndjson.add(patient_payer_id)
             else:  # PARQUET
                 for resource in (patient, *extras):
                     rtype = resource["resourceType"]
+                    rid = resource.get("id", "")
                     if (
                         patient_payer_id is not None
                         and rtype in ("Organization", "InsurancePlan")
                         and patient_payer_id in emitted_payer_ids_ndjson
                     ):
+                        continue
+                    if rtype in (
+                        "Practitioner",
+                        "PractitionerRole",
+                        "Location",
+                        "Organization",
+                    ) and rid in emitted_provider_ids_ndjson:
                         continue
                     subject_ref = None
                     if rtype != "Patient":
@@ -640,6 +773,13 @@ def generate(
                             "raw_json": json.dumps(resource),
                         }
                     )
+                    if rtype in (
+                        "Practitioner",
+                        "PractitionerRole",
+                        "Location",
+                        "Organization",
+                    ):
+                        emitted_provider_ids_ndjson.add(rid)
                 if patient_payer_id is not None:
                     emitted_payer_ids_ndjson.add(patient_payer_id)
 

@@ -73,6 +73,9 @@ def build_encounter_resource(
     period_end: date | datetime | None = None,
     status: str = "finished",
     reason_code: Coding | None = None,
+    practitioner_fullurl: str | None = None,
+    location_fullurl: str | None = None,
+    service_provider_fullurl: str | None = None,
 ) -> dict[str, Any]:
     """Build a US Core Encounter resource for a patient visit."""
     identifier_value = encounter_id(gpx, encounter_spec_id)
@@ -109,6 +112,38 @@ def build_encounter_resource(
 
     if period_end is not None:
         resource["period"]["end"] = fhir_datetime(period_end)
+
+    if practitioner_fullurl is not None:
+        resource["participant"] = [
+            {
+                "type": [
+                    {
+                        "coding": [
+                            {
+                                "system": (
+                                    "http://terminology.hl7.org/CodeSystem/"
+                                    "v3-ParticipationType"
+                                ),
+                                "code": "ATND",
+                                "display": "attender",
+                            }
+                        ]
+                    }
+                ],
+                "individual": {"reference": practitioner_fullurl},
+            }
+        ]
+
+    if location_fullurl is not None:
+        resource["location"] = [
+            {
+                "location": {"reference": location_fullurl},
+                "status": "completed",
+            }
+        ]
+
+    if service_provider_fullurl is not None:
+        resource["serviceProvider"] = {"reference": service_provider_fullurl}
 
     if reason_code is not None:
         resource["reasonCode"] = [

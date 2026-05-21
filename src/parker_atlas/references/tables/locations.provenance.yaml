@@ -1,0 +1,23 @@
+table: locations.csv
+purpose: |
+  Synthetic facility + Location roster used to populate facility
+  Organization, Location, and Encounter.location/serviceProvider
+  references.
+sources:
+  - name: HL7 v3 RoleCode (facility_role, location_type_code)
+    url: https://terminology.hl7.org/CodeSystem-v3-RoleCode.html
+    notes: |
+      facility_role uses the same v3 RoleCode subset as Organization.type
+      (hosp = Hospital, prov = Healthcare Provider). location_type_code
+      uses ServiceDeliveryLocationRoleType codes (HOSP, ER, OF) for
+      Location.type.
+  - name: CMS NPPES NPI numbering scheme
+    url: https://www.cms.gov/Regulations-and-Guidance/Administrative-Simplification/NationalProvIdentStand
+    notes: |
+      Facility NPIs start with 2 (Type 2 / Organization NPIs). Each ends
+      with a Luhn check digit computed against the 9-digit identifier
+      prefixed with "80840".
+notes: |
+  Five Locations across four facility Organizations, all sited in the
+  greater Boston area. Addresses are fictitious. Intended for
+  reference-integrity tests and demos, not realistic geography.

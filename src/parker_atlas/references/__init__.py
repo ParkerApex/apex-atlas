@@ -48,6 +48,31 @@ class PayerMixRow:
     weight: float
 
 
+@dataclass(frozen=True, slots=True)
+class PractitionerRow:
+    npi: str
+    family: str
+    given: str
+    prefix: str
+    taxonomy_code: str
+    taxonomy_display: str
+    encounter_class: str
+
+
+@dataclass(frozen=True, slots=True)
+class LocationRow:
+    facility_npi: str
+    facility_name: str
+    facility_role: str
+    location_name: str
+    location_type_code: str
+    location_type_display: str
+    line: str
+    city: str
+    state: str
+    postal_code: str
+
+
 _PACKAGE = "parker_atlas.references.tables"
 
 
@@ -119,6 +144,41 @@ def load_payer_mix() -> tuple[PayerMixRow, ...]:
     )
 
 
+@lru_cache(maxsize=1)
+def load_practitioners() -> tuple[PractitionerRow, ...]:
+    return tuple(
+        PractitionerRow(
+            npi=r["npi"],
+            family=r["family"],
+            given=r["given"],
+            prefix=r["prefix"],
+            taxonomy_code=r["taxonomy_code"],
+            taxonomy_display=r["taxonomy_display"],
+            encounter_class=r["encounter_class"],
+        )
+        for r in _read_csv("practitioners.csv")
+    )
+
+
+@lru_cache(maxsize=1)
+def load_locations() -> tuple[LocationRow, ...]:
+    return tuple(
+        LocationRow(
+            facility_npi=r["facility_npi"],
+            facility_name=r["facility_name"],
+            facility_role=r["facility_role"],
+            location_name=r["location_name"],
+            location_type_code=r["location_type_code"],
+            location_type_display=r["location_type_display"],
+            line=r["line"],
+            city=r["city"],
+            state=r["state"],
+            postal_code=r["postal_code"],
+        )
+        for r in _read_csv("locations.csv")
+    )
+
+
 def clear_cache() -> None:
     """Clear all memoized loaders. Primarily for tests."""
     load_age_sex.cache_clear()
@@ -127,3 +187,5 @@ def clear_cache() -> None:
     load_names.cache_clear()
     load_payers.cache_clear()
     load_payer_mix.cache_clear()
+    load_practitioners.cache_clear()
+    load_locations.cache_clear()

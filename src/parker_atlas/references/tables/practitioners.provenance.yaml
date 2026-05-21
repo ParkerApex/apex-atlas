@@ -1,0 +1,27 @@
+table: practitioners.csv
+purpose: |
+  Synthetic clinician roster used to populate Practitioner + PractitionerRole
+  resources and Encounter.participant references. Names are fictitious;
+  NPI numbers are dummy values within the 1xxxxxxxxx individual-NPI block,
+  each terminated with a valid Luhn check digit computed per the CMS
+  NPPES algorithm (prefix "80840", mod-10).
+sources:
+  - name: NUCC Health Care Provider Taxonomy Code Set
+    url: https://www.nucc.org/index.php/code-sets-mainmenu-41/provider-taxonomy-mainmenu-40
+    notes: |
+      taxonomy_code/taxonomy_display columns are codes from the NUCC
+      taxonomy. The encounter_class column maps a clinician to the v3
+      ActCode encounter class they typically staff (AMB = ambulatory,
+      EMER = emergency, IMP = inpatient) so the generator can sample
+      a plausible attending for each encounter.
+  - name: CMS NPPES NPI numbering scheme
+    url: https://www.cms.gov/Regulations-and-Guidance/Administrative-Simplification/NationalProvIdentStand
+    notes: |
+      Individual practitioner NPIs start with 1, organization NPIs with
+      2. The 10th digit is a Luhn check over the 9-digit identifier
+      prefixed with "80840" (ISO 7812 issuer prefix). All NPIs in this
+      file pass that check.
+notes: |
+  Roster is intentionally small (~8 clinicians) and weighted-uniform by
+  encounter_class. It is intended as a placeholder for downstream tests
+  and demos, NOT a statistically realistic distribution of US clinicians.
