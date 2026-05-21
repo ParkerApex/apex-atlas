@@ -24,8 +24,12 @@ from rich.table import Table
 
 from parker_atlas import __version__
 from parker_atlas.core.demographics import race_display, sample_demographics
+from parker_atlas.core.payer import sample_payer
 from parker_atlas.fhir.bundle import build_bundle, fullurl_for_gpx, fullurl_for_resource
 from parker_atlas.fhir.condition import build_condition_resource
+from parker_atlas.fhir.coverage import build_coverage_resource
+from parker_atlas.fhir.insurance_plan import build_insurance_plan_resource
+from parker_atlas.fhir.organization import build_payer_organization_resource
 from parker_atlas.fhir.document_reference import build_document_reference_resource
 from parker_atlas.fhir.encounter import build_encounter_resource
 from parker_atlas.fhir.medication_request import build_medication_request_resource
@@ -390,6 +394,7 @@ def generate(
     seed: Annotated[int | None, typer.Option(help="RNG seed for reproducibility.")] = None,
     summary: Annotated[bool, typer.Option("--summary", help="Print cohort demographics and condition summary after generation.")] = False,
     with_notes: Annotated[bool, typer.Option("--with-notes", help="Emit one DocumentReference (template-based progress note) per fired condition.")] = False,
+    with_coverage: Annotated[bool, typer.Option("--with-coverage", help="Sample a payer per patient and emit Coverage + payer Organization + InsurancePlan resources.")] = False,
 ) -> None:
     """Generate a synthetic FHIR patient population."""
     if patients < 1:
@@ -445,6 +450,13 @@ def generate(
     # FHIR Bulk Data Access ($export) convention.
     ndjson_files: dict[str, Any] = {}
 
+    # Payer Organizations + InsurancePlans use payer-scoped (not GPX-scoped)
+    # deterministic ids so they merge on ingest. For NDJSON/Parquet output we
+    # also dedupe writes by payer_id, since those formats are one-row-per-
+    # resource (unlike Bundles, which must self-contain). Bundles always
+    # include the payer Org + Plan so cross-Bundle refs resolve.
+    emitted_payer_ids_ndjson: set[str] = set()
+
     # Parquet writer state — accumulate rows per resourceType in memory,
     # flushed to one file per resourceType at the end. Schema is uniform:
     # id, subject_reference (nullable; null for Patient), raw_json. The
@@ -462,6 +474,39 @@ def generate(
 
             extras: list[dict] = []
             age_years = (today - demo.birth_date).days // 365
+
+            # Payer assignment + Coverage emission. Org + Plan have stable
+            # (payer-scoped, not patient-scoped) ids so they merge on ingest.
+            # Every Bundle that uses the payer must self-contain the Org +
+            # Plan so cross-Bundle references resolve under FHIR transaction
+            # semantics; NDJSON/Parquet dedup is enforced by `emitted_payer_ids`.
+            patient_payer_id: str | None = None
+            if with_coverage:
+                payer = sample_payer(rng, age_years=age_years)
+                if payer is not None:
+                    patient_payer_id = payer.payer_id
+                    payer_org = build_payer_organization_resource(
+                        payer_id=payer.payer_id, name=payer.name
+                    )
+                    payer_org_url = fullurl_for_resource(gpx, payer_org)
+                    plan = build_insurance_plan_resource(
+                        payer_id=payer.payer_id,
+                        payer_type=payer.payer_type,
+                        plan_name=payer.name,
+                        payer_organization_fullurl=payer_org_url,
+                    )
+                    plan_url = fullurl_for_resource(gpx, plan)
+                    coverage = build_coverage_resource(
+                        gpx=gpx,
+                        patient_fullurl=patient_url,
+                        payer_id=payer.payer_id,
+                        payer_type=payer.payer_type,
+                        payer_organization_fullurl=payer_org_url,
+                        insurance_plan_fullurl=plan_url,
+                    )
+                    extras.append(payer_org)
+                    extras.append(plan)
+                    extras.append(coverage)
             # First pass: run every active module to collect this patient's
             # full set of fired diagnoses, in the order modules were run.
             # Cross-module `requires` (e.g. hypertension:essential_hypertension)
@@ -561,14 +606,28 @@ def generate(
             elif format is OutputFormat.NDJSON:
                 for resource in (patient, *extras):
                     rtype = resource["resourceType"]
+                    if (
+                        patient_payer_id is not None
+                        and rtype in ("Organization", "InsurancePlan")
+                        and patient_payer_id in emitted_payer_ids_ndjson
+                    ):
+                        continue
                     fh = ndjson_files.get(rtype)
                     if fh is None:
                         fh = (out / f"{rtype}.ndjson").open("w", encoding="utf-8")
                         ndjson_files[rtype] = fh
                     fh.write(json.dumps(resource) + "\n")
+                if patient_payer_id is not None:
+                    emitted_payer_ids_ndjson.add(patient_payer_id)
             else:  # PARQUET
                 for resource in (patient, *extras):
                     rtype = resource["resourceType"]
+                    if (
+                        patient_payer_id is not None
+                        and rtype in ("Organization", "InsurancePlan")
+                        and patient_payer_id in emitted_payer_ids_ndjson
+                    ):
+                        continue
                     subject_ref = None
                     if rtype != "Patient":
                         subj = resource.get("subject")
@@ -581,6 +640,8 @@ def generate(
                             "raw_json": json.dumps(resource),
                         }
                     )
+                if patient_payer_id is not None:
+                    emitted_payer_ids_ndjson.add(patient_payer_id)
 
             bracket = _bracket_for_age(age_years, summary_brackets)
             if bracket is not None:
