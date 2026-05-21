@@ -143,7 +143,7 @@ class TestFHIREncoding:
         assert identifier["system"] == SYSTEM_URI
         assert identifier["system"] == "https://parkerapex.com/gpx"
         assert identifier["value"] == "GPX-SYN-0000000001-8"
-        assert identifier["assigner"]["display"] == "Parker Atlas Synthetic Population"
+        assert identifier["assigner"]["display"] == "APEX Atlas Synthetic Population"
 
     def test_to_fhir_identifier_production(self):
         gpx = GPX.mint(Category.PRODUCTION, 1)

@@ -1,7 +1,7 @@
 """
 FHIR R4 Observation resource construction.
 
-Handles the two common shapes Parker Atlas modules need:
+Handles the two common shapes APEX Atlas modules need:
 
 - **Single-value** (`value` kwarg): a simple lab result or vital sign with
   one measured Quantity. Used for A1C, total cholesterol, weight, etc.

@@ -28,9 +28,14 @@ from pathlib import Path
 from typing import Any
 
 from fhir.resources.R4B.bundle import Bundle as _Bundle
+from fhir.resources.R4B.allergyintolerance import AllergyIntolerance as _Allergy
+from fhir.resources.R4B.claim import Claim as _Claim
 from fhir.resources.R4B.condition import Condition as _Condition
+from fhir.resources.R4B.diagnosticreport import DiagnosticReport as _DiagReport
 from fhir.resources.R4B.documentreference import DocumentReference as _DocRef
 from fhir.resources.R4B.encounter import Encounter as _Encounter
+from fhir.resources.R4B.explanationofbenefit import ExplanationOfBenefit as _EOB
+from fhir.resources.R4B.immunization import Immunization as _Immunization
 from fhir.resources.R4B.medicationrequest import MedicationRequest as _MedReq
 from fhir.resources.R4B.observation import Observation as _Observation
 from fhir.resources.R4B.patient import Patient as _Patient
@@ -47,9 +52,14 @@ from parker_atlas.fhir.patient import (
 # validation. Used by the NDJSON walker; the bundle walker validates
 # transitively through Bundle.model_validate().
 _FHIR_R4B_CLASSES: dict[str, type] = {
+    "AllergyIntolerance": _Allergy,
+    "Claim": _Claim,
     "Patient": _Patient,
     "Condition": _Condition,
+    "DiagnosticReport": _DiagReport,
     "Encounter": _Encounter,
+    "ExplanationOfBenefit": _EOB,
+    "Immunization": _Immunization,
     "Observation": _Observation,
     "MedicationRequest": _MedReq,
     "DocumentReference": _DocRef,
@@ -241,6 +251,41 @@ def _validate_observation(observation: dict[str, Any], report: FileReport) -> No
         )
 
 
+def _validate_allergy(allergy: dict[str, Any], report: FileReport) -> None:
+    for required in ("clinicalStatus", "verificationStatus", "code", "patient"):
+        if not allergy.get(required):
+            report.errors.append(f"AllergyIntolerance.{required}: required by US Core.")
+
+
+def _validate_immunization(immunization: dict[str, Any], report: FileReport) -> None:
+    for required in ("status", "vaccineCode", "patient"):
+        if not immunization.get(required):
+            report.errors.append(f"Immunization.{required}: required by US Core.")
+    if not (
+        immunization.get("occurrenceDateTime")
+        or immunization.get("occurrenceString")
+    ):
+        report.errors.append("Immunization.occurrence[x]: required by FHIR R4.")
+
+
+def _validate_diagnostic_report(report_resource: dict[str, Any], report: FileReport) -> None:
+    for required in ("status", "code", "subject", "result"):
+        if not report_resource.get(required):
+            report.errors.append(f"DiagnosticReport.{required}: required by Atlas.")
+
+
+def _validate_claim(claim: dict[str, Any], report: FileReport) -> None:
+    for required in ("status", "type", "use", "patient", "created", "provider", "insurance", "item"):
+        if not claim.get(required):
+            report.errors.append(f"Claim.{required}: required by Atlas.")
+
+
+def _validate_eob(eob: dict[str, Any], report: FileReport) -> None:
+    for required in ("status", "type", "use", "patient", "created", "insurer", "provider", "outcome", "insurance", "item"):
+        if not eob.get(required):
+            report.errors.append(f"ExplanationOfBenefit.{required}: required by Atlas.")
+
+
 def _validate_bundle(bundle: dict[str, Any], report: FileReport) -> None:
     try:
         _Bundle.model_validate(bundle)
@@ -266,6 +311,16 @@ def _validate_bundle(bundle: dict[str, Any], report: FileReport) -> None:
             _validate_document_reference(resource, report)
         elif rtype == "Procedure":
             _validate_procedure(resource, report)
+        elif rtype == "AllergyIntolerance":
+            _validate_allergy(resource, report)
+        elif rtype == "Immunization":
+            _validate_immunization(resource, report)
+        elif rtype == "DiagnosticReport":
+            _validate_diagnostic_report(resource, report)
+        elif rtype == "Claim":
+            _validate_claim(resource, report)
+        elif rtype == "ExplanationOfBenefit":
+            _validate_eob(resource, report)
         elif rtype is None:
             report.errors.append(f"entry[{i}]: missing resourceType")
         else:
@@ -307,6 +362,16 @@ def _validate_resource_dict(
         _validate_document_reference(resource, report)
     elif rtype == "Procedure":
         _validate_procedure(resource, report)
+    elif rtype == "AllergyIntolerance":
+        _validate_allergy(resource, report)
+    elif rtype == "Immunization":
+        _validate_immunization(resource, report)
+    elif rtype == "DiagnosticReport":
+        _validate_diagnostic_report(resource, report)
+    elif rtype == "Claim":
+        _validate_claim(resource, report)
+    elif rtype == "ExplanationOfBenefit":
+        _validate_eob(resource, report)
 
 
 def _validate_ndjson_file(path: Path) -> FileReport:

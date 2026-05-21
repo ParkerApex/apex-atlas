@@ -88,7 +88,7 @@ def test_practitioner_role_links_practitioner_and_org_with_taxonomy():
 
 
 def test_facility_org_has_npi_identifier():
-    r = build_facility_organization_resource(npi=FAC_NPI, name="Parker Atlas General")
+    r = build_facility_organization_resource(npi=FAC_NPI, name="APEX Atlas General")
     assert r["identifier"][0]["system"] == NPI_IDENTIFIER_SYSTEM
     assert r["identifier"][0]["value"] == FAC_NPI
 

@@ -4,8 +4,8 @@ Parker GPX Identifier — allocation, formatting, and validation.
 Implements the Parker GPX Identifier Specification v1.0
 (https://parkerapex.com/gpx).
 
-A GPX identifier uniquely identifies a patient across the Parker ecosystem.
-This module is the reference implementation used by Parker Atlas to mint
+A GPX identifier uniquely identifies a patient across the APEX ecosystem.
+This module is the reference implementation used by APEX Atlas to mint
 synthetic patient identifiers under the SYN prefix namespace.
 
 Format:  GPX[-PREFIX]-NNNNNNNNNN-C
@@ -38,7 +38,7 @@ class Category(str, Enum):
     """GPX prefix categories as defined in the Parker GPX Specification v1.0."""
 
     PRODUCTION = ""      # No prefix — real clinical data
-    SYNTHETIC = "SYN"    # Parker Atlas generated data
+    SYNTHETIC = "SYN"    # APEX Atlas generated data
     TEST = "TST"         # Internal QA environments
     DEMO = "DEM"         # Sales demos
     DEVELOPER = "DEV"    # Developer sandbox
@@ -197,7 +197,7 @@ class GPX:
     def _assigner_display(self) -> str:
         return {
             Category.PRODUCTION: "Parker Health Global Patient Registry",
-            Category.SYNTHETIC: "Parker Atlas Synthetic Population",
+            Category.SYNTHETIC: "APEX Atlas Synthetic Population",
             Category.TEST: "Parker Test Environment",
             Category.DEMO: "Parker Demo Environment",
             Category.DEVELOPER: "Parker Developer Sandbox",
@@ -207,7 +207,7 @@ class GPX:
     def synthetic_meta_tag() -> dict:
         """
         Return the HL7 v3 ActReason HTEST tag for marking a resource as
-        synthetic. Required on all Parker Atlas output per Spec §6.3.
+        synthetic. Required on all APEX Atlas output per Spec §6.3.
         """
         return {
             "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
@@ -225,7 +225,7 @@ class Allocator:
     """
     Sequential GPX allocator with durable persistence of the high-water mark.
 
-    For Parker Atlas, the allocator is process-local and backed by a simple
+    For APEX Atlas, the allocator is process-local and backed by a simple
     state file. For production APEX, this is replaced with a centralized
     sequence service (not included in this open-source distribution).
 
@@ -237,7 +237,7 @@ class Allocator:
     def __init__(self, category: Category, start: int = 0) -> None:
         if category is Category.PRODUCTION:
             raise GPXError(
-                "Parker Atlas allocator must not mint production GPX values. "
+                "APEX Atlas allocator must not mint production GPX values. "
                 "Use a category with a non-empty prefix (SYN, TST, DEM, DEV)."
             )
         self._category = category
@@ -305,7 +305,7 @@ class FileAllocator(Allocator):
     def __init__(self, category: Category, state_path: Path) -> None:
         if category is Category.PRODUCTION:
             raise GPXError(
-                "Parker Atlas allocator must not mint production GPX values. "
+                "APEX Atlas allocator must not mint production GPX values. "
                 "Use a category with a non-empty prefix (SYN, TST, DEM, DEV)."
             )
         self._category = category

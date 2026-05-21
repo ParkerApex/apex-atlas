@@ -1,5 +1,5 @@
 """
-Parker Atlas command-line interface.
+APEX Atlas command-line interface.
 
 This module is the entry point for the `atlas` command. The `generate`
 subcommand is functional for the Milestone 1 vertical slice (FHIR R4
@@ -12,7 +12,7 @@ from __future__ import annotations
 import json
 import random
 from collections import Counter
-from datetime import date
+from datetime import date, timedelta
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any
@@ -25,9 +25,15 @@ from rich.table import Table
 from parker_atlas import __version__
 from parker_atlas.core.demographics import race_display, sample_demographics
 from parker_atlas.core.payer import sample_payer
+from parker_atlas.fhir.allergy_intolerance import build_allergy_intolerance_resource
 from parker_atlas.fhir.bundle import build_bundle, fullurl_for_gpx, fullurl_for_resource
+from parker_atlas.fhir.claim import (
+    build_claim_resource,
+    build_explanation_of_benefit_resource,
+)
 from parker_atlas.fhir.condition import build_condition_resource
 from parker_atlas.fhir.coverage import build_coverage_resource
+from parker_atlas.fhir.diagnostic_report import build_diagnostic_report_resource
 from parker_atlas.fhir.insurance_plan import build_insurance_plan_resource
 from parker_atlas.fhir.organization import build_payer_organization_resource
 from parker_atlas.fhir.document_reference import build_document_reference_resource
@@ -37,7 +43,9 @@ from parker_atlas.fhir.location import build_location_resource
 from parker_atlas.fhir.organization import build_facility_organization_resource
 from parker_atlas.fhir.practitioner import build_practitioner_resource
 from parker_atlas.fhir.practitioner_role import build_practitioner_role_resource
+from parker_atlas.fhir.immunization import build_immunization_resource
 from parker_atlas.fhir.medication_request import build_medication_request_resource
+from parker_atlas.fhir.mortality import build_cause_of_death_observation_resource
 from parker_atlas.fhir.observation import (
     ObservationComponent,
     Quantity,
@@ -49,7 +57,10 @@ from parker_atlas.notes import NoteContext, build_progress_note_text
 from parker_atlas.gpx import Allocator, Category
 from parker_atlas.modules import (
     ModuleError,
+    SampledAllergyIntolerance,
+    SampledDiagnosticReport,
     SampledEncounter,
+    SampledImmunization,
     SampledMedicationRequest,
     SampledObservation,
     SampledProcedure,
@@ -67,14 +78,14 @@ from parker_atlas.validation.structural import validate_path
 
 app = typer.Typer(
     name="atlas",
-    help="Parker Atlas — synthetic FHIR patient population generator.",
+    help="APEX Atlas — synthetic FHIR patient population generator.",
     no_args_is_help=True,
     add_completion=False,
 )
 
 ingest_app = typer.Typer(
     name="ingest",
-    help="Ingest external data sources into Parker Atlas (prevalence, demographics, …).",
+    help="Ingest external data sources into APEX Atlas (prevalence, demographics, …).",
     no_args_is_help=True,
 )
 app.add_typer(ingest_app)
@@ -188,6 +199,7 @@ def _build_emitted_resources(
     # First pass: build all Encounters and collect their fullUrls keyed
     # by spec_id so other emits can resolve link_to.
     encounter_urls: dict[str, str] = {}
+    observation_urls: dict[str, str] = {}
     sampled_encounters: list = []
     for sr in diagnosis.sampled_resources:
         if isinstance(sr, SampledEncounter):
@@ -242,6 +254,8 @@ def _build_emitted_resources(
     for sr in diagnosis.sampled_resources:
         if isinstance(sr, SampledEncounter):
             continue  # already handled
+        if isinstance(sr, SampledDiagnosticReport):
+            continue  # built after Observations so result refs resolve
         link = _resolve_link(sr)
         if isinstance(sr, SampledObservation):
             if sr.components:
@@ -279,6 +293,7 @@ def _build_emitted_resources(
             if link is not None:
                 obs["encounter"] = {"reference": link}
             built.append(obs)
+            observation_urls[sr.spec_id] = fullurl_for_resource(gpx, obs)
         elif isinstance(sr, SampledMedicationRequest):
             med = build_medication_request_resource(
                 gpx=gpx,
@@ -301,6 +316,51 @@ def _build_emitted_resources(
                 encounter_fullurl=link,
             )
             built.append(proc)
+        elif isinstance(sr, SampledAllergyIntolerance):
+            allergy = build_allergy_intolerance_resource(
+                gpx=gpx,
+                patient_fullurl=patient_url,
+                allergy_spec_id=sr.spec_id,
+                code=sr.code,
+                recorded_date=sr.effective_date,
+                category=sr.category,
+                criticality=sr.criticality,
+                reaction_manifestation=sr.reaction_manifestation,
+            )
+            built.append(allergy)
+        elif isinstance(sr, SampledImmunization):
+            imm = build_immunization_resource(
+                gpx=gpx,
+                patient_fullurl=patient_url,
+                immunization_spec_id=sr.spec_id,
+                vaccine_code=sr.vaccine_code,
+                occurrence=sr.effective_date,
+                encounter_fullurl=link,
+            )
+            built.append(imm)
+
+    for sr in diagnosis.sampled_resources:
+        if not isinstance(sr, SampledDiagnosticReport):
+            continue
+        link = _resolve_link(sr)
+        result_refs = tuple(
+            observation_urls[sid]
+            for sid in sr.result_spec_ids
+            if sid in observation_urls
+        )
+        if not result_refs:
+            continue
+        report = build_diagnostic_report_resource(
+            gpx=gpx,
+            patient_fullurl=patient_url,
+            report_spec_id=sr.spec_id,
+            code=sr.code,
+            effective=sr.effective_date,
+            result_fullurls=result_refs,
+            conclusion=sr.conclusion,
+            encounter_fullurl=link,
+        )
+        built.append(report)
 
     return built
 
@@ -489,6 +549,7 @@ def generate(
     with_notes: Annotated[bool, typer.Option("--with-notes", help="Emit one DocumentReference (template-based progress note) per fired condition.")] = False,
     with_coverage: Annotated[bool, typer.Option("--with-coverage", help="Sample a payer per patient and emit Coverage + payer Organization + InsurancePlan resources.")] = False,
     with_providers: Annotated[bool, typer.Option("--with-providers", help="Sample a Practitioner + facility Organization + Location per encounter; attach as Encounter.participant / .location / .serviceProvider.")] = False,
+    with_claims: Annotated[bool, typer.Option("--with-claims", help="Emit one Claim + ExplanationOfBenefit per Encounter. Requires --with-coverage; uninsured patients receive no claims.")] = False,
 ) -> None:
     """Generate a synthetic FHIR patient population."""
     if patients < 1:
@@ -517,6 +578,9 @@ def generate(
             f"Milestone 1 implements only us-core-6.1."
         )
         raise typer.Exit(code=2)
+    if with_claims and not with_coverage:
+        err_console.print("[red]--with-claims requires --with-coverage[/red]")
+        raise typer.Exit(code=1)
     active_modules = []
     if module is not None:
         for name in [m.strip() for m in module.split(",") if m.strip()]:
@@ -589,14 +653,19 @@ def generate(
             # Plan so cross-Bundle references resolve under FHIR transaction
             # semantics; NDJSON/Parquet dedup is enforced by `emitted_payer_ids`.
             patient_payer_id: str | None = None
+            patient_payer_type: str | None = None
+            patient_coverage_url: str | None = None
+            patient_payer_org_url: str | None = None
             if with_coverage:
                 payer = sample_payer(rng, age_years=age_years)
                 if payer is not None:
                     patient_payer_id = payer.payer_id
+                    patient_payer_type = payer.payer_type
                     payer_org = build_payer_organization_resource(
                         payer_id=payer.payer_id, name=payer.name
                     )
                     payer_org_url = fullurl_for_resource(gpx, payer_org)
+                    patient_payer_org_url = payer_org_url
                     plan = build_insurance_plan_resource(
                         payer_id=payer.payer_id,
                         payer_type=payer.payer_type,
@@ -612,6 +681,7 @@ def generate(
                         payer_organization_fullurl=payer_org_url,
                         insurance_plan_fullurl=plan_url,
                     )
+                    patient_coverage_url = fullurl_for_resource(gpx, coverage)
                     extras.append(payer_org)
                     extras.append(plan)
                     extras.append(coverage)
@@ -660,6 +730,27 @@ def generate(
             # enabled) get the full problem list via NoteContext.diagnoses,
             # with the focused dx surfaced as primary_diagnosis.
             all_diagnoses = tuple(dx for _, dx in all_dx_in_order)
+            mortality_candidates: list[tuple[date, str, Any]] = []
+            for mod_name, dx in all_dx_in_order:
+                mortality = dx.condition.mortality
+                if mortality is None or dx.onset_date is None:
+                    continue
+                death_date = dx.onset_date + timedelta(
+                    days=mortality.after_years * 365
+                )
+                if death_date > today:
+                    continue
+                if rng.random() < mortality.probability:
+                    mortality_candidates.append((death_date, mod_name, dx))
+
+            death_event: tuple[date, str, Any] | None = None
+            if mortality_candidates:
+                death_event = sorted(
+                    mortality_candidates,
+                    key=lambda item: (item[0], item[1], item[2].condition.id),
+                )[0]
+                patient["deceasedDateTime"] = death_event[0].isoformat()
+
             for mod_name, dx in all_dx_in_order:
                 extras.append(
                     build_condition_resource(
@@ -709,6 +800,68 @@ def generate(
                             encounter_fullurl=encounter_url,
                         )
                     )
+
+            if death_event is not None:
+                death_date, mod_name, dx = death_event
+                cause_code = (
+                    dx.condition.mortality.cause_code
+                    if dx.condition.mortality
+                    else None
+                )
+                cause_code = cause_code or dx.condition.code
+                terminal_spec_id = f"terminal_{mod_name}_{dx.condition.id}"
+                extras.append(
+                    build_condition_resource(
+                        gpx=gpx,
+                        patient_fullurl=patient_url,
+                        condition_spec_id=terminal_spec_id,
+                        code=cause_code,
+                        onset_date=death_date,
+                    )
+                )
+                extras.append(
+                    build_cause_of_death_observation_resource(
+                        gpx=gpx,
+                        patient_fullurl=patient_url,
+                        condition_spec_id=terminal_spec_id,
+                        cause_code=cause_code,
+                        effective=death_date,
+                    )
+                )
+
+            if with_claims and patient_coverage_url is not None:
+                claim_resources: list[dict] = []
+                for encounter in [r for r in extras if r["resourceType"] == "Encounter"]:
+                    encounter_url = fullurl_for_resource(gpx, encounter)
+                    provider_url = (encounter.get("serviceProvider") or {}).get(
+                        "reference"
+                    )
+                    claim = build_claim_resource(
+                        gpx=gpx,
+                        patient_fullurl=patient_url,
+                        encounter_fullurl=encounter_url,
+                        coverage_fullurl=patient_coverage_url,
+                        encounter_id_value=encounter["id"],
+                        encounter_class=encounter["class"]["code"],
+                        created=today,
+                        provider_fullurl=provider_url,
+                    )
+                    claim_url = fullurl_for_resource(gpx, claim)
+                    eob = build_explanation_of_benefit_resource(
+                        gpx=gpx,
+                        patient_fullurl=patient_url,
+                        encounter_fullurl=encounter_url,
+                        coverage_fullurl=patient_coverage_url,
+                        claim_fullurl=claim_url,
+                        encounter_id_value=encounter["id"],
+                        encounter_class=encounter["class"]["code"],
+                        payer_type=patient_payer_type or "commercial",
+                        created=today,
+                        provider_fullurl=provider_url,
+                        insurer_fullurl=patient_payer_org_url,
+                    )
+                    claim_resources.extend((claim, eob))
+                extras.extend(claim_resources)
 
             if format is OutputFormat.FHIR_R4:
                 bundle = build_bundle(gpx, patient, extras)
@@ -929,7 +1082,7 @@ def modules(
     if not names:
         console.print("No bundled modules.")
         return
-    table = Table(title="Bundled Parker Atlas modules")
+    table = Table(title="Bundled APEX Atlas modules")
     table.add_column("Name", style="bold")
     table.add_column("Version")
     table.add_column("Conditions")
@@ -946,14 +1099,14 @@ def modules(
 
 @app.command()
 def version() -> None:
-    """Print the installed Parker Atlas version."""
-    console.print(f"parker-atlas {__version__}")
+    """Print the installed APEX Atlas version."""
+    console.print(f"apex-atlas {__version__}")
 
 
 @app.command()
 def status() -> None:
     """Print implementation status of each subsystem."""
-    table = Table(title="Parker Atlas — implementation status", show_lines=False)
+    table = Table(title="APEX Atlas — implementation status", show_lines=False)
     table.add_column("Component", style="bold")
     table.add_column("Status")
     table.add_column("Milestone")
@@ -961,20 +1114,23 @@ def status() -> None:
     rows = [
         ("GPX identifier",        "[green]implemented[/green]",    "M0"),
         ("CLI scaffolding",       "[green]implemented[/green]",    "M0"),
-        ("Demographic sampling",  "[yellow]placeholder[/yellow]",  "M1"),
+        ("Demographic sampling",  "[green]ACS-sourced[/green]",   "M1"),
         ("FHIR Patient builder",  "[green]implemented[/green]",    "M1"),
         ("FHIR Condition builder","[green]implemented[/green]",    "M1"),
         ("FHIR Observation",      "[green]implemented[/green]",    "M2"),
         ("FHIR Encounter",        "[green]implemented[/green]",    "M2"),
         ("FHIR MedicationRequest","[green]implemented[/green]",    "M2"),
+        ("FHIR Allergy/Immunization","[green]implemented[/green]", "M2"),
+        ("FHIR DiagnosticReport", "[green]implemented[/green]",    "M2"),
+        ("Claim + EOB",           "[green]first cut[/green]",      "M2"),
         ("atlas generate",        "[green]implemented[/green]",    "M1"),
         ("atlas validate",        "[green]structural[/green]",     "M1"),
         ("atlas validate --cohort","[green]first cut[/green]",      "M2"),
         ("Module runtime",        "[green]cross-module reqs[/green]", "M2"),
-        ("Module library",        "[green]5 sourced + 1 demo[/green]", "M2"),
-        ("Fidelity harness",      "[green]6 modules[/green]",      "M2"),
+        ("Module library",        "[green]11 modules[/green]",     "M2"),
+        ("Fidelity harness",      "[green]11 modules[/green]",     "M2"),
         ("LLM authoring",         "[dim]not started[/dim]",        "M3"),
-        ("Clinical notes",        "[dim]not started[/dim]",        "M4"),
+        ("Clinical notes",        "[green]template[/green]",       "M4"),
     ]
     for row in rows:
         table.add_row(*row)
