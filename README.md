@@ -60,6 +60,8 @@ Parker Atlas is in early development. The current repository is a scaffold — m
 | Cross-module dependencies  | ✅ Implemented  | `requires: module:cond_id` + `emit_resource_type: Condition` for harness gating |
 | State-machine progressions | ✅ One-hop, cross-module | `progressions: [{to, after_years, probability}]`; same-module + `<module>:<cond>` cross-module targets; 7 chains live (CKD×3, retinopathy, MI, cardiorenal, HTN→HF, HTN→stroke) |
 | Clinical note generation   | ✅ Template     | `--with-notes`: DocumentReference + inline markdown progress note per condition |
+| Payer & coverage           | ✅ Implemented  | `--with-coverage`: age-stratified payer mix → Coverage + payer Organization + InsurancePlan (US Core 6.1, NAHDO SOPT) |
+| Providers & locations      | ✅ Implemented  | `--with-providers`: per-encounter Practitioner + PractitionerRole + Location + facility Organization (NPI-keyed, NUCC taxonomy) |
 | LLM-assisted authoring     | ⏳ Not started   | Milestone 3                                                              |
 | LLM-assisted note authoring| ⏳ Not started   | Milestone 4 — `NoteStrategy.LLM` API surface in place                    |
 
@@ -132,6 +134,29 @@ markdown) per fired condition:
 ```bash
 atlas generate --patients 100 --seed 42 --module hypertension \
     --with-notes --out ./cohort-with-notes
+```
+
+Sample a payer per patient (age-stratified Medicare / Medicaid /
+Commercial / Uninsured mix) and emit Coverage + payer Organization +
+InsurancePlan. Resource ids are deterministic per payer so Bundles
+share the same payer Org on ingest; NDJSON / Parquet dedupe to one row
+per payer across the cohort:
+
+```bash
+atlas generate --patients 500 --seed 42 --module hypertension \
+    --with-coverage --out ./cohort-with-coverage
+```
+
+Attach a Practitioner + Location + facility Organization to every
+Encounter (sampled from a synthetic NPI-keyed roster with NUCC
+Health Care Provider Taxonomy specialties). Encounters get
+`participant`, `location`, and `serviceProvider` references; cross-
+bundle dedupe is again by deterministic id:
+
+```bash
+atlas generate --patients 500 --seed 42 \
+    --module hypertension,ischemic_heart_disease \
+    --with-providers --with-coverage --out ./cohort-full
 ```
 
 Check that a cohort's aggregate statistics match the module's declared
