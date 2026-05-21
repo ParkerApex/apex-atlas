@@ -21,9 +21,9 @@ Current status:
 
 | File              | Provenance | Source                                                                    |
 | ----------------- | ---------- | ------------------------------------------------------------------------- |
-| `age_sex.csv`     | sourced    | US Census Bureau Vintage 2024 annual estimates (NC-EST2024-SYASEXN)       |
-| `race.csv`        | sourced    | US Census 2020 Decennial Census — Race Alone populations                  |
-| `ethnicity.csv`   | sourced    | US Census Bureau Vintage 2024 (Hispanic/Latino share)                     |
+| `age_sex.csv`     | sourced    | ACS 2024 1-year B01001 Sex by Age                                         |
+| `race.csv`        | sourced    | ACS 2024 1-year B02001 Race                                               |
+| `ethnicity.csv`   | sourced    | ACS 2024 1-year B03003 Hispanic or Latino Origin                          |
 | `names.csv`       | placeholder| Curated common US names; not drawn from Census name frequencies           |
 
 Regenerate any of these via `atlas ingest demographics --input X.csv
@@ -54,10 +54,9 @@ Weights do not need to sum to exactly 1.0 — the sampler normalizes them.
 ## Known caveats
 
 - The `age_sex.csv` brackets (0-17, 18-39, 40-59, 60-99) are chosen to
-  match the NHANES age stratification used by the hypertension fidelity
-  expectation, not ACS's usual (18-44, 45-64, 65+). Single-year Census
-  estimates are aggregated up to these brackets at ingest time.
-- The `race.csv` "Other Race" row aggregates the Census 2020 "Some
+  match the NHANES age stratification used by chronic-disease fidelity
+  expectations. ACS B01001 age bands are aggregated up to these brackets.
+- The `race.csv` "Other Race" row aggregates ACS B02001 "Some
   other race alone" and "Two or more races" categories, because the
   OMB-code enum in `parker_atlas.core.demographics.Race` does not
   separately track a multiracial category. Splitting those out is a

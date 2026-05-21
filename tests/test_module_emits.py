@@ -11,11 +11,15 @@ from typer.testing import CliRunner
 
 from parker_atlas.cli import app
 from parker_atlas.modules import (
+    AllergyIntoleranceEmit,
+    DiagnosticReportEmit,
     EncounterEmit,
+    ImmunizationEmit,
     MedicationRequestEmit,
     ModuleError,
     ObservationEmit,
     SampledEncounter,
+    SampledImmunization,
     SampledMedicationRequest,
     SampledObservation,
     load_module,
@@ -138,6 +142,46 @@ class TestEmitParsing:
         emits = mod.conditions[0].emits
         assert isinstance(emits[0], MedicationRequestEmit)
         assert emits[0].probability == 0.5
+
+    def test_parses_allergy_immunization_and_diagnostic_report_emits(self):
+        mod = load_module_from_str(
+            _minimal_module_with_emits(
+                """
+                - resource_type: Encounter
+                  spec_id: visit
+                  encounter_class: AMB
+                  type: {system: s, code: "1", display: Visit}
+                - resource_type: Observation
+                  spec_id: total_cholesterol
+                  link_to: visit
+                  category: laboratory
+                  code: {system: http://loinc.org, code: "2093-3", display: Total cholesterol}
+                  value_range: {low: 120, high: 240, precision: 0}
+                  unit: mg/dL
+                - resource_type: DiagnosticReport
+                  spec_id: lipid_report
+                  link_to: visit
+                  code: {system: http://loinc.org, code: "24331-1", display: Lipid panel}
+                  results: [total_cholesterol]
+                  conclusion: Synthetic lipid panel.
+                - resource_type: AllergyIntolerance
+                  spec_id: penicillin_allergy
+                  code: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "7980", display: Penicillin}
+                  reaction: {system: http://snomed.info/sct, code: "247472004", display: Hives}
+                - resource_type: Immunization
+                  spec_id: flu_shot
+                  link_to: visit
+                  vaccine: {system: http://hl7.org/fhir/sid/cvx, code: "140", display: Influenza}
+                """
+            )
+        )
+        emits = mod.conditions[0].emits
+        assert any(isinstance(e, DiagnosticReportEmit) for e in emits)
+        assert any(isinstance(e, AllergyIntoleranceEmit) for e in emits)
+        assert any(isinstance(e, ImmunizationEmit) for e in emits)
+
+        dx = run_module(mod, age_years=40, sex="female", rng=random.Random(0))[0]
+        assert any(isinstance(r, SampledImmunization) for r in dx.sampled_resources)
 
     def test_rejects_unknown_resource_type(self):
         with pytest.raises(ModuleError, match="unsupported resource_type"):

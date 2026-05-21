@@ -185,4 +185,4 @@ def test_status_command_works():
 def test_version_command_works():
     result = runner.invoke(app, ["version"])
     assert result.exit_code == 0
-    assert "parker-atlas" in result.output
+    assert "apex-atlas" in result.output

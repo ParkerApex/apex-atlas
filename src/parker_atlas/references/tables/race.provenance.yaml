@@ -1,28 +1,18 @@
 table: race
-version: 0.2.0
+version: 0.3.0
 source:
-  name: US Census 2020 Decennial Census
+  name: ACS 2024 1-year, table B02001
   provenance: sourced
-  url: https://www.census.gov/library/visualizations/interactive/race-and-ethnicity-in-the-united-state-2010-and-2020-census.html
-  note: 'Race marginal distribution from the 2020 Decennial Census "alone"
-
-    categories, with the Atlas "Other Race" bucket aggregating
-
-    "Some other race alone" (8.42%) and "Two or More Races" (10.21%)
-
-    since the current OMB-code enum in parker_atlas.core.demographics
-
-    does not separately track a multiracial category.
-
-    Totals sum to 0.9999 due to rounding of the published percentages.
-
-    '
+  url: https://api.censusreporter.org/1.0/data/show/latest?table_ids=B02001&geo_ids=01000US
+  note: >
+    Race marginal distribution from ACS 2024 1-year table B02001 for
+    geography 01000US. Atlas's current OMB enum does not separately track
+    multiracial patients, so B02001_007E (Some Other Race alone) and
+    B02001_008E (Two or More Races) are aggregated into Other Race.
   citations:
-  - source: U.S. Census Bureau, 2020 Decennial Census — Race Alone populations
-    url: https://www.census.gov/library/stories/2021/08/2020-united-states-population-more-racially-ethnically-diverse-than-2010.html
-    version: 2020 Decennial Census
-    accessed: '2026-04-23'
-    note: 'Percentages: White 61.63%, Black/AA 12.40%, Asian 6.00%, AI/AN 1.12%, NH/PI 0.21%, Some other
-      race 8.42%, Two or more races 10.21%.
-
-      '
+  - source: U.S. Census Bureau, American Community Survey 2024 1-year estimates
+    url: https://data.census.gov/table/ACSDT1Y2024.B02001
+    version: ACS 2024 1-year
+    accessed: '2026-05-21'
+    table: B02001 Race, United States
+    note: Retrieved through Census Reporter API release acs2024_1yr.

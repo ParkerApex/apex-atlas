@@ -1,1 +1,1 @@
-"""Bundled Parker Atlas clinical modules. Treated as package data."""
+"""Bundled APEX Atlas clinical modules. Treated as package data."""

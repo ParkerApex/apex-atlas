@@ -2,7 +2,7 @@
 Ingestion pipelines for external data sources.
 
 Each ingest module consumes a clean CSV (+ small metadata YAML) and
-produces an artifact that Parker Atlas's runtime loaders accept. The
+produces an artifact that APEX Atlas's runtime loaders accept. The
 CSV format is the integration point — users responsible for extracting
 public data (NHANES, ACS, BRFSS, etc.) transform it into Atlas's CSV
 shape, then run the appropriate `atlas ingest` command.

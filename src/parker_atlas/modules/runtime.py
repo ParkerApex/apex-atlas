@@ -1,7 +1,7 @@
 """
 Clinical module runtime — probability-module flavor.
 
-Parker Atlas modules are authored in YAML. The minimal flavor supported
+APEX Atlas modules are authored in YAML. The minimal flavor supported
 today is a **probability module**: each condition carries an age-bracketed
 (optionally sex-stratified) prevalence. For each patient, each condition
 is a Bernoulli trial against its bracket-specific rate.
@@ -143,7 +143,46 @@ class ProcedureEmit:
     link_to: str | None = None
 
 
-EmitSpec = EncounterEmit | ObservationEmit | MedicationRequestEmit | ProcedureEmit
+@dataclass(frozen=True, slots=True)
+class AllergyIntoleranceEmit:
+    spec_id: str
+    code: Coding
+    category: str = "medication"
+    criticality: str = "low"
+    reaction_manifestation: Coding | None = None
+    probability: float = 1.0
+    when: str = "today"
+
+
+@dataclass(frozen=True, slots=True)
+class ImmunizationEmit:
+    spec_id: str
+    vaccine_code: Coding
+    probability: float = 1.0
+    when: str = "today"
+    link_to: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class DiagnosticReportEmit:
+    spec_id: str
+    code: Coding
+    result_spec_ids: tuple[str, ...]
+    conclusion: str | None = None
+    probability: float = 1.0
+    when: str = "today"
+    link_to: str | None = None
+
+
+EmitSpec = (
+    EncounterEmit
+    | ObservationEmit
+    | MedicationRequestEmit
+    | ProcedureEmit
+    | AllergyIntoleranceEmit
+    | ImmunizationEmit
+    | DiagnosticReportEmit
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -181,6 +220,15 @@ class ProgressionSpec:
 
 
 @dataclass(frozen=True, slots=True)
+class MortalitySpec:
+    """Condition-specific mortality after a duration from onset."""
+
+    probability: float
+    after_years: int = 0
+    cause_code: Coding | None = None
+
+
+@dataclass(frozen=True, slots=True)
 class ConditionSpec:
     """One condition a module can assign to a patient."""
 
@@ -204,6 +252,10 @@ class ConditionSpec:
     # ProgressionSpec for semantics. Evaluated after all conditions have
     # had their normal-prevalence trial.
     progressions: tuple[ProgressionSpec, ...] = ()
+    # Optional condition-specific mortality hook. The CLI evaluates this
+    # after all module/progression diagnoses are known so the Patient can
+    # be marked deceased and cause-of-death resources emitted.
+    mortality: MortalitySpec | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -270,11 +322,45 @@ class SampledProcedure:
     link_to: str | None
 
 
+@dataclass(frozen=True, slots=True)
+class SampledAllergyIntolerance:
+    spec_id: str
+    code: Coding
+    category: str
+    criticality: str
+    reaction_manifestation: Coding | None
+    effective_date: date
+    when: str
+
+
+@dataclass(frozen=True, slots=True)
+class SampledImmunization:
+    spec_id: str
+    vaccine_code: Coding
+    effective_date: date
+    when: str
+    link_to: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class SampledDiagnosticReport:
+    spec_id: str
+    code: Coding
+    result_spec_ids: tuple[str, ...]
+    conclusion: str | None
+    effective_date: date
+    when: str
+    link_to: str | None
+
+
 SampledResource = (
     SampledEncounter
     | SampledObservation
     | SampledMedicationRequest
     | SampledProcedure
+    | SampledAllergyIntolerance
+    | SampledImmunization
+    | SampledDiagnosticReport
 )
 
 
@@ -458,6 +544,59 @@ def _parse_procedure_emit(raw: dict[str, Any], ctx: str) -> ProcedureEmit:
     )
 
 
+def _parse_allergy_intolerance_emit(
+    raw: dict[str, Any], ctx: str
+) -> AllergyIntoleranceEmit:
+    for req in ("spec_id", "code"):
+        if req not in raw:
+            raise ModuleError(f"{ctx}: AllergyIntolerance emit missing {req!r}")
+    reaction = raw.get("reaction")
+    return AllergyIntoleranceEmit(
+        spec_id=str(raw["spec_id"]),
+        code=_parse_coding(raw["code"], f"{ctx}.code"),
+        category=str(raw.get("category", "medication")),
+        criticality=str(raw.get("criticality", "low")),
+        reaction_manifestation=(
+            _parse_coding(reaction, f"{ctx}.reaction") if reaction else None
+        ),
+        probability=_parse_probability(raw, ctx),
+        when=_parse_when(raw, ctx),
+    )
+
+
+def _parse_immunization_emit(raw: dict[str, Any], ctx: str) -> ImmunizationEmit:
+    for req in ("spec_id", "vaccine"):
+        if req not in raw:
+            raise ModuleError(f"{ctx}: Immunization emit missing {req!r}")
+    return ImmunizationEmit(
+        spec_id=str(raw["spec_id"]),
+        vaccine_code=_parse_coding(raw["vaccine"], f"{ctx}.vaccine"),
+        probability=_parse_probability(raw, ctx),
+        when=_parse_when(raw, ctx),
+        link_to=str(raw["link_to"]) if raw.get("link_to") else None,
+    )
+
+
+def _parse_diagnostic_report_emit(
+    raw: dict[str, Any], ctx: str
+) -> DiagnosticReportEmit:
+    for req in ("spec_id", "code", "results"):
+        if req not in raw:
+            raise ModuleError(f"{ctx}: DiagnosticReport emit missing {req!r}")
+    results = raw["results"]
+    if not isinstance(results, list) or not results:
+        raise ModuleError(f"{ctx}: DiagnosticReport.results must be a non-empty list")
+    return DiagnosticReportEmit(
+        spec_id=str(raw["spec_id"]),
+        code=_parse_coding(raw["code"], f"{ctx}.code"),
+        result_spec_ids=tuple(str(r) for r in results),
+        conclusion=str(raw["conclusion"]) if raw.get("conclusion") else None,
+        probability=_parse_probability(raw, ctx),
+        when=_parse_when(raw, ctx),
+        link_to=str(raw["link_to"]) if raw.get("link_to") else None,
+    )
+
+
 def _parse_emit(raw: dict[str, Any], ctx: str) -> EmitSpec:
     if "resource_type" not in raw:
         raise ModuleError(f"{ctx}: emit missing `resource_type`")
@@ -470,9 +609,16 @@ def _parse_emit(raw: dict[str, Any], ctx: str) -> EmitSpec:
         return _parse_medication_request_emit(raw, ctx)
     if rtype == "Procedure":
         return _parse_procedure_emit(raw, ctx)
+    if rtype == "AllergyIntolerance":
+        return _parse_allergy_intolerance_emit(raw, ctx)
+    if rtype == "Immunization":
+        return _parse_immunization_emit(raw, ctx)
+    if rtype == "DiagnosticReport":
+        return _parse_diagnostic_report_emit(raw, ctx)
     raise ModuleError(
         f"{ctx}: unsupported resource_type {rtype!r}; "
-        f"choices: Encounter, Observation, MedicationRequest, Procedure"
+        f"choices: AllergyIntolerance, DiagnosticReport, Encounter, "
+        f"Immunization, MedicationRequest, Observation, Procedure"
     )
 
 
@@ -506,6 +652,29 @@ def _parse_onset_age(raw: dict[str, Any], context: str) -> OnsetAgeRange:
     if hi < lo:
         raise ModuleError(f"{context}: onset_age.max {hi} < min {lo}")
     return OnsetAgeRange(min=lo, max=hi)
+
+
+def _parse_mortality(raw: dict[str, Any], context: str) -> MortalitySpec:
+    if "probability" not in raw:
+        raise ModuleError(f"{context}: mortality missing 'probability'")
+    probability = float(raw["probability"])
+    if not 0.0 <= probability <= 1.0:
+        raise ModuleError(
+            f"{context}: mortality.probability {probability} must be in [0, 1]"
+        )
+    after_years = int(raw.get("after_years", 0))
+    if after_years < 0:
+        raise ModuleError(
+            f"{context}: mortality.after_years {after_years} must be >= 0"
+        )
+    cause_raw = raw.get("cause")
+    return MortalitySpec(
+        probability=probability,
+        after_years=after_years,
+        cause_code=(
+            _parse_coding(cause_raw, f"{context}.cause") if cause_raw else None
+        ),
+    )
 
 
 def _parse_condition(
@@ -558,14 +727,32 @@ def _parse_condition(
             f"condition {raw.get('id')!r}: duplicate emit spec_ids: "
             f"{sorted(set(duplicate_specs))}"
         )
+    observation_specs = {e.spec_id for e in emits if isinstance(e, ObservationEmit)}
     # Each link_to must reference an Encounter declared in this condition.
     for e in emits:
-        if isinstance(e, ObservationEmit | MedicationRequestEmit | ProcedureEmit) and e.link_to is not None:
+        if isinstance(
+            e,
+            (
+                ObservationEmit,
+                MedicationRequestEmit,
+                ProcedureEmit,
+                ImmunizationEmit,
+                DiagnosticReportEmit,
+            ),
+        ) and e.link_to is not None:
             if e.link_to not in encounter_specs:
                 raise ModuleError(
                     f"condition {raw.get('id')!r}: emit {e.spec_id!r} link_to={e.link_to!r} "
                     f"does not match any Encounter spec_id in this condition "
                     f"(available: {sorted(encounter_specs)})"
+                )
+        if isinstance(e, DiagnosticReportEmit):
+            missing = [sid for sid in e.result_spec_ids if sid not in observation_specs]
+            if missing:
+                raise ModuleError(
+                    f"condition {raw.get('id')!r}: DiagnosticReport emit {e.spec_id!r} "
+                    f"references unknown Observation spec_id(s): {missing} "
+                    f"(available: {sorted(observation_specs)})"
                 )
     onset_age = (
         _parse_onset_age(raw["onset_age"], f"condition {raw.get('id')!r}.onset_age")
@@ -581,6 +768,16 @@ def _parse_condition(
         raise ModuleError(
             f"condition {raw.get('id')!r}: progressions require an `onset_age` "
             f"on the source condition (progression timing is measured from onset)"
+        )
+    mortality = (
+        _parse_mortality(raw["mortality"], f"condition {raw.get('id')!r}.mortality")
+        if raw.get("mortality")
+        else None
+    )
+    if mortality is not None and onset_age is None:
+        raise ModuleError(
+            f"condition {raw.get('id')!r}: mortality requires an `onset_age` "
+            f"(mortality timing is measured from onset)"
         )
     progression_targets = [p.to for p in progressions]
     if len(set(progression_targets)) != len(progression_targets):
@@ -614,6 +811,7 @@ def _parse_condition(
         onset_age=onset_age,
         requires=requires,
         progressions=progressions,
+        mortality=mortality,
     )
 
 
@@ -929,6 +1127,40 @@ def _sample_emits(
                     spec_id=emit.spec_id,
                     code=emit.code,
                     reason_code=emit.reason_code,
+                    effective_date=eff,
+                    when=emit.when,
+                    link_to=emit.link_to,
+                )
+            )
+        elif isinstance(emit, AllergyIntoleranceEmit):
+            out.append(
+                SampledAllergyIntolerance(
+                    spec_id=emit.spec_id,
+                    code=emit.code,
+                    category=emit.category,
+                    criticality=emit.criticality,
+                    reaction_manifestation=emit.reaction_manifestation,
+                    effective_date=eff,
+                    when=emit.when,
+                )
+            )
+        elif isinstance(emit, ImmunizationEmit):
+            out.append(
+                SampledImmunization(
+                    spec_id=emit.spec_id,
+                    vaccine_code=emit.vaccine_code,
+                    effective_date=eff,
+                    when=emit.when,
+                    link_to=emit.link_to,
+                )
+            )
+        elif isinstance(emit, DiagnosticReportEmit):
+            out.append(
+                SampledDiagnosticReport(
+                    spec_id=emit.spec_id,
+                    code=emit.code,
+                    result_spec_ids=emit.result_spec_ids,
+                    conclusion=emit.conclusion,
                     effective_date=eff,
                     when=emit.when,
                     link_to=emit.link_to,

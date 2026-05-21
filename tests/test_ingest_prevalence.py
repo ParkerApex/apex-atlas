@@ -54,7 +54,7 @@ class TestPrevalenceIngest:
         data = yaml.safe_load(rendered)
         citations = data["source"]["citations"]
         assert len(citations) == 1
-        assert citations[0]["source"] == "Parker Atlas test fixture"
+        assert citations[0]["source"] == "APEX Atlas test fixture"
 
     def test_rejects_placeholder_provenance(self, tmp_path):
         bad_meta = tmp_path / "meta.yaml"

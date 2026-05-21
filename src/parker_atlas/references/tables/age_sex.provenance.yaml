@@ -1,34 +1,18 @@
 table: age_sex
-version: 0.2.0
+version: 0.3.0
 source:
-  name: US Census Bureau, Vintage 2024 population estimates
+  name: ACS 2024 1-year, table B01001
   provenance: sourced
-  url: https://www2.census.gov/programs-surveys/popest/tables/2020-2024/national/asrh/
-  note: 'Weights computed from `NC-EST2024-SYASEXN.xlsx` — Annual Estimates
-
-    of the Resident Population by Single Year of Age and Sex for the
-
-    United States: April 1, 2020 to July 1, 2024 (Vintage 2024).
-
-    The July 1, 2024 column was aggregated into the NHANES-compatible
-
-    age brackets (0-17, 18-39, 40-59, 60+) separately for males and
-
-    females, then divided by total US population to yield the joint
-
-    proportion in each (age, sex) cell. Brackets sum to 1.00000.
-
-    '
+  url: https://api.censusreporter.org/1.0/data/show/latest?table_ids=B01001&geo_ids=01000US
+  note: >
+    Weights computed from ACS 2024 1-year table B01001 (Sex by Age) for
+    geography 01000US. Male and female ACS age bands were aggregated into
+    Atlas brackets (0-17, 18-39, 40-59, 60-99) and divided by B01001_001E
+    total population (340,110,980). Brackets sum to 1.000000.
   citations:
-  - source: 'U.S. Census Bureau, Population Division. Annual Estimates of the Resident Population by Single
-      Year of Age and Sex for the United States: April 1, 2020 to July 1, 2024 (NC-EST2024-SYASEXN).
-
-      '
-    url: https://www2.census.gov/programs-surveys/popest/tables/2020-2024/national/asrh/nc-est2024-syasexn.xlsx
-    version: Vintage 2024 (June 2025 release)
-    accessed: '2026-04-23'
-    table: NC-EST2024-SYASEXN, July 1 2024 column
-    note: 'Single-year-of-age totals for Total/Male/Female sections aggregated by Parker Atlas into bracket
-      proportions.
-
-      '
+  - source: U.S. Census Bureau, American Community Survey 2024 1-year estimates
+    url: https://data.census.gov/table/ACSDT1Y2024.B01001
+    version: ACS 2024 1-year
+    accessed: '2026-05-21'
+    table: B01001 Sex by Age, United States
+    note: Retrieved through Census Reporter API release acs2024_1yr.

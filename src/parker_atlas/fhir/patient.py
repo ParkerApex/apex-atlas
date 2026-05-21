@@ -12,6 +12,7 @@ Produces a dict-shaped Patient resource that round-trips through the
 
 from __future__ import annotations
 
+from datetime import date
 from typing import Any
 
 from fhir.resources.R4B.patient import Patient as _Patient
@@ -74,7 +75,12 @@ def _birthsex_extension(demo: Demographics) -> dict[str, Any]:
     return {"url": US_CORE_BIRTHSEX_URL, "valueCode": code}
 
 
-def build_patient_resource(gpx: GPX, demo: Demographics) -> dict[str, Any]:
+def build_patient_resource(
+    gpx: GPX,
+    demo: Demographics,
+    *,
+    deceased_date: date | None = None,
+) -> dict[str, Any]:
     """Build a US Core 6.1-conformant Patient resource as a JSON-ready dict.
 
     The returned dict is validated against the fhir.resources R4B Patient model
@@ -104,6 +110,9 @@ def build_patient_resource(gpx: GPX, demo: Demographics) -> dict[str, Any]:
         "gender": demo.gender.value,
         "birthDate": demo.birth_date.isoformat(),
     }
+
+    if deceased_date is not None:
+        resource["deceasedDateTime"] = deceased_date.isoformat()
 
     _Patient.model_validate(resource)
     return resource

@@ -43,7 +43,7 @@ def _fhir_instant(value: date | datetime) -> str:
 
 _URL_NAMESPACE = uuid.UUID("6ba7b811-9dad-11d1-80b4-00c04fd430c8")
 
-# LOINC document type codes used by Parker Atlas note types.
+# LOINC document type codes used by APEX Atlas note types.
 LOINC_PROGRESS_NOTE = "11506-3"
 LOINC_HISTORY_AND_PHYSICAL = "34117-2"
 LOINC_DISCHARGE_SUMMARY = "18842-5"
