@@ -1,0 +1,275 @@
+module: type1_diabetes
+version: 0.1.0
+description: >
+  Type 1 diabetes mellitus (T1D) module. T1D is an autoimmune condition in
+  which the pancreatic beta cells are destroyed, resulting in absolute insulin
+  deficiency. An estimated 1.45 million US adults live with T1D (CDC 2022),
+  approximately 0.5% of the adult population. Unlike T2D, T1D onset peaks in
+  childhood and adolescence (bimodal peak: ages 5-7 and 10-14) but carries
+  forward into adulthood; the module therefore uses modestly higher prevalence
+  in the 18-39 bracket (individuals diagnosed in childhood) tapering with age.
+
+  T1D is distinguished from T2D by: absolute insulin dependence, low C-peptide
+  (reflecting absent endogenous insulin secretion), and positive islet
+  autoantibodies (anti-GAD65, anti-IA-2, anti-ZnT8). The module emits the
+  T1D-specific diagnostic and management fingerprint:
+  - An endocrinology or primary care Encounter
+  - HbA1c Observation (LOINC 4548-4) in the suboptimally-controlled range
+    (7.0–12.0%; reflects real-world distribution of T1D patients, whose
+    average HbA1c is ~8.4% per T1D Exchange Registry 2022)
+  - C-peptide Observation (LOINC 1986-9) in the low range (0.05–0.4 ng/mL),
+    distinguishing T1D from T2D (normal 0.5-2.0 ng/mL)
+  - Anti-GAD65 antibody Observation (LOINC 22569-9) in 60% of cases —
+    confirmatory autoimmune marker; positive in ~70% of T1D cases at diagnosis
+  - Fasting plasma glucose (LOINC 1558-6) in the hyperglycemic range
+  - Basal insulin (glargine) MedicationRequest in 80% — basal-bolus regimen
+    is the standard of care for T1D (ADA Standards of Care 2024)
+  - Rapid-acting insulin (lispro) MedicationRequest in 75% — bolus component
+  - Continuous glucose monitor (CGM) Procedure in 70% — ADA 2024 recommends
+    CGM for all people with T1D; real-world penetration now exceeds 70%
+    among T1D patients with commercial coverage (T1D Exchange 2022)
+
+  A DKA (diabetic ketoacidosis) progression is declared at 5-year probability
+  ~8%, anchored to AACE/ADA estimates of annual DKA hospitalization rate
+  ~8-14% in T1D adults.
+
+cites:
+  - source: >
+      CDC National Diabetes Statistics Report — United States, 2022.
+    url: https://www.cdc.gov/diabetes/data/statistics-report/index.html
+    summary: >
+      ~1.45 million US adults have T1D (~0.5% of adults). Incidence peaks in
+      childhood; prevalence is highest in younger adults carrying a childhood
+      diagnosis. Roughly equal sex distribution.
+
+  - source: >
+      Foster NC, Beck RW, Miller KM, et al. State of Type 1 Diabetes
+      Management and Outcomes from the T1D Exchange in 2016-2018.
+      Diabetes Technol Ther. 2019;21(2):66-72.
+    url: https://www.liebertpub.com/doi/10.1089/dia.2018.0384
+    summary: >
+      T1D Exchange Registry 2016-2018: median HbA1c 8.4% across age groups.
+      CGM use rising; youth and adults with CGM have significantly lower HbA1c.
+      Basal-bolus regimen dominant; pump therapy in ~50% of participants.
+
+  - source: >
+      American Diabetes Association. Standards of Medical Care in Diabetes —
+      2024. Diabetes Care. 2024;47(Suppl 1):S1-S321.
+    url: https://diabetesjournals.org/care/issue/47/Supplement_1
+    summary: >
+      CGM recommended for all T1D patients (Technology, Section 7). Basal-
+      bolus or insulin pump therapy is standard of care. HbA1c goal <7% for
+      most adults. Annual DKA risk ~8-14% without structured self-management.
+
+  - source: >
+      Bosi E, Karges B, Battelino T, et al. Continuous Subcutaneous Insulin
+      Infusion and Continuous Glucose Monitoring in T1DM. Endocr Rev. 2020.
+    url: https://pubmed.ncbi.nlm.nih.gov/33638965/
+    summary: >
+      CGM adoption in T1D exceeds 70% in commercially-insured US adults by
+      2021. Basal-bolus MDI remains common; ~50% on insulin pumps. C-peptide
+      <0.2 nmol/L confirms beta cell destruction in T1D.
+
+conditions:
+  - id: type1_diabetes
+    code:
+      system: http://snomed.info/sct
+      code: "46635009"
+      display: Diabetes mellitus type 1 (disorder)
+    prevalence:
+      female:
+        "0-17":  0.002
+        "18-39": 0.007
+        "40-59": 0.005
+        "60-99": 0.003
+      male:
+        "0-17":  0.002
+        "18-39": 0.007
+        "40-59": 0.005
+        "60-99": 0.003
+    onset_age:
+      min: 5
+      max: 40
+    progressions:
+      - to: diabetic_ketoacidosis
+        after_years: 1
+        probability: 0.08
+    emits:
+      - resource_type: Encounter
+        spec_id: t1d_endo_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "46635009"
+          display: Diabetes mellitus type 1
+
+      # HbA1c — suboptimally-controlled range (T1D Exchange median ~8.4%)
+      - resource_type: Observation
+        spec_id: t1d_hba1c
+        when: today
+        link_to: t1d_endo_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "4548-4"
+          display: Hemoglobin A1c/Hemoglobin.total in Blood
+        value_range: {low: 7.0, high: 12.0, precision: 1}
+        unit: '%'
+        unit_code: '%'
+
+      # C-peptide — low in T1D (absent beta cell function; normal 0.5-2.0 ng/mL)
+      - resource_type: Observation
+        spec_id: t1d_c_peptide
+        when: today
+        link_to: t1d_endo_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "1986-9"
+          display: C peptide [Mass/volume] in Serum or Plasma
+        value_range: {low: 0.05, high: 0.40, precision: 2}
+        unit: ng/mL
+        unit_code: ng/mL
+
+      # Fasting plasma glucose — hyperglycemic range
+      - resource_type: Observation
+        spec_id: t1d_fasting_glucose
+        when: today
+        link_to: t1d_endo_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "1558-6"
+          display: Fasting glucose [Mass/volume] in Capillary blood
+        value_range: {low: 90, high: 320, precision: 0}
+        unit: mg/dL
+        unit_code: mg/dL
+
+      # Anti-GAD65 antibody — autoimmune confirmation (positive ≥1.0 IU/mL)
+      - resource_type: Observation
+        spec_id: t1d_anti_gad
+        when: onset
+        link_to: t1d_endo_visit
+        probability: 0.60
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "22569-9"
+          display: Glutamic acid decarboxylase 65 Ab [Units/volume] in Serum
+        value_range: {low: 2.0, high: 250.0, precision: 1}
+        unit: IU/mL
+        unit_code: IU/mL
+
+      # CGM — ADA 2024 recommends for all T1D; real-world penetration >70%
+      - resource_type: Procedure
+        spec_id: t1d_cgm
+        when: today
+        link_to: t1d_endo_visit
+        probability: 0.70
+        code:
+          system: http://snomed.info/sct
+          code: "698472009"
+          display: Continuous glucose monitoring (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "46635009"
+          display: Diabetes mellitus type 1
+
+      # Basal insulin — glargine (most widely prescribed basal insulin in T1D)
+      - resource_type: MedicationRequest
+        spec_id: t1d_glargine
+        when: today
+        link_to: t1d_endo_visit
+        probability: 0.80
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "274783"
+          display: Insulin Glargine 100 UNT/ML Injectable Solution
+
+      # Rapid-acting insulin — lispro (bolus component of basal-bolus regimen)
+      - resource_type: MedicationRequest
+        spec_id: t1d_lispro
+        when: today
+        link_to: t1d_endo_visit
+        probability: 0.75
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "1175658"
+          display: Insulin Lispro 100 UNT/ML Injectable Solution
+
+  # -----------------------------------------------------------------------
+  # Progression target: DKA (diabetic ketoacidosis)
+  # Fires at ~8% probability after 1+ year from T1D onset.
+  # Anchored to AACE/ADA estimates of annual DKA hospitalization in T1D.
+  # -----------------------------------------------------------------------
+  - id: diabetic_ketoacidosis
+    code:
+      system: http://snomed.info/sct
+      code: "420422005"
+      display: Diabetic ketoacidosis (disorder)
+    requires: type1_diabetes
+    prevalence:
+      "0-99": 0.0
+    onset_age:
+      min: 5
+      max: 90
+    emits:
+      - resource_type: Encounter
+        spec_id: dka_ed_visit
+        when: today
+        encounter_class: EMER
+        type:
+          system: http://snomed.info/sct
+          code: "50849002"
+          display: Emergency room admission (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "420422005"
+          display: Diabetic ketoacidosis
+
+      # Serum pH — acidotic range in DKA (normal 7.35-7.45)
+      - resource_type: Observation
+        spec_id: dka_serum_ph
+        when: today
+        link_to: dka_ed_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "2746-6"
+          display: pH of Serum or Plasma
+        value_range: {low: 6.90, high: 7.29, precision: 2}
+        unit: '[pH]'
+        unit_code: '[pH]'
+
+      # Serum bicarbonate — low in DKA (normal 22-29 mEq/L)
+      - resource_type: Observation
+        spec_id: dka_bicarb
+        when: today
+        link_to: dka_ed_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "1963-8"
+          display: Bicarbonate [Moles/volume] in Serum or Plasma
+        value_range: {low: 5, high: 18, precision: 0}
+        unit: mEq/L
+        unit_code: meq/L
+
+      # Blood glucose — markedly elevated in DKA (usually >250 mg/dL)
+      - resource_type: Observation
+        spec_id: dka_glucose
+        when: today
+        link_to: dka_ed_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "2345-7"
+          display: Glucose [Mass/volume] in Serum or Plasma
+        value_range: {low: 260, high: 650, precision: 0}
+        unit: mg/dL
+        unit_code: mg/dL

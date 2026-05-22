@@ -1,0 +1,135 @@
+module: hypothyroidism
+version: 0.1.0
+description: >
+  Hypothyroidism module covering primary hypothyroidism (underactive thyroid)
+  in adults. Hypothyroidism is one of the most common endocrine disorders in
+  the United States, with NHANES III estimating overall prevalence of ~4.6%
+  (Hollowell et al. JCEM 2002), with marked female predominance (~7-8% in
+  women vs ~2-3% in men) and rising prevalence with age.
+
+  The vast majority of cases are Hashimoto's thyroiditis (autoimmune), with
+  smaller fractions due to prior radioiodine therapy, thyroidectomy, or
+  iodine deficiency. This module models the combined primary hypothyroidism
+  population without distinguishing etiology.
+
+  When a patient is positive, the module emits:
+  - An endocrinology or primary care follow-up Encounter
+  - A TSH Observation (LOINC 3016-3) in the elevated range (4.5-50 mIU/L;
+    the treated-but-suboptimal to untreated range reflecting cross-section
+    of diagnosed patients not yet at goal)
+  - A free T4 Observation (LOINC 3026-2) in the low-normal to low range
+    (0.4-0.9 ng/dL; below the normal 0.8-1.8 ng/dL)
+  - Levothyroxine MedicationRequest in 90% of cases — hypothyroidism is
+    one of the highest Rx-rate chronic conditions; nearly all diagnosed
+    patients are on thyroid hormone replacement
+  - A thyroid peroxidase antibody (anti-TPO) Observation in 40% of cases,
+    reflecting testing for Hashimoto's confirmation
+
+cites:
+  - source: >
+      Hollowell JG, Staehling NW, Flanders WD, et al. Serum TSH, T4, and
+      thyroid antibodies in the United States population (1988-1994):
+      National Health and Nutrition Examination Survey (NHANES III).
+      J Clin Endocrinol Metab. 2002;87(2):489-499.
+    url: https://academic.oup.com/jcem/article/87/2/489/2846790
+    summary: >
+      NHANES III: hypothyroidism prevalence 4.6% overall (TSH >4.5 mIU/L
+      or current thyroid medication). Female: ~7-8%; male: ~2-3%. Rises
+      with age; 60+ women approach 12-15%.
+
+  - source: >
+      Garber JR, Cobin RH, Gharib H, et al. Clinical practice guidelines
+      for hypothyroidism in adults. Endocr Pract. 2012;18(Suppl 2):1-207.
+    url: https://pubmed.ncbi.nlm.nih.gov/23246686/
+    summary: >
+      American Association of Clinical Endocrinologists and American Thyroid
+      Association guidelines. Levothyroxine is first-line therapy; TSH goal
+      0.5-2.5 mIU/L. Anti-TPO antibodies positive in ~95% of Hashimoto's.
+
+conditions:
+  - id: hypothyroidism
+    code:
+      system: http://snomed.info/sct
+      code: "40930008"
+      display: Hypothyroidism (disorder)
+    prevalence:
+      female:
+        "0-17":  0.005
+        "18-39": 0.030
+        "40-59": 0.075
+        "60-99": 0.130
+      male:
+        "0-17":  0.002
+        "18-39": 0.012
+        "40-59": 0.025
+        "60-99": 0.055
+    onset_age:
+      min: 18
+      max: 85
+    emits:
+      - resource_type: Encounter
+        spec_id: thyroid_followup_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "40930008"
+          display: Hypothyroidism
+
+      # TSH — elevated in hypothyroidism (normal: 0.45-4.5 mIU/L)
+      - resource_type: Observation
+        spec_id: thyroid_tsh
+        when: today
+        link_to: thyroid_followup_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "3016-3"
+          display: Thyrotropin [Units/volume] in Serum or Plasma
+        value_range: {low: 4.6, high: 50.0, precision: 1}
+        unit: mIU/L
+        unit_code: m[IU]/L
+
+      # Free T4 — low in hypothyroidism (normal: 0.8-1.8 ng/dL)
+      - resource_type: Observation
+        spec_id: thyroid_free_t4
+        when: today
+        link_to: thyroid_followup_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "3026-2"
+          display: Thyroxine (T4) free [Mass/volume] in Serum or Plasma
+        value_range: {low: 0.3, high: 0.9, precision: 2}
+        unit: ng/dL
+        unit_code: ng/dL
+
+      # Anti-TPO antibody — Hashimoto's confirmation (positive ≥35 IU/mL)
+      - resource_type: Observation
+        spec_id: thyroid_anti_tpo
+        when: today
+        link_to: thyroid_followup_visit
+        probability: 0.40
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "8099-4"
+          display: Thyroid peroxidase Ab [Units/volume] in Serum
+        value_range: {low: 36, high: 600, precision: 0}
+        unit: IU/mL
+        unit_code: IU/mL
+
+      # Levothyroxine — nearly universal first-line treatment
+      - resource_type: MedicationRequest
+        spec_id: thyroid_levothyroxine
+        when: today
+        link_to: thyroid_followup_visit
+        probability: 0.90
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "892245"
+          display: Levothyroxine Sodium 50 MCG Oral Tablet

@@ -1,0 +1,169 @@
+module: sleep_apnea
+version: 0.1.0
+description: >
+  Obstructive sleep apnea (OSA) module. OSA is the most common sleep-related
+  breathing disorder, affecting an estimated 936 million adults globally
+  (Benjafield et al. Lancet Respir Med 2019). In the United States, NHANES
+  2015-2018 data indicate approximately 10% of adults meet AHI-based criteria
+  for at least moderate OSA (AHI ≥15 events/hour), with higher rates in men
+  and in older adults.
+
+  OSA is closely linked to obesity, hypertension, atrial fibrillation, and
+  metabolic syndrome — making it a high-value module for cross-condition
+  realism. The module does not declare cross-module progressions inline (those
+  are in the HTN and AFib modules' overlay files) but the conditions share
+  a substantial patient overlap in real-world cohorts.
+
+  When a patient is positive, the module emits:
+  - A sleep medicine or pulmonary Encounter
+  - A home sleep apnea test (HSAT) DiagnosticReport — the dominant initial
+    diagnostic modality (Medicare/ACP guidelines prefer HSAT for
+    uncomplicated suspected OSA; PSG in-lab for complex cases)
+  - An apnea-hypopnea index (AHI) Observation (LOINC 69991-3) in the
+    moderate-to-severe range (≥15 events/hour; this module targets the
+    diagnosed population, which skews toward moderate-severe)
+  - Oxygen saturation nadir Observation during sleep (SpO2, LOINC 59408-5)
+    in the desaturation range (75-91%)
+  - A CPAP therapy initiation Procedure in 75% of cases — CPAP is the
+    gold-standard first-line treatment for moderate-severe OSA (AHA/ACC 2019)
+  - An oral appliance referral Procedure in 15% of cases — for patients who
+    refuse or cannot tolerate CPAP (AASM guideline alternative)
+
+cites:
+  - source: >
+      Benjafield AV, Ayas NT, Eastwood PR, et al. Estimation of the global
+      prevalence and burden of obstructive sleep apnoea: a literature-based
+      analysis. Lancet Respir Med. 2019;7(8):687-698.
+    url: https://www.thelancet.com/journals/lanres/article/PIIS2213-2600(19)30198-5/fulltext
+    summary: >
+      936 million adults globally with AHI ≥5; 425 million with AHI ≥15
+      (moderate-severe). US estimates: ~70 million with any OSA, ~26 million
+      with moderate-severe. Higher in males (2:1 ratio); rising with obesity.
+
+  - source: >
+      Gottlieb DJ, Punjabi NM. Diagnosis and Management of Obstructive Sleep
+      Apnea: A Review. JAMA. 2020;323(14):1389-1400.
+    url: https://jamanetwork.com/journals/jama/fullarticle/2764021
+    summary: >
+      Prevalence ~10% of US adults by AHI ≥15. CPAP is primary treatment;
+      adherence ~50-70% at 1 year. Oral appliance is recommended alternative.
+      HSAT appropriate for uncomplicated OSA (high pretest probability,
+      no significant comorbidities).
+
+  - source: >
+      American Academy of Sleep Medicine — Clinical Practice Guideline
+      for Diagnostic Testing for Adult Obstructive Sleep Apnea. J Clin
+      Sleep Med. 2017;13(3):479-504.
+    url: https://jcsm.aasm.org/doi/10.5664/jcsm.6506
+    summary: >
+      HSAT recommended as initial diagnostic strategy for uncomplicated
+      suspected OSA. In-lab PSG reserved for complex patients. CPAP
+      first-line treatment; oral appliance for those who prefer it
+      or cannot tolerate CPAP.
+
+conditions:
+  - id: obstructive_sleep_apnea
+    code:
+      system: http://snomed.info/sct
+      code: "78275009"
+      display: Obstructive sleep apnea syndrome (disorder)
+    prevalence:
+      female:
+        "0-17":  0.0
+        "18-39": 0.030
+        "40-59": 0.080
+        "60-99": 0.130
+      male:
+        "0-17":  0.0
+        "18-39": 0.065
+        "40-59": 0.150
+        "60-99": 0.210
+    onset_age:
+      min: 18
+      max: 85
+    emits:
+      - resource_type: Encounter
+        spec_id: osa_sleep_clinic_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "78275009"
+          display: Obstructive sleep apnea syndrome
+
+      # Home sleep apnea test (HSAT) — preferred initial diagnostic
+      - resource_type: Procedure
+        spec_id: osa_hsat
+        when: onset
+        link_to: osa_sleep_clinic_visit
+        probability: 0.80
+        code:
+          system: http://snomed.info/sct
+          code: "171230007"
+          display: Home sleep study (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "78275009"
+          display: Obstructive sleep apnea syndrome
+
+      # CPAP therapy initiation — gold standard for moderate-severe OSA
+      - resource_type: Procedure
+        spec_id: osa_cpap_initiation
+        when: today
+        link_to: osa_sleep_clinic_visit
+        probability: 0.75
+        code:
+          system: http://snomed.info/sct
+          code: "229070002"
+          display: Continuous positive airway pressure therapy (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "78275009"
+          display: Obstructive sleep apnea syndrome
+
+      # Oral appliance referral — for CPAP-intolerant patients
+      - resource_type: Procedure
+        spec_id: osa_oral_appliance
+        when: today
+        link_to: osa_sleep_clinic_visit
+        probability: 0.15
+        code:
+          system: http://snomed.info/sct
+          code: "229073000"
+          display: Mandibular repositioning splint therapy (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "78275009"
+          display: Obstructive sleep apnea syndrome
+
+      # AHI — moderate-to-severe range (≥15 events/hour)
+      - resource_type: Observation
+        spec_id: osa_ahi
+        when: onset
+        link_to: osa_sleep_clinic_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "69991-3"
+          display: Apnea-hypopnea index
+        value_range: {low: 15, high: 65, precision: 1}
+        unit: /h
+        unit_code: /h
+
+      # Oxygen saturation nadir during sleep — desaturation range
+      - resource_type: Observation
+        spec_id: osa_spo2_nadir
+        when: onset
+        link_to: osa_sleep_clinic_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "59408-5"
+          display: Oxygen saturation in Arterial blood by Pulse oximetry
+        value_range: {low: 75, high: 91, precision: 0}
+        unit: '%'
+        unit_code: '%'

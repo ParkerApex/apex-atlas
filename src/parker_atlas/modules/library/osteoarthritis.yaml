@@ -1,0 +1,161 @@
+module: osteoarthritis
+version: 0.1.0
+description: >
+  Osteoarthritis (OA) module covering the most common form of arthritis in
+  the United States. An estimated 32.5 million US adults have OA (CDC 2021),
+  representing ~13% of the adult population. OA is a leading cause of
+  disability in older adults and a primary driver of orthopedic referrals,
+  NSAID prescriptions, and joint replacement procedures.
+
+  Prevalence increases sharply with age (relatively rare under 45, very common
+  over 65) and is modestly higher in women, particularly for knee OA. The
+  module covers OA of the knee, hip, and hand as a combined diagnosis since
+  the module DSL treats the condition as a single billing code; site-specific
+  codes can be added as separate conditions in a future version.
+
+  When a patient is positive, the module emits:
+  - An orthopedic or primary care Encounter
+  - A joint X-ray Procedure in 70% of cases (standard first-line imaging
+    for OA confirmation; plain films show joint space narrowing, osteophytes)
+  - An NSAID MedicationRequest (naproxen or celecoxib) in 55% of cases —
+    NSAIDs are first-line pharmacotherapy for OA pain (ACR 2019 guideline)
+  - Acetaminophen in 30% of cases — alternative or adjunct; guideline-
+    supported though less effective than NSAIDs for joint pain
+  - Physical therapy referral (modeled as a PT Encounter) in 40% of cases —
+    ACR 2019 strongly recommends exercise and PT as core OA management
+  - Intra-articular corticosteroid injection Procedure in 20% of cases —
+    used for acute flares (ACR conditionally recommends for knee OA)
+
+cites:
+  - source: >
+      CDC Osteoarthritis Fact Sheet — National Statistics, 2021.
+    url: https://www.cdc.gov/arthritis/basics/osteoarthritis.htm
+    summary: >
+      32.5 million US adults have OA (2021). Prevalence: ~2% ages 18-44,
+      ~18% ages 45-64, ~40% ages 65+. Women slightly more affected overall,
+      particularly knee OA. OA is the leading cause of disability among
+      US adults.
+
+  - source: >
+      Kolasinski SL, Neogi T, Hochberg MC, et al. 2019 American College
+      of Rheumatology/Arthritis Foundation Guideline for the Management
+      of Osteoarthritis of the Hand, Hip, and Knee. Arthritis Care Res.
+      2020;72(2):149-162.
+    url: https://acrjournals.onlinelibrary.wiley.com/doi/10.1002/acr.24131
+    summary: >
+      Strongly recommends: exercise (aerobic + resistance), PT, topical
+      NSAIDs (knee), oral NSAIDs. Conditionally recommends: IA
+      corticosteroids (knee/hip), acetaminophen, duloxetine.
+      Conditionally recommends against: opioids, glucosamine, chondroitin.
+
+conditions:
+  - id: osteoarthritis
+    code:
+      system: http://snomed.info/sct
+      code: "396275006"
+      display: Osteoarthritis (disorder)
+    prevalence:
+      female:
+        "0-17":  0.0
+        "18-44": 0.020
+        "45-64": 0.195
+        "65-99": 0.430
+      male:
+        "0-17":  0.0
+        "18-44": 0.018
+        "45-64": 0.165
+        "65-99": 0.380
+    onset_age:
+      min: 35
+      max: 90
+    emits:
+      - resource_type: Encounter
+        spec_id: oa_ortho_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "396275006"
+          display: Osteoarthritis
+
+      # Physical therapy — ACR strongly recommends exercise/PT
+      - resource_type: Encounter
+        spec_id: oa_pt_visit
+        when: today
+        probability: 0.40
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "91251008"
+          display: Physical therapy procedure (regime/therapy)
+        reason:
+          system: http://snomed.info/sct
+          code: "396275006"
+          display: Osteoarthritis
+
+      # Joint X-ray — first-line imaging for OA confirmation
+      - resource_type: Procedure
+        spec_id: oa_joint_xray
+        when: today
+        link_to: oa_ortho_visit
+        probability: 0.70
+        code:
+          system: http://snomed.info/sct
+          code: "169070004"
+          display: Plain X-ray of joint (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "396275006"
+          display: Osteoarthritis
+
+      # Intra-articular corticosteroid injection — for acute flares (knee/hip)
+      - resource_type: Procedure
+        spec_id: oa_ia_injection
+        when: today
+        link_to: oa_ortho_visit
+        probability: 0.20
+        code:
+          system: http://snomed.info/sct
+          code: "79899007"
+          display: Drug injection (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "396275006"
+          display: Osteoarthritis
+
+      # NSAID — naproxen (oral NSAID, ACR first-line for OA pain)
+      - resource_type: MedicationRequest
+        spec_id: oa_naproxen
+        when: today
+        link_to: oa_ortho_visit
+        probability: 0.38
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "849727"
+          display: Naproxen 500 MG Oral Tablet
+
+      # COX-2 inhibitor — celecoxib (preferred for GI risk or older adults)
+      - resource_type: MedicationRequest
+        spec_id: oa_celecoxib
+        when: today
+        link_to: oa_ortho_visit
+        probability: 0.17
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "198032"
+          display: Celecoxib 200 MG Oral Capsule
+
+      # Acetaminophen — adjunct or alternative to NSAIDs
+      - resource_type: MedicationRequest
+        spec_id: oa_acetaminophen
+        when: today
+        link_to: oa_ortho_visit
+        probability: 0.30
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "209387"
+          display: Acetaminophen 500 MG Oral Tablet

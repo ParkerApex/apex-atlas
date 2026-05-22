@@ -1,0 +1,240 @@
+module: ckd
+version: 0.1.0
+description: >
+  Chronic kidney disease (CKD) standalone module. CKD affects approximately
+  14-15% of US adults (CDC 2021), with prevalence rising sharply with age
+  and higher rates in patients with hypertension, diabetes, and obesity.
+  This module models CKD as a primary diagnosis; cross-module progressions
+  from hypertension (HTN→CKD) and diabetes (DM→CKD→ESRD) remain in those
+  modules' progression overlays and are not duplicated here.
+
+  The primary condition `chronic_kidney_disease` covers CKD stages 2-4
+  (eGFR 15-89 mL/min/1.73m²; stage 5/ESRD excluded as a distinct entity
+  requiring dialysis modeling). When it fires, the module emits:
+  - A nephrology follow-up Encounter
+  - An eGFR Observation (LOINC 98979-8) in the CKD range (15-74)
+  - A serum creatinine Observation (LOINC 2160-0) correspondingly elevated
+  - A urine albumin-creatinine ratio (ACR) Observation (LOINC 9318-7) in
+    the microalbuminuria to macroalbuminuria range
+  - Blood pressure Observation (hypertension is prevalent in CKD; ~80% of
+    CKD patients are hypertensive — modeled as an independent co-measurement)
+  - An ACE inhibitor or ARB MedicationRequest in ~70% of cases (KDIGO 2024
+    first-line reno-protective therapy; RAS blockade slows CKD progression)
+  - A diuretic (furosemide) in 30% of cases (volume management in stages 3-4)
+
+  A progression to ESRD is declared but set conservatively: 5-year
+  probability ~4% from CKD stage 3-4 (USRDS 2023), fires only when onset
+  was ≥5 years ago.
+
+  Prevalence is age-stratified from the CDC 2021 Chronic Kidney Disease
+  Surveillance System, aligned with NHANES 2017-2020. Sex stratification
+  reflects slightly higher female prevalence at younger ages (lupus nephritis,
+  pregnancy-related) and higher male prevalence at older ages (cardiovascular
+  comorbidity burden).
+
+cites:
+  - source: >
+      CDC Chronic Kidney Disease Surveillance System — United States, 2021.
+    url: https://www.cdc.gov/kidneydisease/publications-resources/ckd-national-facts.html
+    summary: >
+      ~37 million US adults have CKD (14.8%). Prevalence by age: 18-44
+      ~3%, 45-64 ~10%, 65+ ~38%. Rates are higher in adults with diabetes
+      (1 in 3), hypertension (1 in 5), and Black and Hispanic adults.
+
+  - source: >
+      USRDS 2023 Annual Data Report — Chapter 1: CKD in the United States.
+    url: https://usrds-adr.niddk.nih.gov/2023
+    summary: >
+      Incident ESRD rates among CKD stage 3-4 patients: ~3-5% over 5 years
+      depending on albuminuria severity and eGFR trajectory. Used to anchor
+      the progression probability in this module.
+
+  - source: >
+      KDIGO 2024 CKD Guideline — Chapter 4: Management of CKD.
+    url: https://kdigo.org/guidelines/ckd-evaluation-and-management/
+    summary: >
+      RAS inhibitors (ACE inhibitors / ARBs) recommended for CKD patients
+      with hypertension and/or albuminuria ≥30 mg/g. Target BP <130/80
+      mmHg. ~70% of CKD patients on RAS therapy in real-world US practice
+      (NHANES-linked claims data).
+
+conditions:
+  - id: chronic_kidney_disease
+    code:
+      system: http://snomed.info/sct
+      code: "709044004"
+      display: Chronic kidney disease (disorder)
+    prevalence:
+      female:
+        "0-17":  0.0
+        "18-44": 0.032
+        "45-64": 0.105
+        "65-99": 0.370
+      male:
+        "0-17":  0.0
+        "18-44": 0.025
+        "45-64": 0.095
+        "65-99": 0.410
+    onset_age:
+      min: 18
+      max: 85
+    progressions:
+      - to: esrd
+        after_years: 5
+        probability: 0.04
+    emits:
+      - resource_type: Encounter
+        spec_id: ckd_nephrology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "709044004"
+          display: Chronic kidney disease
+
+      # eGFR — CKD range (stages 2-4: 15-74 mL/min/1.73m²)
+      - resource_type: Observation
+        spec_id: ckd_egfr
+        when: today
+        link_to: ckd_nephrology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "98979-8"
+          display: Glomerular filtration rate/1.73 sq M.predicted [Volume Rate/Area] in Serum, Plasma or Blood by Creatinine-based formula (CKD-EPI 2021)
+        value_range: {low: 15, high: 74, precision: 0}
+        unit: mL/min/{1.73_m2}
+        unit_code: mL/min/{1.73_m2}
+
+      # Serum creatinine — elevated, inversely related to eGFR
+      - resource_type: Observation
+        spec_id: ckd_creatinine
+        when: today
+        link_to: ckd_nephrology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "2160-0"
+          display: Creatinine [Mass/volume] in Serum or Plasma
+        value_range: {low: 1.3, high: 5.5, precision: 1}
+        unit: mg/dL
+        unit_code: mg/dL
+
+      # Urine ACR — microalbuminuria to macroalbuminuria range
+      - resource_type: Observation
+        spec_id: ckd_urine_acr
+        when: today
+        link_to: ckd_nephrology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "9318-7"
+          display: Albumin/Creatinine [Ratio] in Urine
+        value_range: {low: 30, high: 800, precision: 0}
+        unit: mg/g
+        unit_code: mg/g
+
+      # Blood pressure — many CKD patients are hypertensive
+      - resource_type: Observation
+        spec_id: ckd_bp
+        when: today
+        link_to: ckd_nephrology_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "85354-9"
+          display: Blood pressure panel with all children optional
+        components:
+          - code:
+              system: http://loinc.org
+              code: "8480-6"
+              display: Systolic blood pressure
+            value_range: {low: 125, high: 165, precision: 0}
+            unit: mm[Hg]
+          - code:
+              system: http://loinc.org
+              code: "8462-4"
+              display: Diastolic blood pressure
+            value_range: {low: 75, high: 100, precision: 0}
+            unit: mm[Hg]
+
+      # ACE inhibitor — lisinopril (KDIGO first-line reno-protection)
+      - resource_type: MedicationRequest
+        spec_id: ckd_lisinopril
+        when: today
+        link_to: ckd_nephrology_visit
+        probability: 0.55
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "314076"
+          display: Lisinopril 10 MG Oral Tablet
+
+      # ARB — losartan (alternative to ACE inhibitor)
+      - resource_type: MedicationRequest
+        spec_id: ckd_losartan
+        when: today
+        link_to: ckd_nephrology_visit
+        probability: 0.18
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "979492"
+          display: Losartan Potassium 50 MG Oral Tablet
+
+      # Loop diuretic — furosemide for volume overload in stages 3-4
+      - resource_type: MedicationRequest
+        spec_id: ckd_furosemide
+        when: today
+        link_to: ckd_nephrology_visit
+        probability: 0.30
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "310429"
+          display: Furosemide 40 MG Oral Tablet
+
+  # -----------------------------------------------------------------------
+  # Progression target: ESRD (end-stage renal disease)
+  # Fires after 5+ years from CKD onset at ~4% probability.
+  # Dialysis access and transplant modeling are future extensions.
+  # -----------------------------------------------------------------------
+  - id: esrd
+    code:
+      system: http://snomed.info/sct
+      code: "46177005"
+      display: End-stage renal disease (disorder)
+    requires: chronic_kidney_disease
+    prevalence:
+      "0-99": 0.0
+    onset_age:
+      min: 25
+      max: 90
+    emits:
+      - resource_type: Encounter
+        spec_id: esrd_nephrology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "11429006"
+          display: Consultation (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "46177005"
+          display: End-stage renal disease
+
+      # eGFR in ESRD range (<15)
+      - resource_type: Observation
+        spec_id: esrd_egfr
+        when: today
+        link_to: esrd_nephrology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "98979-8"
+          display: Glomerular filtration rate/1.73 sq M.predicted [Volume Rate/Area] in Serum, Plasma or Blood by Creatinine-based formula (CKD-EPI 2021)
+        value_range: {low: 3, high: 14, precision: 0}
+        unit: mL/min/{1.73_m2}
+        unit_code: mL/min/{1.73_m2}
