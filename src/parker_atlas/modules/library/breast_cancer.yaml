@@ -1,0 +1,176 @@
+module: breast_cancer
+version: 0.1.0
+description: >
+  Breast cancer module covering invasive breast carcinoma — the most common
+  cancer diagnosis in US women. ACS 2024 estimates 313,510 new invasive breast
+  cancer cases and 42,780 deaths in women annually. NCI SEER 5-year prevalence:
+  approximately 3.8 million women alive with a breast cancer diagnosis (~2.9%
+  of adult women). Male breast cancer accounts for ~1% of all cases (~2,800
+  cases/year) and is modeled at a low but non-zero male prevalence.
+
+  Breast cancer incidence and survival have both improved substantially due to
+  mammography screening (USPSTF recommends biennial starting at 40) and
+  advances in systemic therapy. Overall 5-year survival is ~91%, though it
+  varies from ~99% (localized) to ~31% (distant). Hormone receptor-positive
+  (ER+/PR+) tumors comprise ~75% of cases and are treated with endocrine
+  therapy; HER2-positive tumors (~15%) are treated with trastuzumab-based
+  regimens; triple-negative (~12%) receives cytotoxic chemotherapy.
+
+  When a patient is positive, the module emits:
+  - An oncology or breast surgery Encounter
+  - A mammography Procedure in 85% of cases — standard screening and
+    diagnostic imaging; detects most breast cancers before palpability
+  - A breast biopsy Procedure in 65% of cases — required for pathologic
+    confirmation; core needle biopsy is standard
+  - A CEA tumor marker Observation (LOINC 2039-6) in the elevated range —
+    elevated in ~25-50% of metastatic breast cancer; used for surveillance
+  - Tamoxifen 20 MG in 32% of cases — SERM; standard endocrine therapy for
+    ER+ premenopausal breast cancer (ATLAS/aTTom 10-year superiority)
+  - Letrozole 2.5 MG in 28% of cases — aromatase inhibitor; first-line
+    endocrine therapy for ER+ postmenopausal women (MA.17R, BIG 1-98)
+
+  Mortality: overall 5-year survival ~91%; we model 8% 5-year mortality
+  to reflect the favorable all-stage average.
+
+cites:
+  - source: >
+      Siegel RL, Giaquinto AN, Jemal A. Cancer statistics, 2024.
+      CA Cancer J Clin. 2024;74(1):12-49.
+    url: https://acsjournals.onlinelibrary.wiley.com/doi/10.3322/caac.21820
+    summary: >
+      Breast cancer 2024 (women): 313,510 new invasive cases, 42,780 deaths.
+      Most common cancer in women; second leading cancer death. Lifetime risk
+      ~13% (1 in 8). Incidence 132/100,000 women. Rising in women <50.
+
+  - source: >
+      National Cancer Institute SEER*Explorer — Female Breast Cancer
+      Stat Facts (2024).
+    url: https://seer.cancer.gov/statfacts/html/breast.html
+    summary: >
+      5-year relative survival all stages 91.0% (SEER 2014-2020). Stage:
+      66% localized (99%), 26% regional (86%), 6% distant (31%). SEER 5-year
+      prevalence 3.8 million women. Median age at diagnosis 63.
+
+  - source: >
+      Burstein HJ, Curigliano G, Thürlimann B, et al. Customizing local
+      and systemic therapies for women with early breast cancer: the St. Gallen
+      International Consensus Guidelines for treatment of early breast cancer
+      2021. Ann Oncol. 2021;32(10):1216-1235.
+    url: https://www.annalsofoncology.org/article/S0923-7534(21)02083-1/fulltext
+    summary: >
+      ER+/HER2- early breast cancer: tamoxifen (premenopausal) or
+      aromatase inhibitors (postmenopausal) 5-10 years first-line.
+      HER2+: trastuzumab-based chemotherapy. TNBC: anthracycline +
+      taxane ± pembrolizumab (if PD-L1+, KEYNOTE-522).
+
+conditions:
+  - id: breast_cancer
+    code:
+      system: http://snomed.info/sct
+      code: "254837009"
+      display: Malignant neoplasm of breast (disorder)
+    prevalence:
+      female:
+        "0-17":  0.0
+        "18-44": 0.002
+        "45-64": 0.021
+        "65-99": 0.045
+      male:
+        "0-99":  0.0002
+    onset_age:
+      min: 25
+      max: 90
+    mortality:
+      after_years: 5
+      probability: 0.08
+      cause:
+        system: http://snomed.info/sct
+        code: "254837009"
+        display: Malignant neoplasm of breast
+    emits:
+      - resource_type: Encounter
+        spec_id: brca_oncology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "254837009"
+          display: Malignant neoplasm of breast
+
+      # Mammography — standard screening and diagnostic imaging
+      - resource_type: Procedure
+        spec_id: brca_mammography
+        when: today
+        link_to: brca_oncology_visit
+        probability: 0.85
+        code:
+          system: http://snomed.info/sct
+          code: "241055006"
+          display: Mammography (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "254837009"
+          display: Malignant neoplasm of breast
+
+      # Core needle biopsy of breast — required for pathologic confirmation
+      - resource_type: Procedure
+        spec_id: brca_biopsy
+        when: onset
+        link_to: brca_oncology_visit
+        probability: 0.65
+        code:
+          system: http://snomed.info/sct
+          code: "274021009"
+          display: Biopsy of breast (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "254837009"
+          display: Malignant neoplasm of breast
+
+      # CEA tumor marker — elevated in metastatic breast cancer; surveillance use
+      - resource_type: Observation
+        spec_id: brca_cea
+        when: today
+        link_to: brca_oncology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "2039-6"
+          display: Carcinoembryonic Ag [Mass/volume] in Serum or Plasma
+        value_range: {low: 5.0, high: 80.0, precision: 1}
+        unit: ng/mL
+        unit_code: ng/mL
+
+      # Tamoxifen — SERM; first-line endocrine therapy for ER+ premenopausal
+      - resource_type: MedicationRequest
+        spec_id: brca_tamoxifen
+        when: today
+        link_to: brca_oncology_visit
+        probability: 0.32
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "203322"
+          display: Tamoxifen 20 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "254837009"
+          display: Malignant neoplasm of breast
+
+      # Letrozole — aromatase inhibitor; first-line for ER+ postmenopausal
+      - resource_type: MedicationRequest
+        spec_id: brca_letrozole
+        when: today
+        link_to: brca_oncology_visit
+        probability: 0.28
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "308120"
+          display: Letrozole 2.5 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "254837009"
+          display: Malignant neoplasm of breast

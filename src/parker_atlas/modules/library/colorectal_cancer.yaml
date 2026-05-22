@@ -1,0 +1,161 @@
+module: colorectal_cancer
+version: 0.1.0
+description: >
+  Colorectal cancer (CRC) module covering malignant neoplasms of the colon
+  and rectum. CRC is the third most common cancer and the second leading cause
+  of cancer death in the United States. ACS 2024 estimates 154,270 new cases
+  and 52,180 deaths annually. NCI SEER 5-year prevalence: approximately 1.5
+  million Americans alive with a CRC diagnosis (~0.6% of all US adults).
+
+  Prevalence rises sharply with age and is ~25% higher in men than women.
+  USPSTF (2021) recommends screening beginning at age 45 for average-risk
+  adults. Despite screening availability, ~24% of CRC is diagnosed at
+  distant (metastatic) stage where 5-year survival is only 14% (SEER 2024).
+  Average overall 5-year survival across all stages is ~65%.
+
+  When a patient is positive, the module emits:
+  - An oncology or GI Encounter
+  - A colonoscopy Procedure in 80% of cases — both the diagnostic procedure
+    and the standard surveillance tool post-treatment
+  - A CT abdomen/pelvis Procedure in 70% of cases — standard staging
+    imaging (NCCN guidelines require CT chest/abdomen/pelvis at diagnosis)
+  - A CEA tumor marker Observation (LOINC 2039-6) in the elevated range —
+    elevated in ~60-80% of metastatic CRC; used for surveillance
+  - Capecitabine 500 MG in 30% of cases — oral fluoropyrimidine; used as
+    adjuvant therapy or as part of XELOX regimen for stage III/IV CRC
+    (NCCN 2024 Category 1 for stage II-III adjuvant and metastatic)
+
+  Mortality: SEER all-stage 5-year survival ~65%; we model a 25% 5-year
+  mortality probability, conservative relative to stage-weighted average
+  to account for the proportion diagnosed at early resectable stages.
+
+cites:
+  - source: >
+      Siegel RL, Giaquinto AN, Jemal A. Cancer statistics, 2024.
+      CA Cancer J Clin. 2024;74(1):12-49.
+    url: https://acsjournals.onlinelibrary.wiley.com/doi/10.3322/caac.21820
+    summary: >
+      CRC 2024: 154,270 new cases, 52,180 deaths. Third most common
+      cancer in both sexes. Lifetime risk ~4.1% men, ~3.8% women. Rising
+      incidence in adults under 50 (now ~20% of cases). Declining overall
+      incidence due to colonoscopy screening.
+
+  - source: >
+      National Cancer Institute SEER*Explorer — Colorectal Cancer
+      Stat Facts (2024).
+    url: https://seer.cancer.gov/statfacts/html/colorect.html
+    summary: >
+      5-year relative survival all stages 64.7% (SEER 2014-2020). Stage
+      distribution: 37% localized (91% survival), 36% regional (73%),
+      22% distant (14%). Median age at diagnosis 66. SEER 5-year prevalence
+      ~1.5 million.
+
+  - source: >
+      Weiser MR. NCCN Clinical Practice Guidelines in Oncology — Colon
+      Cancer, Version 3.2024. J Natl Compr Canc Netw. 2024.
+    url: https://www.nccn.org/professionals/physician_gls/pdf/colon.pdf
+    summary: >
+      Adjuvant chemotherapy for stage III CRC: FOLFOX (oxaliplatin +
+      5-FU/leucovorin) or XELOX (capecitabine + oxaliplatin) Category 1.
+      Capecitabine alone is category 1 for patients who cannot receive
+      oxaliplatin. CEA pre- and post-treatment monitoring recommended.
+
+conditions:
+  - id: colorectal_cancer
+    code:
+      system: http://snomed.info/sct
+      code: "363346000"
+      display: Malignant neoplasm of colon (disorder)
+    prevalence:
+      female:
+        "0-17":  0.0
+        "18-44": 0.001
+        "45-64": 0.005
+        "65-99": 0.014
+      male:
+        "0-17":  0.0
+        "18-44": 0.001
+        "45-64": 0.007
+        "65-99": 0.018
+    onset_age:
+      min: 40
+      max: 90
+    mortality:
+      after_years: 5
+      probability: 0.25
+      cause:
+        system: http://snomed.info/sct
+        code: "363346000"
+        display: Malignant neoplasm of colon
+    emits:
+      - resource_type: Encounter
+        spec_id: crc_oncology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "363346000"
+          display: Malignant neoplasm of colon
+
+      # Colonoscopy — diagnostic and surveillance standard
+      - resource_type: Procedure
+        spec_id: crc_colonoscopy
+        when: onset
+        link_to: crc_oncology_visit
+        probability: 0.80
+        code:
+          system: http://snomed.info/sct
+          code: "73761001"
+          display: Colonoscopy (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "363346000"
+          display: Malignant neoplasm of colon
+
+      # CT abdomen/pelvis — standard staging imaging (NCCN mandated at diagnosis)
+      - resource_type: Procedure
+        spec_id: crc_ct_abdomen
+        when: onset
+        link_to: crc_oncology_visit
+        probability: 0.70
+        code:
+          system: http://snomed.info/sct
+          code: "77477000"
+          display: Computerized axial tomography of abdomen (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "363346000"
+          display: Malignant neoplasm of colon
+
+      # CEA tumor marker — elevated in ~60-80% of metastatic CRC (normal <5 ng/mL)
+      - resource_type: Observation
+        spec_id: crc_cea
+        when: today
+        link_to: crc_oncology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "2039-6"
+          display: Carcinoembryonic Ag [Mass/volume] in Serum or Plasma
+        value_range: {low: 5.0, high: 150.0, precision: 1}
+        unit: ng/mL
+        unit_code: ng/mL
+
+      # Capecitabine — oral fluoropyrimidine; adjuvant or XELOX regimen (NCCN Cat 1)
+      - resource_type: MedicationRequest
+        spec_id: crc_capecitabine
+        when: today
+        link_to: crc_oncology_visit
+        probability: 0.30
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "213277"
+          display: Capecitabine 500 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "363346000"
+          display: Malignant neoplasm of colon

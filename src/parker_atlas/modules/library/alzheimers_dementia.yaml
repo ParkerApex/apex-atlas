@@ -1,0 +1,143 @@
+module: alzheimers_dementia
+version: 0.1.0
+description: >
+  Alzheimer's disease and related dementias (ADRD) module. Alzheimer's is
+  the most common form of dementia, accounting for 60-80% of cases.
+  Alzheimer's Association 2024 Facts & Figures estimates 6.9 million
+  Americans age 65+ are living with Alzheimer's dementia. Prevalence rises
+  steeply with age: ~5% at 65-74, ~14% at 75-84, and ~35% at 85+.
+  Two-thirds of those with Alzheimer's are women, partly due to longer
+  life expectancy and possibly sex-specific biological factors.
+
+  This module targets the diagnosed/treated population. Early-onset
+  Alzheimer's (onset before 65) accounts for ~5-6% of cases and is modeled
+  via the low but non-zero 40-59 prevalence bracket.
+
+  When a patient is positive, the module emits:
+  - A neurology or geriatrics Encounter
+  - An MMSE (Mini-Mental State Examination) score Observation (LOINC 72106-8)
+    in the mild-to-moderate dementia range (10-23; normal ≥24)
+  - A brain MRI Procedure in 65% of cases — standard neuroimaging for
+    dementia workup per AAN/NIA-AA guidelines; detects atrophy and excludes
+    vascular or reversible causes
+  - Donepezil 10 MG in 55% of cases — first-line cholinesterase inhibitor
+    approved for all stages of Alzheimer's (FDA 1996, 2006)
+  - Memantine 10 MG in 30% of cases — NMDA receptor antagonist approved
+    for moderate-to-severe Alzheimer's; often co-prescribed with donepezil
+
+cites:
+  - source: >
+      Alzheimer's Association. 2024 Alzheimer's Disease Facts and Figures.
+      Alzheimers Dement. 2024;20(5):3708-3821.
+    url: https://www.alz.org/media/Documents/alzheimers-facts-and-figures.pdf
+    summary: >
+      6.9 million Americans 65+ with Alzheimer's in 2024. Prevalence: ~5%
+      at 65-74, ~14% at 75-84, ~35% at 85+. Two-thirds are women. Total
+      costs $360 billion in 2024. By 2050, projected 12.7 million.
+
+  - source: >
+      Jack CR Jr, Bennett DA, Blennow K, et al. NIA-AA Research Framework:
+      Toward a biological definition of Alzheimer's disease.
+      Alzheimers Dement. 2018;14(4):535-562.
+    url: https://www.sciencedirect.com/science/article/pii/S1552526018300724
+    summary: >
+      NIA-AA 2018 framework defines Alzheimer's biologically via amyloid
+      (A), tau (T), and neurodegeneration (N) biomarkers. MRI showing
+      hippocampal atrophy and medial temporal volume loss is a key N
+      biomarker. MMSE and CDR are clinical staging tools.
+
+  - source: >
+      Alzheimer's Association. Cholinesterase Inhibitors — Donepezil,
+      Rivastigmine, Galantamine. 2024.
+    url: https://www.alz.org/alzheimers-dementia/treatments/medications-for-memory
+    summary: >
+      Donepezil is approved for all stages of Alzheimer's. Memantine is
+      approved for moderate-severe. Combination therapy (donepezil +
+      memantine) is more effective than either alone in moderate-severe
+      Alzheimer's. Lecanemab (Leqembi) and donanemab approved 2023-2024
+      for early AD — uptake still limited.
+
+conditions:
+  - id: alzheimers_dementia
+    code:
+      system: http://snomed.info/sct
+      code: "26929004"
+      display: Alzheimer's disease (disorder)
+    prevalence:
+      female:
+        "0-59":  0.001
+        "60-74": 0.045
+        "75-84": 0.165
+        "85-99": 0.390
+      male:
+        "0-59":  0.001
+        "60-74": 0.030
+        "75-84": 0.120
+        "85-99": 0.300
+    onset_age:
+      min: 50
+      max: 92
+    emits:
+      - resource_type: Encounter
+        spec_id: alzheimers_neurology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "26929004"
+          display: Alzheimer's disease
+
+      # MMSE — mild-to-moderate dementia range (10-23; normal ≥24, severe <10)
+      - resource_type: Observation
+        spec_id: alzheimers_mmse
+        when: today
+        link_to: alzheimers_neurology_visit
+        category: survey
+        code:
+          system: http://loinc.org
+          code: "72106-8"
+          display: Total score [MMSE]
+        value_range: {low: 10, high: 23, precision: 0}
+        unit: '{score}'
+        unit_code: '{score}'
+
+      # Brain MRI — standard neuroimaging for dementia workup (AAN/NIA-AA)
+      - resource_type: Procedure
+        spec_id: alzheimers_brain_mri
+        when: onset
+        link_to: alzheimers_neurology_visit
+        probability: 0.65
+        code:
+          system: http://snomed.info/sct
+          code: "241601008"
+          display: Magnetic resonance imaging of brain (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "26929004"
+          display: Alzheimer's disease
+
+      # Donepezil — cholinesterase inhibitor; first-line for all AD stages
+      - resource_type: MedicationRequest
+        spec_id: alzheimers_donepezil
+        when: today
+        link_to: alzheimers_neurology_visit
+        probability: 0.55
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "857937"
+          display: Donepezil 10 MG Oral Tablet
+
+      # Memantine — NMDA antagonist; approved for moderate-to-severe AD
+      - resource_type: MedicationRequest
+        spec_id: alzheimers_memantine
+        when: today
+        link_to: alzheimers_neurology_visit
+        probability: 0.30
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "996556"
+          display: Memantine 10 MG Oral Tablet

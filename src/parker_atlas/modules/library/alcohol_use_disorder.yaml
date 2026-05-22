@@ -1,0 +1,170 @@
+module: alcohol_use_disorder
+version: 0.1.0
+description: >
+  Alcohol use disorder (AUD) module covering the spectrum from hazardous
+  drinking through alcohol dependence. SAMHSA NSDUH 2022 reports 29.5 million
+  US adults (~10.5%) met DSM-5 criteria for AUD in the past year. Male
+  prevalence roughly doubles female across all age groups; peak 12-month
+  prevalence is in the 18-29 bracket. Despite high burden, only ~7.6% of
+  those with AUD receive treatment in a given year.
+
+  AUD carries major medical comorbidity: alcoholic hepatitis and cirrhosis,
+  cardiomyopathy, Wernicke-Korsakoff syndrome, pancreatitis, and increased
+  risk of oral, esophageal, liver, and colorectal cancers. Liver function
+  tests — particularly an AST:ALT ratio >2:1 — are characteristic markers of
+  alcohol-related hepatocyte injury distinguishing it from viral or fatty
+  liver etiologies.
+
+  When a patient is positive, the module emits:
+  - A behavioral health or primary care Encounter
+  - An AUDIT-C score Observation (LOINC 75624-7) in the hazardous-to-severe
+    range (5-12 out of 12)
+  - AST and ALT Observations in the alcohol-associated elevated range;
+    AST dominant (range 50-200 U/L vs ALT 35-120 U/L)
+  - Naltrexone 50 MG in 30% of cases — FDA-approved first-line; reduces
+    craving via mu-opioid receptor antagonism (COMBINE trial)
+  - Acamprosate 333 MG Delayed Release in 20% of cases — FDA-approved for
+    maintaining abstinence; reduces NMDA-mediated excitotoxicity
+  - Thiamine 100 MG in 40% of cases — Wernicke's encephalopathy prophylaxis;
+    standard in chronic/heavy alcohol use
+
+cites:
+  - source: >
+      SAMHSA. Key Substance Use and Mental Health Indicators in the United
+      States: Results from the 2022 National Survey on Drug Use and Health.
+      HHS Publication No. PEP23-07-01-006. Rockville, MD: SAMHSA, 2023.
+    url: https://www.samhsa.gov/data/sites/default/files/reports/rpt42731/2022-nsduh-nnr.pdf
+    summary: >
+      29.5 million US adults (10.5%) met DSM-5 AUD criteria in 2022. Male
+      ~14%, female ~7.5%. Highest in 18-25 (~20%). Only 7.6% received
+      treatment. AUD is the third leading preventable cause of death in US.
+
+  - source: >
+      Anton RF, O'Malley SS, Ciraulo DA, et al. Combined pharmacotherapies
+      and behavioral interventions for alcohol dependence: the COMBINE
+      study. JAMA. 2006;295(17):2003-2017.
+    url: https://jamanetwork.com/journals/jama/fullarticle/202908
+    summary: >
+      Naltrexone 100 mg/d significantly reduced heavy drinking days vs.
+      placebo (p=0.009). Combined with behavioral counseling, naltrexone
+      achieved best outcomes. Acamprosate had no significant benefit over
+      placebo in this US population.
+
+  - source: >
+      Lieber CS. Relationships between nutrition, alcohol use, and liver
+      disease. Alcohol Res Health. 2003;27(3):220-231.
+    url: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC6668875/
+    summary: >
+      Alcoholic liver disease: AST:ALT ratio >2:1 in ~70% of cases;
+      differentiates from viral hepatitis (ratio <1) and NAFLD (ratio <1).
+      Thiamine deficiency present in ~80% of chronic heavy drinkers.
+      Wernicke's encephalopathy is preventable with early thiamine repletion.
+
+conditions:
+  - id: alcohol_use_disorder
+    code:
+      system: http://snomed.info/sct
+      code: "15167005"
+      display: Alcohol dependence syndrome (disorder)
+    prevalence:
+      female:
+        "0-17":  0.0
+        "18-39": 0.070
+        "40-59": 0.060
+        "60-99": 0.028
+      male:
+        "0-17":  0.0
+        "18-39": 0.145
+        "40-59": 0.105
+        "60-99": 0.055
+    onset_age:
+      min: 18
+      max: 75
+    emits:
+      - resource_type: Encounter
+        spec_id: aud_behavioral_health_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "15167005"
+          display: Alcohol dependence syndrome
+
+      # AUDIT-C total score — hazardous-to-severe range (screen positive ≥3 women / ≥4 men)
+      - resource_type: Observation
+        spec_id: aud_audit_score
+        when: today
+        link_to: aud_behavioral_health_visit
+        category: survey
+        code:
+          system: http://loinc.org
+          code: "75624-7"
+          display: Total score [AUDIT]
+        value_range: {low: 5, high: 12, precision: 0}
+        unit: '{score}'
+        unit_code: '{score}'
+
+      # AST — elevated in alcohol-associated liver injury (normal 10-40 U/L)
+      - resource_type: Observation
+        spec_id: aud_ast
+        when: today
+        link_to: aud_behavioral_health_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "1920-8"
+          display: Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma
+        value_range: {low: 50, high: 200, precision: 0}
+        unit: U/L
+        unit_code: U/L
+
+      # ALT — also elevated but less so than AST; AST:ALT >2:1 is characteristic
+      - resource_type: Observation
+        spec_id: aud_alt
+        when: today
+        link_to: aud_behavioral_health_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "1742-6"
+          display: Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma
+        value_range: {low: 35, high: 120, precision: 0}
+        unit: U/L
+        unit_code: U/L
+
+      # Naltrexone — FDA-approved first-line; reduces craving via mu-opioid antagonism
+      - resource_type: MedicationRequest
+        spec_id: aud_naltrexone
+        when: today
+        link_to: aud_behavioral_health_visit
+        probability: 0.30
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "856769"
+          display: Naltrexone 50 MG Oral Tablet
+
+      # Acamprosate — FDA-approved for abstinence maintenance
+      - resource_type: MedicationRequest
+        spec_id: aud_acamprosate
+        when: today
+        link_to: aud_behavioral_health_visit
+        probability: 0.20
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "866040"
+          display: Acamprosate Calcium 333 MG Delayed Release Oral Tablet
+
+      # Thiamine — Wernicke's prophylaxis; standard with heavy/chronic alcohol use
+      - resource_type: MedicationRequest
+        spec_id: aud_thiamine
+        when: today
+        link_to: aud_behavioral_health_visit
+        probability: 0.40
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "573418"
+          display: Thiamine 100 MG Oral Tablet

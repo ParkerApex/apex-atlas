@@ -1,0 +1,200 @@
+module: sickle_cell
+version: 0.1.0
+description: >
+  Sickle cell disease (SCD) module covering homozygous HbSS disease, the most
+  common and severe form of SCD. CDC estimates approximately 100,000 Americans
+  are living with SCD, predominantly African Americans (~1 in 365 Black births;
+  ~1 in 16,300 Hispanic births). SCD is the most common inherited blood
+  disorder in the United States and a leading cause of stroke in children.
+
+  SCD results from a point mutation in the HBB gene causing production of
+  hemoglobin S (HbS). Homozygous HbSS produces chronic hemolytic anemia
+  (Hgb 6-10 g/dL) and recurrent vaso-occlusive crises (VOC) when HbS
+  polymerizes under hypoxic conditions, causing red cell sickling and
+  microvascular obstruction. Organ damage accumulates over decades (spleen,
+  kidneys, lungs, brain, retina, hip). Newborn screening identifies SCD at
+  birth in all 50 US states.
+
+  This module models the SCD population across all ages (congenital
+  condition diagnosed via newborn screening; onset_age 0-1). Prevalence is
+  modeled at the US population level (~0.04%) rather than the Black
+  population-specific rate to avoid requiring race as a simulation variable.
+
+  When a patient is positive, the module emits:
+  - A hematology Encounter
+  - A hemoglobin Observation (LOINC 718-7) in the chronic hemolytic anemia
+    range (6.5-10.5 g/dL; normal 12-17 g/dL in adults)
+  - A hemoglobin S fraction Observation (LOINC 2054-5) in the HbSS range
+    (75-95%; HbSS patients: ~85-95% HbS)
+  - Hydroxyurea 500 MG in 50% of cases — only FDA-approved disease-modifying
+    agent for SCD that increases fetal hemoglobin (HbF), reducing VOC
+    frequency; NHLBI 2014 guidelines strongly recommend for adults with ≥3
+    VOC/year and all infants/children with HbSS or HbSβ0 thalassemia
+  - Folic Acid 1 MG in 65% of cases — routine supplementation to support
+    increased erythropoiesis from chronic hemolysis; standard of care since
+    childhood
+  - A VOC (vaso-occlusive crisis) progression fires at ~35% probability
+    after 1 year from diagnosis — reflecting annual VOC hospitalization rate
+    of ~35% among adults with SCD (Kauf et al. Blood 2009)
+
+cites:
+  - source: >
+      CDC. Sickle Cell Disease — Data & Statistics. Centers for Disease
+      Control and Prevention. 2024.
+    url: https://www.cdc.gov/sickle-cell/data/index.html
+    summary: >
+      ~100,000 Americans with SCD; ~1 in 365 Black/African American births;
+      ~1 in 16,300 Hispanic births; ~1 in 100,000 White births. All 50
+      states screen newborns for SCD. SCD causes ~113,000 hospitalizations
+      and ~75,000 vaso-occlusive crisis admissions per year.
+
+  - source: >
+      Yawn BP, Buchanan GR, Afenyi-Annan AN, et al. Management of sickle
+      cell disease: summary of the 2014 evidence-based report by expert
+      panel members. JAMA. 2014;312(10):1033-1048.
+    url: https://jamanetwork.com/journals/jama/fullarticle/1904384
+    summary: >
+      NHLBI 2014 guidelines: Hydroxyurea strongly recommended for adults
+      with ≥3 painful crises/year, severe anemia, or other severe SCD
+      complications. Folic acid supplementation recommended throughout life.
+      Transcranial Doppler screening to prevent stroke in children 2-16.
+
+  - source: >
+      Kauf TL, Coates TD, Huazhi L, et al. The cost of health care for
+      children and adults with sickle cell disease. Am J Hematol.
+      2009;84(6):323-327.
+    url: https://onlinelibrary.wiley.com/doi/10.1002/ajh.21408
+    summary: >
+      Annual hospitalization rate for VOC: ~35% of adults with SCD.
+      Mean annual healthcare cost ~$11,000 per child, ~$15,000 per adult
+      (2004 dollars). Acute chest syndrome and VOC are the leading
+      hospitalization causes.
+
+conditions:
+  - id: sickle_cell_disease
+    code:
+      system: http://snomed.info/sct
+      code: "127040003"
+      display: Sickle cell-hemoglobin SS disease (disorder)
+    prevalence:
+      female:
+        "0-17":  0.0004
+        "18-39": 0.0004
+        "40-59": 0.0003
+        "60-99": 0.0002
+      male:
+        "0-17":  0.0004
+        "18-39": 0.0004
+        "40-59": 0.0003
+        "60-99": 0.0002
+    onset_age:
+      min: 0
+      max: 1
+    progressions:
+      - to: vaso_occlusive_crisis
+        after_years: 1
+        probability: 0.35
+    emits:
+      - resource_type: Encounter
+        spec_id: scd_hematology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "127040003"
+          display: Sickle cell-hemoglobin SS disease
+
+      # Hemoglobin — chronic hemolytic anemia range (normal 12-17 g/dL in adults)
+      - resource_type: Observation
+        spec_id: scd_hemoglobin
+        when: today
+        link_to: scd_hematology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "718-7"
+          display: Hemoglobin [Mass/volume] in Blood
+        value_range: {low: 6.5, high: 10.5, precision: 1}
+        unit: g/dL
+        unit_code: g/dL
+
+      # Hemoglobin S fraction — HbSS pattern (normal HbS = 0%; sickle trait ~35-45%)
+      - resource_type: Observation
+        spec_id: scd_hgb_s_fraction
+        when: onset
+        link_to: scd_hematology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "2054-5"
+          display: Hemoglobin S/Hemoglobin.total in Blood
+        value_range: {low: 75, high: 95, precision: 0}
+        unit: '%'
+        unit_code: '%'
+
+      # Hydroxyurea — disease-modifying; NHLBI strongly recommends for frequent VOC
+      - resource_type: MedicationRequest
+        spec_id: scd_hydroxyurea
+        when: today
+        link_to: scd_hematology_visit
+        probability: 0.50
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "197770"
+          display: Hydroxyurea 500 MG Oral Capsule
+
+      # Folic acid — lifelong supplementation for chronic hemolysis-driven erythropoiesis
+      - resource_type: MedicationRequest
+        spec_id: scd_folic_acid
+        when: today
+        link_to: scd_hematology_visit
+        probability: 0.65
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "316074"
+          display: Folic Acid 1 MG Oral Tablet
+
+  # -----------------------------------------------------------------------
+  # Progression target: Vaso-occlusive crisis (VOC)
+  # Fires at ~35% probability after 1+ year from SCD onset.
+  # Anchored to annual VOC hospitalization rate in SCD adults (Kauf 2009).
+  # -----------------------------------------------------------------------
+  - id: vaso_occlusive_crisis
+    code:
+      system: http://snomed.info/sct
+      code: "40103001"
+      display: Vaso-occlusive crisis in sickle cell disease (disorder)
+    requires: sickle_cell_disease
+    prevalence:
+      "0-99": 0.0
+    onset_age:
+      min: 1
+      max: 90
+    emits:
+      - resource_type: Encounter
+        spec_id: scd_voc_ed_visit
+        when: today
+        encounter_class: EMER
+        type:
+          system: http://snomed.info/sct
+          code: "50849002"
+          display: Emergency room admission (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "40103001"
+          display: Vaso-occlusive crisis in sickle cell disease
+
+      # Opioid pain management — hydromorphone IV (standard VOC treatment)
+      - resource_type: MedicationRequest
+        spec_id: scd_voc_hydromorphone
+        when: today
+        link_to: scd_voc_ed_visit
+        probability: 0.70
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "1666831"
+          display: Hydromorphone Hydrochloride 2 MG/ML Injectable Solution
