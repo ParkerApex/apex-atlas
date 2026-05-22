@@ -94,6 +94,7 @@ pip install -e ".[dev]"
 atlas generate --patients 10 --seed 42 --out ./out
 ls ./out
 # GPX-SYN-0000000001-8.json  GPX-SYN-0000000002-6.json  …
+# generation-metadata.json  # cohort provenance, patient count, and feature flags
 
 # Structurally validate the output
 atlas validate ./out
@@ -184,7 +185,28 @@ ls ./bulk
 pip install -e ".[data]"
 atlas generate --patients 500 --seed 42 \
     --module hypertension --format parquet --out ./parquet
+# generation-metadata.json is written into every output directory for audit and cohort tracking
 ```
+
+### Generation metadata
+
+Every `atlas generate` run now writes a `generation-metadata.json` file into the output directory. This artifact captures run-level provenance and cohort metrics for governance and marketing.
+
+Example fields:
+
+- `cohort_id`: generated run identifier
+- `generated_at`: UTC timestamp when the cohort was produced
+- `output_path`: target output directory
+- `requested_patients`: requested synthetic patient count
+- `actual_patients`: actual synthetic patient count produced
+- `module_names`: list of active clinical modules
+- `format`: output format (`fhir-r4`, `ndjson`, `parquet`)
+- `profile`: FHIR profile used
+- `seed`: RNG seed
+- `with_notes`, `with_coverage`, `with_providers`, `with_claims`, `with_sdoh`, `with_measures`: enabled feature flags
+- `summary`: optional demographic counts when `--summary` is used
+
+This file makes cohort generation auditable and easy to aggregate over time.
 
 ### LLM-authored clinical notes
 
@@ -210,6 +232,7 @@ atlas validate ./cohort --cohort --module hypertension
 
 # HTML report with demographics + fidelity bars (no JS, safe to email)
 atlas report ./cohort --module hypertension --out cohort-report.html
+# generation-metadata.json captured at generation time provides an audit trail for internal governance
 ```
 
 ## Architecture
