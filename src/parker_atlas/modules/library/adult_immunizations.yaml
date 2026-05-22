@@ -1,0 +1,386 @@
+module: adult_immunizations
+version: 0.1.0
+description: >
+  Adult immunization module covering the ACIP 2024 recommended adult
+  immunization schedule. Each condition represents a distinct vaccine
+  cohort with age-stratified prevalence anchored to CDC vaccination
+  coverage survey data (NHIS 2022, NIS-Adult 2023, NIS-Flu 2022-23).
+
+  The "prevalence" for each condition represents the proportion of adults
+  in that age group who have received the relevant vaccine series (or the
+  most recent annual dose for flu/COVID). This allows the module to emit
+  immunization records for the vaccinated fraction of the population —
+  providing a realistic mix of vaccinated and under-vaccinated patients
+  consistent with actual US immunization coverage rates.
+
+  Vaccine cohorts modeled:
+  - Annual influenza (all adults 18+): ~50% overall coverage; higher in 65+
+  - High-dose flu (65+): reflects shift from standard to high-dose/adjuvanted
+  - Pneumococcal PCV20 (65+, high-risk adults): ~72% in 65+ (NHIS 2022)
+  - Shingles Shingrix 2-dose series (50+): ~36% series completion (NIS-Adult)
+  - Tdap booster (19-64, decennial): ~32% past-10-year Tdap (NHIS 2022)
+  - RSV vaccine (60+): ~24% in first year post-approval (CDC 2023-24)
+  - COVID-19 updated booster (65+): ~47% received 2023-24 updated dose (CDC)
+  - HPV series (18-26, catch-up): ~58% ≥1-dose coverage among adults 18-26
+
+  Immunizations are linked to a preventive care Encounter. The flu vaccine
+  quality measure (FluVaccine) in the Atlas measures module evaluates
+  CVX code "141"/"144" presence — this module emits both, gated by age.
+
+cites:
+  - source: >
+      CDC National Immunization Survey — Adult (NIS-Adult) 2023 and
+      Flu Vaccination Coverage 2022-23 Season.
+    url: https://www.cdc.gov/vaccines/imz-managers/coverage/adultvaxview/index.html
+    summary: >
+      2022-23 flu coverage: adults 18-64 ~47%, adults 65+ ~75%. Pneumococcal
+      coverage (65+): ~72%. Shingles (65+): ~40% ≥1 dose, ~36% series.
+      Tdap (adults 19-64): ~32% in past 10 years. COVID-19 updated booster
+      uptake (65+): ~47% as of early 2024.
+
+  - source: >
+      CDC ACIP Adult Immunization Schedule — United States, 2024.
+    url: https://www.cdc.gov/vaccines/schedules/hcp/imz/adult.html
+    summary: >
+      Influenza: annually for all adults ≥6 months; high-dose or adjuvanted
+      preferred for 65+. PCV20 or PCV15+PPSV23 for adults 65+. Shingrix
+      2-dose series for 50+. RSV vaccine for adults 60+ (shared decision).
+      Updated COVID-19 vaccine annually for all adults. Tdap once, then Td
+      every 10 years.
+
+  - source: >
+      Lu P, Hung MC, Srivastav A, et al. Surveillance of Vaccination
+      Coverage Among Adult Populations — United States, 2022.
+      MMWR Surveill Summ. 2024;73(No. SS-1):1-31.
+    url: https://www.cdc.gov/mmwr/volumes/73/ss/ss7301a1.htm
+    summary: >
+      HPV vaccination coverage adults 18-26: ~58% ≥1 dose (2022). Major
+      coverage gaps persist among adults 27-45 despite catch-up recommendation.
+      Flu, pneumococcal, and shingles coverage gaps are largest in adults
+      18-64 without insurance and in rural areas.
+
+conditions:
+  # -----------------------------------------------------------------------
+  # Annual flu vaccine — standard dose, all adults 18-64
+  # CVX 141: Influenza, seasonal, injectable (standard trivalent/quadrivalent)
+  # 47% coverage in 18-64 adults (NIS-Flu 2022-23)
+  # -----------------------------------------------------------------------
+  - id: adult_flu_standard
+    code:
+      system: http://snomed.info/sct
+      code: "170427009"
+      display: Influenza vaccination (procedure)
+    prevalence:
+      "0-17":  0.0
+      "18-64": 0.47
+      "65-99": 0.0
+    onset_age:
+      min: 18
+      max: 64
+    emits:
+      - resource_type: Encounter
+        spec_id: flu_std_preventive_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185389009"
+          display: Follow-up visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "170427009"
+          display: Influenza vaccination
+
+      - resource_type: Immunization
+        spec_id: flu_vaccine_standard
+        when: today
+        link_to: flu_std_preventive_visit
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "141"
+          display: Influenza, seasonal, injectable
+
+  # -----------------------------------------------------------------------
+  # High-dose/adjuvanted flu vaccine — adults 65+
+  # CVX 144: Influenza, seasonal, injectable, high-dose
+  # 75% coverage in 65+ adults (NIS-Flu 2022-23); ACIP prefers HD or adj
+  # -----------------------------------------------------------------------
+  - id: adult_flu_highdose
+    code:
+      system: http://snomed.info/sct
+      code: "170427009"
+      display: Influenza vaccination (procedure)
+    prevalence:
+      "0-64":  0.0
+      "65-99": 0.75
+    onset_age:
+      min: 65
+      max: 99
+    emits:
+      - resource_type: Encounter
+        spec_id: flu_hd_preventive_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185389009"
+          display: Follow-up visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "170427009"
+          display: Influenza vaccination
+
+      - resource_type: Immunization
+        spec_id: flu_vaccine_highdose
+        when: today
+        link_to: flu_hd_preventive_visit
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "144"
+          display: Influenza, seasonal, injectable, high dose
+
+  # -----------------------------------------------------------------------
+  # Pneumococcal vaccine (PCV20) — adults 65+, high-risk adults 19-64
+  # CVX 216: Pneumococcal conjugate vaccine, 20-valent (Prevnar 20)
+  # 72% ≥1 pneumococcal dose in 65+ (NHIS 2022); lower in 19-64 high-risk
+  # -----------------------------------------------------------------------
+  - id: pneumococcal_vaccine
+    code:
+      system: http://snomed.info/sct
+      code: "394678003"
+      display: Pneumococcal vaccination (procedure)
+    prevalence:
+      "0-49":  0.0
+      "50-64": 0.12
+      "65-99": 0.72
+    onset_age:
+      min: 50
+      max: 99
+    emits:
+      - resource_type: Encounter
+        spec_id: pneumo_preventive_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185389009"
+          display: Follow-up visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "394678003"
+          display: Pneumococcal vaccination
+
+      - resource_type: Immunization
+        spec_id: pneumococcal_pcv20
+        when: today
+        link_to: pneumo_preventive_visit
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "216"
+          display: Pneumococcal conjugate vaccine, 20 valent
+
+  # -----------------------------------------------------------------------
+  # Shingles vaccine (Shingrix 2-dose series) — adults 50+
+  # CVX 187: Zoster vaccine, recombinant
+  # 36% series completion in 50+ (NIS-Adult 2023); rises to ~40% in 65+
+  # -----------------------------------------------------------------------
+  - id: shingles_vaccine
+    code:
+      system: http://snomed.info/sct
+      code: "428191000124101"
+      display: Recombinant zoster vaccination (procedure)
+    prevalence:
+      "0-49":  0.0
+      "50-64": 0.30
+      "65-99": 0.40
+    onset_age:
+      min: 50
+      max: 99
+    emits:
+      - resource_type: Encounter
+        spec_id: shingles_preventive_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185389009"
+          display: Follow-up visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "428191000124101"
+          display: Recombinant zoster vaccination
+
+      - resource_type: Immunization
+        spec_id: shingles_shingrix
+        when: today
+        link_to: shingles_preventive_visit
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "187"
+          display: Zoster vaccine, recombinant (Shingrix)
+
+  # -----------------------------------------------------------------------
+  # Tdap booster — adults 19-64 who have not received Tdap in 10 years
+  # CVX 115: Td (adult) preservative free
+  # 32% past-10-year coverage in 19-64 (NHIS 2022); Tdap once, then Td
+  # -----------------------------------------------------------------------
+  - id: tdap_adult_booster
+    code:
+      system: http://snomed.info/sct
+      code: "312868008"
+      display: Tetanus and diphtheria and pertussis vaccination (procedure)
+    prevalence:
+      "0-18":  0.0
+      "19-64": 0.32
+      "65-99": 0.15
+    onset_age:
+      min: 19
+      max: 64
+    emits:
+      - resource_type: Encounter
+        spec_id: tdap_preventive_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185389009"
+          display: Follow-up visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "312868008"
+          display: Tetanus, diphtheria, pertussis vaccination
+
+      - resource_type: Immunization
+        spec_id: tdap_booster_dose
+        when: today
+        link_to: tdap_preventive_visit
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "115"
+          display: Tdap
+
+  # -----------------------------------------------------------------------
+  # RSV vaccine — adults 60+; ACIP 2024 shared decision-making recommendation
+  # CVX 304: Respiratory syncytial virus vaccine, recombinant, adjuvanted (Arexvy)
+  # ~24% uptake in 60+ in first year post-approval (CDC 2023-24 estimates)
+  # -----------------------------------------------------------------------
+  - id: rsv_adult_vaccine
+    code:
+      system: http://snomed.info/sct
+      code: "170425001"
+      display: Respiratory syncytial virus vaccination (procedure)
+    prevalence:
+      "0-59":  0.0
+      "60-99": 0.24
+    onset_age:
+      min: 60
+      max: 99
+    emits:
+      - resource_type: Encounter
+        spec_id: rsv_preventive_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185389009"
+          display: Follow-up visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "170425001"
+          display: Respiratory syncytial virus vaccination
+
+      - resource_type: Immunization
+        spec_id: rsv_vaccine_dose
+        when: today
+        link_to: rsv_preventive_visit
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "304"
+          display: Respiratory syncytial virus vaccine, recombinant, adjuvanted, for adults
+
+  # -----------------------------------------------------------------------
+  # COVID-19 updated booster — adults 65+; ACIP 2024 annual recommendation
+  # CVX 208: COVID-19 vaccine, mRNA, LNP-S (Pfizer; used as proxy for annual)
+  # ~47% updated 2023-24 dose coverage in 65+ (CDC early 2024)
+  # -----------------------------------------------------------------------
+  - id: covid19_adult_booster
+    code:
+      system: http://snomed.info/sct
+      code: "1119349007"
+      display: COVID-19 mRNA vaccine administration (procedure)
+    prevalence:
+      "0-17":  0.0
+      "18-64": 0.25
+      "65-99": 0.47
+    onset_age:
+      min: 18
+      max: 99
+    emits:
+      - resource_type: Encounter
+        spec_id: covid19_preventive_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185389009"
+          display: Follow-up visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "1119349007"
+          display: COVID-19 mRNA vaccine administration
+
+      - resource_type: Immunization
+        spec_id: covid19_booster_dose
+        when: today
+        link_to: covid19_preventive_visit
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "208"
+          display: COVID-19, mRNA, LNP-S, PF, 30 mcg/0.3 mL dose
+
+  # -----------------------------------------------------------------------
+  # HPV series (Gardasil 9) — adults 18-26 catch-up; 27-45 shared decision
+  # CVX 165: HPV9 (Gardasil 9)
+  # 58% ≥1 dose coverage in adults 18-26 (NIS-Adult 2022)
+  # -----------------------------------------------------------------------
+  - id: hpv_adult_series
+    code:
+      system: http://snomed.info/sct
+      code: "761841000"
+      display: Administration of vaccine against human papillomavirus (procedure)
+    prevalence:
+      female:
+        "0-17":  0.0
+        "18-26": 0.58
+        "27-45": 0.15
+        "46-99": 0.0
+      male:
+        "0-17":  0.0
+        "18-26": 0.50
+        "27-45": 0.10
+        "46-99": 0.0
+    onset_age:
+      min: 18
+      max: 45
+    emits:
+      - resource_type: Encounter
+        spec_id: hpv_preventive_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185389009"
+          display: Follow-up visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "761841000"
+          display: Administration of vaccine against human papillomavirus
+
+      - resource_type: Immunization
+        spec_id: hpv9_dose
+        when: today
+        link_to: hpv_preventive_visit
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "165"
+          display: HPV9 (Gardasil 9)

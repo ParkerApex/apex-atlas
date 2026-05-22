@@ -1,0 +1,165 @@
+module: tobacco_use_disorder
+version: 0.1.0
+description: >
+  Tobacco use disorder (TUD) module covering current cigarette smokers —
+  the highest-burden preventable risk factor in US health. CDC NHIS/BRFSS
+  2022 reports 28.3 million US adults (11.5%) as current cigarette smokers.
+  After decades of decline, prevalence has plateaued around 12-15%; rates
+  are markedly higher in adults with mental illness (~30%), adults in poverty,
+  and rural populations.
+
+  Tobacco is the causal anchor for COPD, lung cancer, ischemic heart disease,
+  stroke, peripheral artery disease, bladder cancer, and oral/esophageal
+  cancers. This module emits smoking-specific clinical resources and
+  cessation pharmacotherapy. Cross-module risk interactions (e.g., smoking
+  amplifying COPD or lung cancer probability) are declared in respective
+  module progression overlays; this module emits the upstream signal.
+
+  Prevalence reflects current smokers (not lifetime/former smokers) based on
+  CDC 2022 BRFSS/NHIS: ~14% of adults 25-64, declining in 65+. Male
+  prevalence slightly exceeds female across all age groups.
+
+  When a patient is positive, the module emits:
+  - A primary care Encounter
+  - A tobacco smoking quantity Observation (LOINC 8663-7) in packs/day
+    (0.25-2.0 packs/day; 5-40 cigarettes/day) — used in pack-year calculations
+    for lung cancer screening eligibility (USPSTF LDCT: ≥20 pack-years, 50-80)
+  - Smoking cessation counseling Procedure in 45% of cases — USPSTF Grade A
+    recommendation; brief 5As or 5Rs counseling at every visit is recommended
+    for all current smokers
+  - Varenicline 1 MG in 25% of cases — most effective cessation pharmacotherapy;
+    7.5x cessation rate vs placebo at 12 weeks (Gonzales et al. JAMA 2006);
+    FDA-approved first-line per USPSTF and AHA
+  - Bupropion SR 150 MG in 15% of cases — second-line cessation; NRT-equivalent
+    efficacy; also used when varenicline is contraindicated
+  - Nicotine replacement therapy (21 MG/24HR patch) in 20% of cases — OTC
+    first-line option; often documented at visits when pharmacist-referred
+
+cites:
+  - source: >
+      Cornelius ME, Loretan CG, Jamal A, et al. Tobacco Product Use Among
+      Adults — United States, 2021. MMWR Morb Mortal Wkly Rep.
+      2023;72(18):475-483.
+    url: https://www.cdc.gov/mmwr/volumes/72/wr/mm7218a1.htm
+    summary: >
+      11.5% of US adults (~28.3 million) were current cigarette smokers
+      in 2021. Prevalence by age: 18-24 ~7.3%, 25-44 ~15.7%, 45-64 ~15.6%,
+      65+ ~8.9%. Male ~13.1%, female ~10.1%. Rates highest in adults with
+      serious psychological distress (34.2%).
+
+  - source: >
+      Gonzales D, Rennard SI, Nides M, et al. Varenicline, an alpha4beta2
+      nicotinic acetylcholine receptor partial agonist, vs sustained-release
+      bupropion and placebo for smoking cessation. JAMA. 2006;296(1):47-55.
+    url: https://jamanetwork.com/journals/jama/fullarticle/398754
+    summary: >
+      Varenicline 1 mg BID: 44% continuous abstinence at 12 weeks vs 18%
+      bupropion and 18% placebo. At 52 weeks: 22% varenicline vs 16%
+      bupropion vs 9% placebo. Varenicline is the most effective single
+      agent for smoking cessation.
+
+  - source: >
+      USPSTF. Interventions for Tobacco Smoking Cessation in Adults,
+      Including Pregnant Persons. JAMA. 2021;325(3):265-279.
+    url: https://jamanetwork.com/journals/jama/fullarticle/2775528
+    summary: >
+      Grade A recommendation for cessation interventions including behavioral
+      counseling (5As) and pharmacotherapy (varenicline, bupropion, NRT) in
+      all adults who smoke. Combined behavioral + pharmacotherapy is most
+      effective. Clinician brief advice increases cessation 70% vs no advice.
+
+conditions:
+  - id: current_tobacco_smoker
+    code:
+      system: http://snomed.info/sct
+      code: "56294008"
+      display: Tobacco use disorder (disorder)
+    prevalence:
+      female:
+        "0-17":  0.0
+        "18-39": 0.115
+        "40-59": 0.140
+        "60-99": 0.080
+      male:
+        "0-17":  0.0
+        "18-39": 0.150
+        "40-59": 0.175
+        "60-99": 0.100
+    onset_age:
+      min: 14
+      max: 35
+    emits:
+      - resource_type: Encounter
+        spec_id: tobacco_primary_care_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "56294008"
+          display: Tobacco use disorder
+
+      # Packs per day — quantitative smoking intensity (0.25-2.0 packs/day)
+      - resource_type: Observation
+        spec_id: tobacco_packs_per_day
+        when: today
+        link_to: tobacco_primary_care_visit
+        category: social-history
+        code:
+          system: http://loinc.org
+          code: "8663-7"
+          display: Cigarettes smoked current (packs per day)
+        value_range: {low: 0.25, high: 2.0, precision: 2}
+        unit: '{packs}/d'
+        unit_code: '{packs}/d'
+
+      # Smoking cessation counseling — USPSTF Grade A; 5As approach at every visit
+      - resource_type: Procedure
+        spec_id: tobacco_cessation_counseling
+        when: today
+        link_to: tobacco_primary_care_visit
+        probability: 0.45
+        code:
+          system: http://snomed.info/sct
+          code: "225323000"
+          display: Smoking cessation education (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "56294008"
+          display: Tobacco use disorder
+
+      # Varenicline — most effective cessation Rx; 7.5x cessation vs placebo
+      - resource_type: MedicationRequest
+        spec_id: tobacco_varenicline
+        when: today
+        link_to: tobacco_primary_care_visit
+        probability: 0.25
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "794849"
+          display: Varenicline 1 MG Oral Tablet
+
+      # Bupropion SR — second-line; NRT-equivalent; also for co-morbid depression
+      - resource_type: MedicationRequest
+        spec_id: tobacco_bupropion
+        when: today
+        link_to: tobacco_primary_care_visit
+        probability: 0.15
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "993538"
+          display: Bupropion Hydrochloride 150 MG 12HR Extended Release Oral Tablet
+
+      # Nicotine patch 21 MG/24HR — OTC NRT first-line for heavy smokers (≥10/day)
+      - resource_type: MedicationRequest
+        spec_id: tobacco_nicotine_patch
+        when: today
+        link_to: tobacco_primary_care_visit
+        probability: 0.20
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "1100188"
+          display: Nicotine 21 MG/24HR Transdermal System

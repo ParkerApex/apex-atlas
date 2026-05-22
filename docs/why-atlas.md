@@ -80,7 +80,7 @@ Atlas covers:
 
 - **Pediatric well-child visits** with the ACIP 2024 immunization schedule, age-appropriate growth measurements, and CDC NHIS-calibrated visit prevalence across four developmental cohorts (infant, toddler, school-age, adolescent).
 - **Maternal health and obstetric care** including the full prenatal visit cascade (first trimester through delivery and postpartum), prenatal labs, and three clinical complications — gestational diabetes, preeclampsia, and postpartum depression — each calibrated to ACOG and CDC published rates.
-- **16 chronic disease modules** covering the highest-prevalence adult conditions with cross-module progressions (hypertension → CKD, hypertension → stroke, diabetes → retinopathy, atrial fibrillation → stroke, and more).
+- **37 clinical modules** (as of May 2026) spanning 14 domains — cardiovascular, metabolic, pulmonary, GI, renal, musculoskeletal, mental health, substance use, neurology, oncology, infectious disease, hematology, pediatric/OB, and prevention (adult immunizations) — with cross-module progressions (hypertension → CKD, hypertension → stroke, diabetes → retinopathy, atrial fibrillation → stroke, CKD → ESRD, NAFLD → cirrhosis, T1D → DKA, sickle cell → vaso-occlusive crisis, and more).
 
 ### 4. Statistical grounding with auditable provenance
 
@@ -114,7 +114,7 @@ Apex Atlas is the foundational layer of that infrastructure. It is where Parker'
 
 The goal is not to be the most popular synthetic data generator. It is to be the most accurate and the most useful — the one that produces data that actually changes what an AI model learns, that actually tests a real FHIR integration, that actually reflects how social circumstances shape health outcomes.
 
-That is a harder goal, and it will take longer to reach. The module library needs to grow from 16 to 100+. The SDoH causal model needs to incorporate joint distributions across domains. The note generation needs to pass a clinician fidelity audit. These are known gaps and there are milestones for each.
+That is a harder goal, and it will take longer to reach. The module library is growing toward 100+ (37 today); the SDoH causal model needs to incorporate joint distributions across domains; the note generation needs to pass a formal clinician fidelity audit. These are known gaps and there are milestones for each.
 
 But the architecture — statistical grounding, causal SDoH modeling, quality measure output, full lifecycle coverage, auditable provenance, FHIR-first design — is in place. Atlas can be extended toward that goal without re-architecture.
 
