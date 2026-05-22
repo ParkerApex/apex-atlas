@@ -1,0 +1,174 @@
+module: atrial_fibrillation
+version: 0.1.0
+description: >
+  Atrial fibrillation (AF) — the most common sustained cardiac
+  arrhythmia in adults. Probability-module flavor with sex-and-age
+  brackets anchored to AHA Heart Disease and Stroke Statistics 2024.
+
+  AF affects ~5.2M US adults (~1.8% prevalence), rising sharply with
+  age — under 1% in the 40-59 bracket, ~7% in 60-79, and >10% in 80+.
+  The prevalence numbers below aggregate AHA's sub-buckets to Atlas's
+  18-39 / 40-59 / 60-99 brackets weighted by US population share.
+
+  When a patient is positive, the module emits:
+  - A cardiology follow-up Encounter
+  - A 12-lead ECG Procedure (SNOMED 29303009) — the diagnostic
+    workup standard for AF
+  - An apixaban (Eliquis) MedicationRequest in 60% of cases — direct
+    oral anticoagulants are first-line per the 2023 ACC/AHA AF
+    Guideline for stroke prevention in patients with CHA₂DS₂-VASc ≥2
+  - A CHA₂DS₂-VASc score Observation (LOINC 88959-7) in the 2-6 range
+    — the typical scoring window for adults with AF, capturing the
+    "anticoagulation indicated" cohort
+
+  Cross-module integration:
+  - htn → atrial_fibrillation (10y, ~5%). Hypertension is the most
+    common antecedent risk factor for AF; the 5% 10-year rate is an
+    approximation pending sourced ingestion from the Framingham AF
+    cohort.
+  - atrial_fibrillation → stroke (5y, ~3%). AF carries a ~5x lifetime
+    stroke risk; the 3% 5-year rate reflects the stroke risk in
+    treated AF (most patients are on anticoagulation) rather than the
+    untreated natural history.
+
+  Mortality is moderate, modeled at 4% over 5 years to capture the
+  excess all-cause mortality of AF (driven primarily by stroke and HF).
+
+  No bundled fidelity expectation in this first cut — sourced AF
+  prevalence numbers exist (AHA 2024) but the multi-source aggregation
+  is more involved than a single NCHS Data Brief table. A follow-up
+  commit will ingest the AHA Statistical Update via `atlas ingest
+  prevalence` and ship the matching expectation.
+cites:
+  - source: >
+      Tsao CW, Aday AW, Almarzooq ZI, et al. Heart Disease and Stroke
+      Statistics — 2024 Update: A Report from the American Heart
+      Association. Circulation 2024;149(8):e347-e913.
+    url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001209
+    summary: >
+      US AF prevalence: ~5.2M adults (~1.8%). By age (NHANES + clinical
+      cohorts): 20-39 ~0.1%; 40-59 men 1.1% / women 0.7%; 60-79 men
+      6.9% / women 5.6%; 80+ men 12.0% / women 11.4%.
+  - source: >
+      Joglar JA, Chung MK, Armbruster AL, et al. 2023 ACC/AHA/ACCP/HRS
+      Guideline for the Diagnosis and Management of Atrial Fibrillation.
+      Circulation 2024;149(1):e1-e156.
+    url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001193
+    summary: >
+      Direct oral anticoagulants (DOACs — apixaban, rivaroxaban,
+      dabigatran, edoxaban) are preferred over warfarin for stroke
+      prevention in AF patients with CHA₂DS₂-VASc ≥2 (men) or ≥3
+      (women). Apixaban is the most commonly prescribed DOAC in the US.
+  - source: >
+      Schnabel RB, Yin X, Gona P, et al. 50 year trends in atrial
+      fibrillation prevalence, incidence, risk factors, and mortality
+      in the Framingham Heart Study. Lancet 2015;386(9989):154-162.
+    url: https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(14)61774-8/fulltext
+    summary: >
+      Hypertension is the most prevalent modifiable risk factor for
+      AF; AF carries excess mortality (hazard ratios ~1.5 men / ~1.9
+      women adjusting for comorbidities). Cumulative AF incidence in
+      HTN patients ~5-7% at 10y in the Framingham cohort.
+conditions:
+  - id: atrial_fibrillation
+    code:
+      system: http://snomed.info/sct
+      code: "49436004"
+      display: Atrial fibrillation (disorder)
+    prevalence:
+      female:
+        "0-17": 0.0
+        "18-39": 0.001
+        "40-59": 0.007
+        "60-99": 0.078
+      male:
+        "0-17": 0.0
+        "18-39": 0.001
+        "40-59": 0.011
+        "60-99": 0.092
+    onset_age:
+      min: 55
+      max: 85
+    mortality:
+      after_years: 5
+      probability: 0.04
+      cause:
+        system: http://snomed.info/sct
+        code: "49436004"
+        display: Atrial fibrillation
+    # Cross-module progression: AF substantially elevates stroke risk.
+    # The 3% 5-year rate models stroke risk under anticoagulation
+    # (which most AF patients are on), not the untreated natural
+    # history. Cross-module targets only fire when `stroke` is also
+    # active in the same `atlas generate` run.
+    progressions:
+      - to: stroke:stroke
+        after_years: 5
+        probability: 0.03
+    emits:
+      - resource_type: Encounter
+        spec_id: afib_cardiology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "49436004"
+          display: Atrial fibrillation
+
+      # 12-lead ECG — diagnostic gold standard for AF.
+      - resource_type: Procedure
+        spec_id: afib_ecg
+        when: today
+        link_to: afib_cardiology_visit
+        probability: 0.85
+        code:
+          system: http://snomed.info/sct
+          code: "29303009"
+          display: Electrocardiographic procedure (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "49436004"
+          display: Atrial fibrillation
+
+      # Apixaban (Eliquis) — most-prescribed DOAC for stroke prevention
+      # in AF. The 60% rate reflects the subset of AF patients with
+      # CHA₂DS₂-VASc ≥2 who are actively anticoagulated; the remainder
+      # are on warfarin, other DOACs, antiplatelet-only, or untreated
+      # despite indication.
+      - resource_type: MedicationRequest
+        spec_id: afib_apixaban
+        when: today
+        link_to: afib_cardiology_visit
+        probability: 0.60
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "1364430"
+          display: Apixaban 5 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "49436004"
+          display: Atrial fibrillation
+
+      # CHA₂DS₂-VASc score — stroke risk stratification tool, the
+      # primary driver of anticoagulation decisions in AF. Range 2-6
+      # covers the cohort where anticoagulation is guideline-indicated
+      # (score ≥2 men, ≥3 women).
+      - resource_type: Observation
+        spec_id: afib_chads2vasc
+        when: today
+        link_to: afib_cardiology_visit
+        # CHA₂DS₂-VASc is a derived clinical score; categorized under
+        # "laboratory" to match how the stroke module records NIHSS
+        # (also a clinically-derived ordinal score).
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "88959-7"
+          display: CHA2DS2-VASc score
+        value_range: {low: 2, high: 6, precision: 0}
+        unit: "{score}"
+        unit_code: "{score}"

@@ -218,12 +218,18 @@ def build_progress_note_text(ctx: NoteContext) -> str:
 
 
 def render_note(ctx: NoteContext, strategy: NoteStrategy = NoteStrategy.TEMPLATE) -> str:
-    """Dispatch to the chosen renderer. LLM mode is reserved for M4."""
+    """Dispatch to the chosen renderer.
+
+    LLM mode delegates to `parker_atlas.notes.llm.render_llm_note` and returns
+    its `.text`. Callers that need usage / model provenance should call the
+    LLM renderer directly. If the LLM strategy can't be served (missing SDK
+    or API key), `LLMNotesUnavailable` is raised — callers decide whether to
+    fall back to TEMPLATE or fail the run.
+    """
     if strategy is NoteStrategy.TEMPLATE:
         return build_progress_note_text(ctx)
     if strategy is NoteStrategy.LLM:
-        raise NotImplementedError(
-            "NoteStrategy.LLM is reserved for Milestone 4. "
-            "Use NoteStrategy.TEMPLATE for the current build."
-        )
+        from parker_atlas.notes.llm import render_llm_note
+
+        return render_llm_note(ctx).text
     raise ValueError(f"unknown NoteStrategy: {strategy!r}")

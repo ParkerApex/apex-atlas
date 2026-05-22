@@ -1,0 +1,161 @@
+module: wellness
+version: 0.1.0
+description: >
+  Adult preventive care baseline. Models the "healthy adult who saw a
+  doctor this year" cohort that every other module relies on existing
+  in the background — without this, healthy patients leave Atlas with
+  empty bundles, which is the single most obvious giveaway that data
+  is synthetic.
+
+  When a patient is positive, the module emits:
+  - An annual physical Encounter (AMB, "Encounter for general adult
+    examination")
+  - A BP measurement (LOINC 85354-9, multi-component) within the
+    normotensive range (110-130 / 70-85)
+  - A BMI Observation (LOINC 39156-5) in the population-typical range
+    (18.5-32; not perfectly Gaussian but reasonable for the synthetic
+    healthy-adult cohort)
+  - An annual influenza vaccine Immunization (CVX 140) in ~47% of
+    cases — matches CDC FluVaxView 2023-24 adult flu vaccination
+    coverage
+  - A Tdap booster Immunization (CVX 115) in ~4% of cases — annual
+    proxy for the recommended 10-year Tdap booster schedule
+
+  Pediatric well-child visits and the full ACIP childhood immunization
+  schedule are out of scope for v0.1. Age-conditional adult vaccines
+  (shingles 50+, pneumococcal 65+) are tracked as a follow-up — the
+  module DSL today doesn't gate emits by patient age, so adding them
+  cleanly requires either age-bracketed wellness sub-conditions or a
+  small runtime extension. Both are tractable; ship the baseline first.
+
+  Prevalence brackets are anchored to CDC's WB&H "saw a doctor in past
+  12 months" rates (NHIS 2022 ≈ 80% adults, lower in 18-39, higher in
+  65+). Pediatric brackets are intentionally 0 — see above.
+
+  No bundled fidelity expectation. The module emits process measures
+  (visit attendance, vaccination uptake), not disease prevalence, and
+  the conditional_prevalence harness shape is wrong for these. A
+  process-measure expectation kind is a follow-up.
+cites:
+  - source: >
+      CDC National Health Interview Survey 2022 — Health Care Access
+      and Utilization Among Adults.
+    url: https://www.cdc.gov/nchs/nhis/index.htm
+    summary: >
+      ~80% of US adults reported a visit to a doctor or other health
+      professional in the past 12 months. Rates rise with age and are
+      slightly higher in women than men.
+  - source: >
+      CDC FluVaxView — Flu Vaccination Coverage, United States,
+      2023-24 Influenza Season.
+    url: https://www.cdc.gov/flu/fluvaxview/coverage-2324estimates.htm
+    summary: >
+      Adult (≥18 yrs) seasonal influenza vaccination coverage: 46.9%
+      overall; ranges from ~37% in 18-49 to ~72% in 65+.
+  - source: >
+      CDC ACIP Adult Immunization Schedule (2024).
+    url: https://www.cdc.gov/vaccines/schedules/hcp/imz/adult.html
+    summary: >
+      Tdap booster is recommended every 10 years for adults — the 4%
+      annual emit rate here is a flat approximation of that schedule.
+conditions:
+  - id: annual_wellness_visit
+    # SNOMED 162673000 "General examination of patient" is the
+    # standard concept for a well-person / annual physical visit.
+    # Maps to ICD-10 Z00.00 "Encounter for general adult medical
+    # examination without abnormal findings".
+    code:
+      system: http://snomed.info/sct
+      code: "162673000"
+      display: General examination of patient (procedure)
+    prevalence:
+      female:
+        "0-17": 0.0
+        "18-39": 0.74
+        "40-59": 0.82
+        "60-99": 0.91
+      male:
+        "0-17": 0.0
+        "18-39": 0.62
+        "40-59": 0.75
+        "60-99": 0.88
+    # Wellness "onset" is the visit itself — set to a recent window
+    # (within the last year) so notes anchored to this diagnosis read
+    # as a current annual physical, not a historical event.
+    onset_age:
+      min: 18
+      max: 99
+    emits:
+      - resource_type: Encounter
+        spec_id: wellness_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185349003"
+          display: Encounter for check up
+        reason:
+          system: http://snomed.info/sct
+          code: "162673000"
+          display: General examination of patient
+
+      - resource_type: Observation
+        spec_id: wellness_bp
+        when: today
+        link_to: wellness_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "85354-9"
+          display: Blood pressure panel with all children optional
+        components:
+          - code:
+              system: http://loinc.org
+              code: "8480-6"
+              display: Systolic blood pressure
+            value_range: {low: 110, high: 130, precision: 0}
+            unit: mm[Hg]
+          - code:
+              system: http://loinc.org
+              code: "8462-4"
+              display: Diastolic blood pressure
+            value_range: {low: 70, high: 85, precision: 0}
+            unit: mm[Hg]
+
+      - resource_type: Observation
+        spec_id: wellness_bmi
+        when: today
+        link_to: wellness_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "39156-5"
+          display: Body mass index (BMI) [Ratio]
+        value_range: {low: 18.5, high: 32.0, precision: 1}
+        unit: kg/m2
+        unit_code: kg/m2
+
+      # Annual flu shot — CDC FluVaxView 2023-24 adult coverage 46.9%.
+      - resource_type: Immunization
+        spec_id: wellness_flu_vaccine
+        when: today
+        link_to: wellness_visit
+        probability: 0.47
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "140"
+          display: Influenza, seasonal, injectable, preservative free
+
+      # Tdap booster — 10-year schedule, modeled as a flat ~4% annual
+      # probability so cohort prevalence over a single year approximates
+      # 1/10 of the eligible population having received Tdap in the
+      # past year.
+      - resource_type: Immunization
+        spec_id: wellness_tdap_vaccine
+        when: today
+        link_to: wellness_visit
+        probability: 0.04
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "115"
+          display: Tdap (tetanus, diphtheria, acellular pertussis)
