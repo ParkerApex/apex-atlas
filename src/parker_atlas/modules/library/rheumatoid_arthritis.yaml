@@ -1,0 +1,170 @@
+module: rheumatoid_arthritis
+version: 0.1.0
+description: >
+  Rheumatoid arthritis (RA) module covering the most common inflammatory
+  arthritis in adults. An estimated 1.3-1.5 million US adults have RA (CDC
+  2021), approximately 0.6% of the adult population. RA is characterized by
+  symmetric, erosive polyarthritis driven by autoimmune dysregulation. Female
+  prevalence is 2-3x higher than male; peak onset is 40-60 years.
+
+  RA diagnosis is based on clinical features plus serology: rheumatoid factor
+  (RF) is positive in ~70-80% and anti-cyclic citrullinated peptide (anti-CCP)
+  antibodies in ~60-70% of patients. Anti-CCP has higher specificity (~95%)
+  and appears years before clinical symptoms, making it the preferred
+  diagnostic test. Elevated ESR and CRP confirm systemic inflammation.
+
+  When a patient is positive, the module emits:
+  - A rheumatology Encounter
+  - RF Observation (LOINC 11572-5) in the elevated range (>14 IU/mL)
+  - Anti-CCP antibody Observation (LOINC 13974-3) in the positive range
+  - CRP Observation (LOINC 1988-5) in the elevated inflammatory range
+  - Methotrexate in 55% of cases — anchor DMARD; first-line per ACR 2021
+    guideline for DMARD-naive moderate-to-high disease activity RA
+  - Hydroxychloroquine in 30% of cases — add-on DMARD for mild RA or
+    combination therapy with methotrexate
+  - Adalimumab (TNF inhibitor) in 22% of cases — most commonly prescribed
+    biologic for RA; first-line biologic after inadequate DMARD response
+    (ACR 2021; also etanercept, abatacept, rituximab are alternatives)
+
+cites:
+  - source: >
+      Helmick CG, Felson DT, Lawrence RC, et al. Estimates of the prevalence
+      of arthritis and other rheumatic conditions in the United States.
+      Arthritis Rheum. 2008;58(1):15-25. (CDC 2021 update applies similar
+      estimates; RA prevalence ~0.5-1.0% US adults.)
+    url: https://onlinelibrary.wiley.com/doi/10.1002/art.23177
+    summary: >
+      RA prevalence ~0.6% US adults (1.3-1.5 million). Female:male ~2.5:1.
+      Peak incidence 40-60 years. Excess mortality ~1.5-2x vs general
+      population, primarily cardiovascular.
+
+  - source: >
+      Fraenkel L, Bathon JM, England BR, et al. 2021 American College of
+      Rheumatology Guideline for the Treatment of Rheumatoid Arthritis.
+      Arthritis Rheumatol. 2021;73(7):1108-1123.
+    url: https://onlinelibrary.wiley.com/doi/10.1002/art.41752
+    summary: >
+      Methotrexate is strongly recommended as the initial DMARD for
+      moderate-to-high disease activity RA. TNF inhibitors (adalimumab,
+      etanercept) recommended after inadequate DMARD response. Combination
+      DMARDs (methotrexate + hydroxychloroquine ± sulfasalazine) conditionally
+      recommended for patients who cannot use biologics.
+
+  - source: >
+      Nishimura K, Sugiyama D, Kogata Y, et al. Meta-analysis: diagnostic
+      accuracy of anti-cyclic citrullinated peptide antibody and rheumatoid
+      factor for rheumatoid arthritis. Ann Intern Med. 2007;146(11):797-808.
+    url: https://www.acpjournals.org/doi/10.7326/0003-4819-146-11-200706050-00008
+    summary: >
+      Anti-CCP: sensitivity 67%, specificity 95% for RA. RF: sensitivity
+      69%, specificity 85%. Anti-CCP more specific; detectable years before
+      clinical disease. Both positive: high positive predictive value.
+
+conditions:
+  - id: rheumatoid_arthritis
+    code:
+      system: http://snomed.info/sct
+      code: "69896004"
+      display: Rheumatoid arthritis (disorder)
+    prevalence:
+      female:
+        "0-17":  0.0
+        "18-39": 0.003
+        "40-59": 0.011
+        "60-99": 0.016
+      male:
+        "0-17":  0.0
+        "18-39": 0.001
+        "40-59": 0.004
+        "60-99": 0.006
+    onset_age:
+      min: 20
+      max: 80
+    emits:
+      - resource_type: Encounter
+        spec_id: ra_rheumatology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "69896004"
+          display: Rheumatoid arthritis
+
+      # Rheumatoid factor — positive >14 IU/mL; elevated in ~70-80% of RA
+      - resource_type: Observation
+        spec_id: ra_rf
+        when: onset
+        link_to: ra_rheumatology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "11572-5"
+          display: Rheumatoid factor [Units/volume] in Serum
+        value_range: {low: 20, high: 600, precision: 0}
+        unit: IU/mL
+        unit_code: IU/mL
+
+      # Anti-CCP antibody — high specificity marker (positive >17 U/mL)
+      - resource_type: Observation
+        spec_id: ra_anti_ccp
+        when: onset
+        link_to: ra_rheumatology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "13974-3"
+          display: Cyclic citrullinated peptide Ab [Units/volume] in Serum
+        value_range: {low: 20, high: 600, precision: 0}
+        unit: U/mL
+        unit_code: U/mL
+
+      # CRP — elevated in active RA (normal <10 mg/L; active RA often 15-100+)
+      - resource_type: Observation
+        spec_id: ra_crp
+        when: today
+        link_to: ra_rheumatology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "1988-5"
+          display: C reactive protein [Mass/volume] in Serum or Plasma
+        value_range: {low: 15, high: 80, precision: 1}
+        unit: mg/L
+        unit_code: mg/L
+
+      # Methotrexate — anchor DMARD; ACR 2021 first-line for moderate-to-high RA
+      - resource_type: MedicationRequest
+        spec_id: ra_methotrexate
+        when: today
+        link_to: ra_rheumatology_visit
+        probability: 0.55
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "105586"
+          display: Methotrexate 2.5 MG Oral Tablet
+
+      # Hydroxychloroquine — add-on DMARD for mild RA or methotrexate combination
+      - resource_type: MedicationRequest
+        spec_id: ra_hydroxychloroquine
+        when: today
+        link_to: ra_rheumatology_visit
+        probability: 0.30
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "979103"
+          display: Hydroxychloroquine Sulfate 200 MG Oral Tablet
+
+      # Adalimumab — most prescribed TNF inhibitor; first-line biologic after DMARD failure
+      - resource_type: MedicationRequest
+        spec_id: ra_adalimumab
+        when: today
+        link_to: ra_rheumatology_visit
+        probability: 0.22
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "1542261"
+          display: Adalimumab 40 MG/0.8ML Subcutaneous Solution

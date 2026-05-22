@@ -1,0 +1,162 @@
+module: prostate_cancer
+version: 0.1.0
+description: >
+  Prostate cancer module covering adenocarcinoma of the prostate — the most
+  common cancer diagnosis in US men. ACS 2024 estimates 299,010 new cases
+  and 35,250 deaths annually. NCI SEER 5-year prevalence: approximately
+  3.3 million men alive with a prostate cancer diagnosis (~5% of adult men
+  50 and older). Prostate cancer disproportionately affects older men; rare
+  before 45, incidence rises steeply after 60. Black men have ~75% higher
+  incidence and ~2x higher mortality than White men.
+
+  PSA-based screening (USPSTF: shared decision-making for men 55-69) detects
+  the majority of prostate cancers while still organ-confined; 77% of cases are
+  localized at diagnosis. Overall 5-year survival is ~97% reflecting the high
+  proportion of indolent disease; distant-stage 5-year survival is ~34%.
+
+  The treatment landscape varies widely by risk stratification: active
+  surveillance for low-risk disease (~40%), radiation/surgery for localized
+  intermediate-high-risk disease, and androgen deprivation therapy (ADT) for
+  advanced/metastatic disease. This module emits a cross-section of diagnosed
+  patients across risk strata.
+
+  When a patient is positive, the module emits:
+  - A urology or oncology Encounter
+  - A PSA Observation (LOINC 10334-1) in the elevated range for diagnosed
+    prostate cancer (4-200 ng/mL; normal <4)
+  - A prostate biopsy Procedure in 60% of cases — required for pathologic
+    confirmation; transrectal ultrasound-guided or fusion biopsy
+  - Leuprolide acetate in 28% of cases — GnRH agonist; backbone of ADT for
+    advanced/metastatic disease; also used in neoadjuvant/adjuvant settings
+  - Bicalutamide 50 MG in 20% of cases — anti-androgen; combined with
+    GnRH agonist (CAB) or as monotherapy for locally advanced disease
+
+  Mortality: SEER all-stage 5-year survival ~97%; we model 8% 5-year mortality
+  reflecting the minority with high-risk or metastatic disease at diagnosis.
+
+cites:
+  - source: >
+      Siegel RL, Giaquinto AN, Jemal A. Cancer statistics, 2024.
+      CA Cancer J Clin. 2024;74(1):12-49.
+    url: https://acsjournals.onlinelibrary.wiley.com/doi/10.3322/caac.21820
+    summary: >
+      Prostate cancer 2024: 299,010 new cases, 35,250 deaths. Most common
+      cancer in men. Lifetime risk ~13%. Significant racial disparity:
+      Black men have 1.75x incidence and 2.1x mortality vs White men.
+
+  - source: >
+      National Cancer Institute SEER*Explorer — Prostate Cancer
+      Stat Facts (2024).
+    url: https://seer.cancer.gov/statfacts/html/prost.html
+    summary: >
+      5-year relative survival all stages 97.0% (SEER 2014-2020). Stage
+      distribution: 77% localized (>99%), 12% regional (>99%), 8% distant
+      (34%). SEER 5-year prevalence ~3.3 million men. Median age at
+      diagnosis 67.
+
+  - source: >
+      Lowrance WT, Murad MH, Oh WK, et al. Castration-Resistant Prostate
+      Cancer: AUA Guideline Amendment 2021. J Urol. 2021;205(5):1289-1303.
+    url: https://www.auanet.org/guidelines-and-quality/guidelines/castration-resistant-prostate-cancer-guideline
+    summary: >
+      GnRH agonists (leuprolide, goserelin) are the standard ADT backbone
+      for advanced/castration-sensitive prostate cancer. Combined androgen
+      blockade (GnRH + anti-androgen) slightly superior to GnRH alone.
+      Docetaxel + ADT first-line for metastatic castration-sensitive.
+
+conditions:
+  - id: prostate_cancer
+    code:
+      system: http://snomed.info/sct
+      code: "399068003"
+      display: Malignant neoplasm of prostate (disorder)
+    prevalence:
+      female:
+        "0-99":  0.0
+      male:
+        "0-17":  0.0
+        "18-44": 0.0001
+        "45-64": 0.012
+        "65-99": 0.065
+    onset_age:
+      min: 50
+      max: 92
+    mortality:
+      after_years: 5
+      probability: 0.08
+      cause:
+        system: http://snomed.info/sct
+        code: "399068003"
+        display: Malignant neoplasm of prostate
+    emits:
+      - resource_type: Encounter
+        spec_id: pca_urology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "399068003"
+          display: Malignant neoplasm of prostate
+
+      # PSA — elevated in prostate cancer (normal <4 ng/mL; cancer typically >4-200+)
+      - resource_type: Observation
+        spec_id: pca_psa
+        when: today
+        link_to: pca_urology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "10334-1"
+          display: Prostate specific Ag [Units/volume] in Serum or Plasma
+        value_range: {low: 4.5, high: 200.0, precision: 1}
+        unit: ng/mL
+        unit_code: ng/mL
+
+      # Prostate biopsy — required for pathologic confirmation (TRUS-guided or fusion)
+      - resource_type: Procedure
+        spec_id: pca_biopsy
+        when: onset
+        link_to: pca_urology_visit
+        probability: 0.60
+        code:
+          system: http://snomed.info/sct
+          code: "176262003"
+          display: Transrectal biopsy of prostate (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "399068003"
+          display: Malignant neoplasm of prostate
+
+      # Leuprolide acetate — GnRH agonist; backbone of ADT for advanced disease
+      - resource_type: MedicationRequest
+        spec_id: pca_leuprolide
+        when: today
+        link_to: pca_urology_visit
+        probability: 0.28
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "1114148"
+          display: Leuprolide Acetate 7.5 MG Extended Release Suspension
+        reason:
+          system: http://snomed.info/sct
+          code: "399068003"
+          display: Malignant neoplasm of prostate
+
+      # Bicalutamide — anti-androgen; combined androgen blockade or monotherapy
+      - resource_type: MedicationRequest
+        spec_id: pca_bicalutamide
+        when: today
+        link_to: pca_urology_visit
+        probability: 0.20
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "314004"
+          display: Bicalutamide 50 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "399068003"
+          display: Malignant neoplasm of prostate

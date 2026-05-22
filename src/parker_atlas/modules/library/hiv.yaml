@@ -1,0 +1,156 @@
+module: hiv
+version: 0.1.0
+description: >
+  Human immunodeficiency virus (HIV) infection module covering the diagnosed
+  and treated HIV-positive population in the United States. CDC 2022 estimates
+  1.2 million Americans are living with HIV (~0.4% of all US adults), with
+  approximately 13% unaware of their infection. Approximately 35,000 new
+  diagnoses occur annually.
+
+  Male prevalence is ~3-4x higher than female (~0.6% vs ~0.15% of adults),
+  driven primarily by male-to-male sexual contact as the dominant transmission
+  route (~69% of new diagnoses). Prevalence peaks in the 40-59 age group,
+  reflecting the large cohort of people diagnosed in the 1990s and 2000s who
+  are now virologically suppressed on antiretroviral therapy (ART).
+
+  Modern ART is highly effective: >95% of people on ART achieve viral
+  suppression (<200 copies/mL) within 6 months (DHHS 2024 guidelines). The
+  module emits a cross-section reflecting patients in various states of
+  treatment engagement, with viral load range encompassing both suppressed
+  and partially adherent patients.
+
+  When a patient is positive, the module emits:
+  - An infectious disease or primary care Encounter
+  - An HIV RNA viral load Observation (LOINC 20447-9) in the low-to-moderate
+    range (20-5,000 copies/mL), covering the spectrum from virologically
+    suppressed to partially adherent; <50 copies/mL is undetectable
+  - A CD4+ T-cell count Observation (LOINC 24467-3) in the 200-800 range —
+    reflects treated patients not in AIDS range (<200 = AIDS-defining)
+  - A single-tablet ART regimen (bictegravir/FTC/TAF; Biktarvy) in 72% of
+    cases — most prescribed ART regimen in the US as of 2022; preferred
+    first-line per DHHS 2024 guidelines for ART-naive patients
+  - STI co-screening: syphilis RPR in 45% of cases — CDC recommends annual
+    STI screening for all sexually active HIV-positive patients
+
+cites:
+  - source: >
+      CDC. HIV Surveillance Report — Diagnoses of HIV Infection in the
+      United States and Dependent Areas, 2022. Vol. 34. Published 2024.
+    url: https://www.cdc.gov/hiv/library/reports/hiv-surveillance.html
+    summary: >
+      1.2 million Americans living with HIV at end of 2022 (0.37%).
+      ~35,000 new diagnoses in 2022. Male:female ratio ~3.8:1. MSM
+      accounts for 68% of new diagnoses. Black Americans disproportionately
+      affected (~40% of new diagnoses at 13% of US population).
+
+  - source: >
+      Panel on Antiretroviral Guidelines for Adults and Adolescents. DHHS
+      Guidelines for the Use of Antiretroviral Agents in Adults and
+      Adolescents with HIV. Updated 2024.
+    url: https://clinicalinfo.hiv.gov/en/guidelines/adult-and-adolescent-arv/whats-new-guidelines
+    summary: >
+      Bictegravir/FTC/TAF (Biktarvy) is a preferred first-line regimen for
+      most ART-naive patients (Grade AI). Goal: viral load <50 copies/mL.
+      96% of adherent patients on preferred regimens achieve viral suppression
+      within 24 weeks. ART recommended immediately at HIV diagnosis regardless
+      of CD4 count.
+
+  - source: >
+      Rodger AJ, Cambiano V, Bruun T, et al. Risk of HIV transmission
+      through condomless sex in serodifferent gay couples with the HIV-
+      positive partner taking suppressive antiretroviral therapy (PARTNER):
+      final results of a multicentre, prospective, observational study.
+      Lancet. 2019;393(10189):2428-2438.
+    url: https://www.thelancet.com/journals/lancet/article/PIIS0140-6736(19)30418-0/fulltext
+    summary: >
+      PARTNER2 study: zero HIV transmissions from virologically suppressed
+      HIV+ partners over 972 couple-years of follow-up. Establishes
+      U=U (Undetectable = Untransmittable) with biological certainty.
+
+conditions:
+  - id: hiv_infection
+    code:
+      system: http://snomed.info/sct
+      code: "86406008"
+      display: Human immunodeficiency virus infection (disorder)
+    prevalence:
+      female:
+        "0-17":  0.0
+        "18-39": 0.002
+        "40-59": 0.002
+        "60-99": 0.001
+      male:
+        "0-17":  0.0
+        "18-39": 0.006
+        "40-59": 0.007
+        "60-99": 0.003
+    onset_age:
+      min: 16
+      max: 75
+    emits:
+      - resource_type: Encounter
+        spec_id: hiv_id_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "86406008"
+          display: Human immunodeficiency virus infection
+
+      # HIV RNA viral load — suppressed-to-partially-adherent range (50+ = detectable)
+      - resource_type: Observation
+        spec_id: hiv_viral_load
+        when: today
+        link_to: hiv_id_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "20447-9"
+          display: HIV 1 RNA [Units/volume] (viral load) in Serum or Plasma by Probe with amplification
+        value_range: {low: 20, high: 5000, precision: 0}
+        unit: copies/mL
+        unit_code: copies/mL
+
+      # CD4+ T-cell count — treated range; <200 = AIDS-defining (not modeled)
+      - resource_type: Observation
+        spec_id: hiv_cd4
+        when: today
+        link_to: hiv_id_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "24467-3"
+          display: CD3+CD4+ (T4 helper) cells [#/volume] in Blood
+        value_range: {low: 200, high: 800, precision: 0}
+        unit: cells/uL
+        unit_code: /uL
+
+      # Biktarvy (bictegravir/FTC/TAF) — preferred first-line ART (DHHS 2024)
+      - resource_type: MedicationRequest
+        spec_id: hiv_art_biktarvy
+        when: today
+        link_to: hiv_id_visit
+        probability: 0.72
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "2003129"
+          display: Bictegravir 50 MG / Emtricitabine 200 MG / Tenofovir Alafenamide 25 MG Oral Tablet
+
+      # Syphilis RPR — annual STI screening recommended for all HIV-positive patients
+      - resource_type: Observation
+        spec_id: hiv_syphilis_rpr
+        when: today
+        link_to: hiv_id_visit
+        probability: 0.45
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "20507-0"
+          display: Reagin Ab [Units/volume] in Serum by RPR
+        value_range: {low: 1, high: 8, precision: 0}
+        unit: '{titer}'
+        unit_code: '{titer}'

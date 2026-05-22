@@ -1,0 +1,141 @@
+module: opioid_use_disorder
+version: 0.1.0
+description: >
+  Opioid use disorder (OUD) module covering the spectrum from opioid misuse
+  through dependence, including both prescription opioid and heroin/illicit
+  fentanyl pathways. SAMHSA NSDUH 2022 estimates 6.1 million US adults
+  (2.2%) had OUD in the past year. The opioid overdose crisis has driven OUD
+  to be the primary driver of drug overdose deaths in the US; in 2022, over
+  80,000 opioid-involved overdose deaths were recorded by CDC.
+
+  Male prevalence modestly exceeds female (~2.5% vs 1.9% past-year OUD);
+  both peak in the 18-39 age group. Real-world treatment penetration remains
+  low: ~20% of people with OUD receive medication-assisted treatment (MAT) in
+  a given year despite strong evidence for buprenorphine and methadone.
+
+  When a patient is positive, the module emits:
+  - A behavioral health or addiction medicine Encounter
+  - A DAST-10 score Observation (LOINC 82666-9) in the severe range (6-10)
+  - Buprenorphine/naloxone sublingual (Suboxone) in 45% of cases —
+    gold-standard outpatient MAT; FDA-approved, reduces overdose mortality
+    ~50% vs no treatment (Sordo et al. BMJ 2017)
+  - Naloxone nasal spray in 65% of cases — overdose rescue; AHA/SAMHSA
+    guidelines recommend co-prescription with all opioid prescriptions
+    and for all patients in MAT
+  - Methadone 10 MG in 12% of cases — highly effective MAT, but
+    dispensed only through Opioid Treatment Programs (OTPs); used for
+    heroin/illicit fentanyl pathway patients and those unable to tolerate
+    buprenorphine
+
+cites:
+  - source: >
+      SAMHSA. Key Substance Use and Mental Health Indicators in the United
+      States: Results from the 2022 National Survey on Drug Use and Health.
+      HHS Publication No. PEP23-07-01-006. Rockville, MD: SAMHSA, 2023.
+    url: https://www.samhsa.gov/data/sites/default/files/reports/rpt42731/2022-nsduh-nnr.pdf
+    summary: >
+      6.1 million US adults had past-year OUD in 2022 (2.2%). Male ~2.5%,
+      female ~1.9%. Treatment gap: ~4.8 million received no OUD treatment.
+      Heroin use declining; illicit fentanyl now primary OUD driver.
+
+  - source: >
+      Sordo L, Barrio G, Bravo MJ, et al. Mortality risk during and after
+      opioid substitution treatment: systematic review and meta-analysis
+      of cohort studies. BMJ. 2017;357:j1550.
+    url: https://www.bmj.com/content/357/bmj.j1550
+    summary: >
+      Meta-analysis of 19 cohort studies: mortality during OST 1.4/100
+      person-years vs 4.8/100 out-of-treatment — 64% RR reduction.
+      Buprenorphine and methadone both effective; coverage gap on leaving
+      treatment creates high overdose risk in first 4 weeks.
+
+  - source: >
+      SAMHSA. TIP 63: Medications for Opioid Use Disorder. HHS
+      Publication No. PEP21-02-01-002. Rockville, MD: SAMHSA, 2021.
+    url: https://store.samhsa.gov/sites/default/files/pep21-02-01-002.pdf
+    summary: >
+      Buprenorphine/naloxone is the preferred outpatient MAT (office-based).
+      Methadone effective but requires OTP dispensing. Naltrexone (extended-
+      release injectable) is third approved option. Naloxone co-prescribing
+      with buprenorphine reduces overdose mortality.
+
+conditions:
+  - id: opioid_use_disorder
+    code:
+      system: http://snomed.info/sct
+      code: "75544000"
+      display: Opioid type dependence (disorder)
+    prevalence:
+      female:
+        "0-17":  0.0
+        "18-39": 0.019
+        "40-59": 0.018
+        "60-99": 0.005
+      male:
+        "0-17":  0.0
+        "18-39": 0.025
+        "40-59": 0.024
+        "60-99": 0.007
+    onset_age:
+      min: 16
+      max: 65
+    emits:
+      - resource_type: Encounter
+        spec_id: oud_addiction_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "75544000"
+          display: Opioid type dependence
+
+      # DAST-10 total score — severe range (6-10; ≥3 indicates need for intervention)
+      - resource_type: Observation
+        spec_id: oud_dast_score
+        when: today
+        link_to: oud_addiction_visit
+        category: survey
+        code:
+          system: http://loinc.org
+          code: "82666-9"
+          display: Drug Abuse Screening Test [DAST] 10 item Total score
+        value_range: {low: 6, high: 10, precision: 0}
+        unit: '{score}'
+        unit_code: '{score}'
+
+      # Buprenorphine/naloxone sublingual — gold-standard outpatient MAT
+      - resource_type: MedicationRequest
+        spec_id: oud_buprenorphine_naloxone
+        when: today
+        link_to: oud_addiction_visit
+        probability: 0.45
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "1010600"
+          display: Buprenorphine 8 MG / Naloxone 2 MG Sublingual Film
+
+      # Naloxone nasal spray — overdose rescue; co-prescribed with MAT and opioids
+      - resource_type: MedicationRequest
+        spec_id: oud_naloxone
+        when: today
+        link_to: oud_addiction_visit
+        probability: 0.65
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "1860487"
+          display: Naloxone 4 MG/ACTUAT Nasal Spray
+
+      # Methadone — effective MAT via OTPs; heroin/illicit fentanyl pathway patients
+      - resource_type: MedicationRequest
+        spec_id: oud_methadone
+        when: today
+        link_to: oud_addiction_visit
+        probability: 0.12
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "864706"
+          display: Methadone Hydrochloride 10 MG Oral Tablet

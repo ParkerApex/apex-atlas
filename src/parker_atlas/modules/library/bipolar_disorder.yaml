@@ -1,0 +1,173 @@
+module: bipolar_disorder
+version: 0.1.0
+description: >
+  Bipolar disorder module covering the bipolar spectrum including Bipolar I
+  (manic-depressive illness with full manic episodes), Bipolar II (hypomanic
+  and depressive episodes), and cyclothymia. NIMH NSDUH 2021 reports lifetime
+  prevalence of Bipolar I at ~1.8% and Bipolar II at ~1.1% of US adults;
+  combined bipolar spectrum prevalence is ~2.8-4.5% including subthreshold
+  presentations (Merikangas et al. Arch Gen Psychiatry 2007).
+
+  Sex distribution is roughly equal for Bipolar I; Bipolar II is modestly
+  more common in women. Onset typically occurs in late adolescence to early
+  adulthood (median onset 25 years; 90% of cases onset before age 40). The
+  disorder carries substantial disease burden including elevated suicide risk
+  (~30x general population), functional impairment, and high psychiatric
+  comorbidity (anxiety, SUD).
+
+  When a patient is positive, the module emits:
+  - A psychiatry or behavioral health Encounter
+  - A PHQ-9 score Observation (LOINC 44261-6) in the moderate depressive
+    range (8-18), reflecting cross-sectional capture during or near depressive
+    phase (which dominates the longitudinal course of bipolar disorder)
+  - A lithium serum level Observation (LOINC 3695-4) in the therapeutic range
+    (0.5-1.2 mmol/L) — reflecting monitoring for patients on lithium
+  - Lithium Carbonate 300 MG in 35% of cases — gold-standard mood stabilizer
+    with best evidence for suicide prevention; first-line per APA 2018
+  - Valproic Acid 500 MG in 28% of cases — mood stabilizer; preferred for
+    rapid cycling and mixed features; second most prescribed mood stabilizer
+  - Lamotrigine 100 MG in 25% of cases — preferred for bipolar depression;
+    APA guideline first-line for depressive episodes and maintenance
+  - Quetiapine 50 MG in 28% of cases — second-generation antipsychotic
+    approved for acute mania, bipolar depression, and maintenance
+
+cites:
+  - source: >
+      Merikangas KR, Akiskal HS, Angst J, et al. Lifetime and 12-month
+      prevalence of bipolar spectrum disorder in the National Comorbidity
+      Survey Replication. Arch Gen Psychiatry. 2007;64(5):543-552.
+    url: https://jamanetwork.com/journals/jamapsychiatry/fullarticle/209925
+    summary: >
+      NCS-R: Bipolar I lifetime 1.0%, Bipolar II 1.1%, subthreshold 2.4%
+      — total bipolar spectrum 4.4%. Median onset 25 years. Severe
+      functional impairment in majority of Bipolar I. Lifetime comorbidity
+      with anxiety disorders ~75%.
+
+  - source: >
+      National Institute of Mental Health. Bipolar Disorder — Prevalence
+      (NSDUH 2021). NIMH Statistics.
+    url: https://www.nimh.nih.gov/health/statistics/bipolar-disorder
+    summary: >
+      Bipolar I lifetime 2.8% (NSDUH 2021; includes broad DSM-5 criteria).
+      Bipolar II 1.1%. Equal male/female for Bipolar I; slight female
+      predominance for Bipolar II. 12-month past-year prevalence ~1.8%.
+
+  - source: >
+      Yatham LN, Kennedy SH, Parikh SV, et al. Canadian Network for Mood
+      and Anxiety Treatments (CANMAT) and International Society for
+      Bipolar Disorders (ISBD) 2018 guidelines for the management of
+      patients with bipolar disorder. Bipolar Disord. 2018;20(2):97-170.
+    url: https://onlinelibrary.wiley.com/doi/10.1111/bdi.12609
+    summary: >
+      Lithium first-line for acute mania and maintenance (Level 1 evidence);
+      best evidence for antisuicidal effect. Valproate first-line for acute
+      mania, rapid cycling, mixed features. Lamotrigine first-line for
+      bipolar depression and maintenance (depressive dominant course).
+      Quetiapine approved for all phases.
+
+conditions:
+  - id: bipolar_disorder
+    code:
+      system: http://snomed.info/sct
+      code: "13746004"
+      display: Bipolar I disorder (disorder)
+    prevalence:
+      female:
+        "0-17":  0.003
+        "18-39": 0.028
+        "40-59": 0.018
+        "60-99": 0.007
+      male:
+        "0-17":  0.002
+        "18-39": 0.026
+        "40-59": 0.016
+        "60-99": 0.006
+    onset_age:
+      min: 15
+      max: 50
+    emits:
+      - resource_type: Encounter
+        spec_id: bipolar_psych_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "13746004"
+          display: Bipolar I disorder
+
+      # PHQ-9 — moderate depressive range; bipolar course is dominated by depression
+      - resource_type: Observation
+        spec_id: bipolar_phq9
+        when: today
+        link_to: bipolar_psych_visit
+        category: survey
+        code:
+          system: http://loinc.org
+          code: "44261-6"
+          display: Patient Health Questionnaire 9 item (PHQ-9) total score
+        value_range: {low: 8, high: 18, precision: 0}
+        unit: '{score}'
+        unit_code: '{score}'
+
+      # Lithium serum level — therapeutic monitoring (goal 0.6-1.2 mmol/L)
+      - resource_type: Observation
+        spec_id: bipolar_lithium_level
+        when: today
+        link_to: bipolar_psych_visit
+        probability: 0.40
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "3695-4"
+          display: Lithium [Moles/volume] in Serum or Plasma
+        value_range: {low: 0.5, high: 1.3, precision: 2}
+        unit: mmol/L
+        unit_code: mmol/L
+
+      # Lithium carbonate — gold standard; best antisuicidal evidence (APA 2018)
+      - resource_type: MedicationRequest
+        spec_id: bipolar_lithium
+        when: today
+        link_to: bipolar_psych_visit
+        probability: 0.35
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "217349"
+          display: Lithium Carbonate 300 MG Oral Capsule
+
+      # Valproic acid — preferred for rapid cycling, mixed features, acute mania
+      - resource_type: MedicationRequest
+        spec_id: bipolar_valproate
+        when: today
+        link_to: bipolar_psych_visit
+        probability: 0.28
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "308543"
+          display: Valproic Acid 500 MG Delayed Release Oral Tablet
+
+      # Lamotrigine — first-line for bipolar depression and depressive maintenance
+      - resource_type: MedicationRequest
+        spec_id: bipolar_lamotrigine
+        when: today
+        link_to: bipolar_psych_visit
+        probability: 0.25
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "197576"
+          display: Lamotrigine 100 MG Oral Tablet
+
+      # Quetiapine — SGA approved for mania, bipolar depression, and maintenance
+      - resource_type: MedicationRequest
+        spec_id: bipolar_quetiapine
+        when: today
+        link_to: bipolar_psych_visit
+        probability: 0.28
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "312551"
+          display: Quetiapine 50 MG Oral Tablet
