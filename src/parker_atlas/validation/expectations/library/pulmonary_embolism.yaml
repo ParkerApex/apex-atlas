@@ -1,0 +1,43 @@
+module: pulmonary_embolism
+version: 0.1.0
+source:
+  name: CHEST antithrombotic therapy guideline for VTE disease
+  provenance: sourced
+  url: https://journal.chestnet.org/article/S0012-3692(15)00335-9/fulltext
+  note: >
+    Targets mirror the module's age-gradient pulmonary embolism approximation
+    and representative emergency diagnostic and anticoagulation emits.
+  citations:
+    - source: CHEST Guideline and Expert Panel Report on Antithrombotic Therapy for VTE Disease
+      url: https://journal.chestnet.org/article/S0012-3692(15)00335-9/fulltext
+      accessed: "2026-05-22"
+metrics:
+  - id: pulmonary_embolism_prevalence_by_age
+    kind: conditional_prevalence
+    condition_code: "59282003"
+    condition_system: http://snomed.info/sct
+    stratify_by: age_bracket
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      0-17: 0.001
+      18-39: 0.002
+      40-59: 0.006
+      60-99: 0.018
+  - id: pulmonary_embolism_d_dimer_rate
+    kind: emit_presence_rate
+    condition_code: "59282003"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: Observation
+    target: 0.80
+    emit_code: "48065-7"
+    emit_code_system: http://loinc.org
+  - id: pulmonary_embolism_ctpa_rate
+    kind: emit_presence_rate
+    condition_code: "59282003"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: Procedure
+    target: 0.75
+    emit_code: "169069000"
+    emit_code_system: http://snomed.info/sct

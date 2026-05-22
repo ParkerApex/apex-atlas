@@ -1,0 +1,37 @@
+module: endometriosis
+version: 0.1.0
+description: >
+  Endometriosis module for reproductive-age women's health and pelvic-pain cohorts.
+cites:
+  - source: ACOG practice bulletin on endometriosis
+    url: https://www.acog.org/clinical/clinical-guidance/practice-bulletin
+    summary: Endometriosis evaluation and treatment includes pain management, hormonal therapy, and surgical evaluation in selected patients.
+conditions:
+  - id: endometriosis
+    code: {system: http://snomed.info/sct, code: "129103003", display: Endometriosis}
+    prevalence:
+      female:
+        "0-17": 0.010
+        "18-39": 0.090
+        "40-59": 0.050
+        "60-99": 0.003
+      male:
+        "0-17": 0.000
+        "18-39": 0.000
+        "40-59": 0.000
+        "60-99": 0.000
+    onset_age: {min: 15, max: 50}
+    emits:
+      - resource_type: Encounter
+        spec_id: endometriosis_gynecology_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "129103003", display: Endometriosis}
+      - resource_type: MedicationRequest
+        spec_id: endometriosis_naproxen
+        when: today
+        link_to: endometriosis_gynecology_visit
+        probability: 0.40
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "7258", display: Naproxen}
+        reason: {system: http://snomed.info/sct, code: "129103003", display: Endometriosis}

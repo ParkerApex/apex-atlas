@@ -1,0 +1,33 @@
+module: acute_bronchitis
+version: 0.1.0
+description: >
+  Acute bronchitis module for common outpatient respiratory episodes and stewardship-aware care.
+cites:
+  - source: CDC outpatient antibiotic prescribing guidance
+    url: https://www.cdc.gov/antibiotic-use/hcp/clinical-care/adult-outpatient.html
+    summary: Acute uncomplicated bronchitis is usually viral and antibiotics are not routinely indicated.
+conditions:
+  - id: acute_bronchitis
+    code: {system: http://snomed.info/sct, code: "10509002", display: Acute bronchitis}
+    prevalence:
+      "0-17": 0.060
+      "18-39": 0.050
+      "40-59": 0.050
+      "60-99": 0.045
+    onset_age: {min: 1, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: bronchitis_acute_visit
+        when: onset
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "185345009", display: Encounter for symptom}
+        reason: {system: http://snomed.info/sct, code: "10509002", display: Acute bronchitis}
+      - resource_type: Observation
+        spec_id: bronchitis_spo2
+        when: onset
+        link_to: bronchitis_acute_visit
+        category: vital-signs
+        code: {system: http://loinc.org, code: "2708-6", display: Oxygen saturation in Arterial blood}
+        value_range: {low: 94, high: 100, precision: 0}
+        unit: "%"
+        unit_code: "%"

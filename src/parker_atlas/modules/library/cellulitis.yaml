@@ -1,0 +1,31 @@
+module: cellulitis
+version: 0.1.0
+description: >
+  Cellulitis module for urgent-care and primary-care skin infection episodes.
+cites:
+  - source: IDSA skin and soft tissue infection guideline
+    url: https://academic.oup.com/cid/article/59/2/e10/2895845
+    summary: Cellulitis management includes severity assessment and antibiotic therapy.
+conditions:
+  - id: cellulitis
+    code: {system: http://snomed.info/sct, code: "128045006", display: Cellulitis}
+    prevalence:
+      "0-17": 0.020
+      "18-39": 0.025
+      "40-59": 0.035
+      "60-99": 0.050
+    onset_age: {min: 1, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: cellulitis_acute_visit
+        when: onset
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "185345009", display: Encounter for symptom}
+        reason: {system: http://snomed.info/sct, code: "128045006", display: Cellulitis}
+      - resource_type: MedicationRequest
+        spec_id: cellulitis_cephalexin
+        when: onset
+        link_to: cellulitis_acute_visit
+        probability: 0.70
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "2231", display: Cephalexin}
+        reason: {system: http://snomed.info/sct, code: "128045006", display: Cellulitis}

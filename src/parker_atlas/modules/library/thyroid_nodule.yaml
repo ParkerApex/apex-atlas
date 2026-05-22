@@ -1,0 +1,31 @@
+module: thyroid_nodule
+version: 0.1.0
+description: >
+  Thyroid nodule module for endocrine imaging, biopsy triage, and follow-up workflows.
+cites:
+  - source: American Thyroid Association thyroid nodule guideline
+    url: https://www.liebertpub.com/doi/10.1089/thy.2015.0020
+    summary: Thyroid nodule care includes TSH testing, ultrasound risk stratification, and biopsy for selected nodules.
+conditions:
+  - id: thyroid_nodule
+    code: {system: http://snomed.info/sct, code: "237495005", display: Thyroid nodule}
+    prevalence:
+      "0-17": 0.006
+      "18-39": 0.050
+      "40-59": 0.110
+      "60-99": 0.180
+    onset_age: {min: 12, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: thyroid_nodule_endocrine_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "237495005", display: Thyroid nodule}
+      - resource_type: Procedure
+        spec_id: thyroid_nodule_ultrasound
+        when: today
+        link_to: thyroid_nodule_endocrine_visit
+        probability: 0.65
+        code: {system: http://snomed.info/sct, code: "16310003", display: Ultrasonography of thyroid}
+        reason: {system: http://snomed.info/sct, code: "237495005", display: Thyroid nodule}

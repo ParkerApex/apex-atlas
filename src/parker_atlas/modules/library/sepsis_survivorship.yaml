@@ -1,0 +1,31 @@
+module: sepsis_survivorship
+version: 0.1.0
+description: >
+  Sepsis survivorship module for post-discharge follow-up and longitudinal recovery workflows.
+cites:
+  - source: CDC sepsis clinical information
+    url: https://www.cdc.gov/sepsis/hcp/clinical-overview/index.html
+    summary: Sepsis survivors may need follow-up for recovery, function, and complications after hospitalization.
+conditions:
+  - id: history_of_sepsis
+    code: {system: http://snomed.info/sct, code: "161511000", display: History of sepsis}
+    prevalence:
+      "0-17": 0.003
+      "18-39": 0.006
+      "40-59": 0.018
+      "60-99": 0.055
+    onset_age: {min: 1, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: sepsis_survivorship_followup
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "161511000", display: History of sepsis}
+      - resource_type: Procedure
+        spec_id: sepsis_reconciliation
+        when: today
+        link_to: sepsis_survivorship_followup
+        probability: 0.55
+        code: {system: http://snomed.info/sct, code: "430193006", display: Medication reconciliation}
+        reason: {system: http://snomed.info/sct, code: "161511000", display: History of sepsis}

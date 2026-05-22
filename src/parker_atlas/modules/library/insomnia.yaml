@@ -1,0 +1,31 @@
+module: insomnia
+version: 0.1.0
+description: >
+  Insomnia module for behavioral health, primary-care, and medication safety workflows.
+cites:
+  - source: American Academy of Sleep Medicine insomnia guideline
+    url: https://aasm.org/clinical-resources/practice-standards/practice-guidelines/
+    summary: Chronic insomnia care includes cognitive behavioral therapy and selective pharmacologic treatment.
+conditions:
+  - id: insomnia
+    code: {system: http://snomed.info/sct, code: "193462001", display: Insomnia}
+    prevalence:
+      "0-17": 0.030
+      "18-39": 0.120
+      "40-59": 0.150
+      "60-99": 0.180
+    onset_age: {min: 12, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: insomnia_sleep_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "193462001", display: Insomnia}
+      - resource_type: MedicationRequest
+        spec_id: insomnia_trazodone
+        when: today
+        link_to: insomnia_sleep_visit
+        probability: 0.22
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "10737", display: Trazodone}
+        reason: {system: http://snomed.info/sct, code: "193462001", display: Insomnia}

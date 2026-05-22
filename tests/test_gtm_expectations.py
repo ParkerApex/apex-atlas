@@ -6,12 +6,22 @@ from parker_atlas.validation.expectations import load_bundled_expectation
 
 GTM_HARDENED_MODULES = [
     "allergic_rhinitis",
+    "benign_prostatic_hyperplasia",
     "cataract",
+    "covid19",
     "gout",
+    "hepatitis_c",
+    "hyperthyroidism",
+    "iron_deficiency_anemia",
+    "metabolic_syndrome",
     "migraine",
+    "nephrolithiasis",
+    "osteoporosis",
     "peripheral_artery_disease",
     "pneumonia",
     "prediabetes",
+    "psoriasis",
+    "pulmonary_embolism",
     "urinary_tract_infection",
 ]
 

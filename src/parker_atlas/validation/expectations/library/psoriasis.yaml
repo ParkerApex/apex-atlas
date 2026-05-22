@@ -1,0 +1,46 @@
+module: psoriasis
+version: 0.1.0
+source:
+  name: US psoriasis prevalence literature and AAD guideline
+  provenance: sourced
+  url: https://pubmed.ncbi.nlm.nih.gov/24388724/
+  note: >
+    Targets mirror the module's adult psoriasis approximation and representative
+    dermatology treatment emits.
+  citations:
+    - source: Rachakonda TD et al. Psoriasis prevalence among adults in the United States
+      url: https://pubmed.ncbi.nlm.nih.gov/24388724/
+      accessed: "2026-05-22"
+    - source: American Academy of Dermatology psoriasis clinical guidelines
+      url: https://www.aad.org/member/clinical-quality/guidelines/psoriasis
+      accessed: "2026-05-22"
+metrics:
+  - id: psoriasis_prevalence_by_age
+    kind: conditional_prevalence
+    condition_code: "9014002"
+    condition_system: http://snomed.info/sct
+    stratify_by: age_bracket
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      0-17: 0.010
+      18-39: 0.025
+      40-59: 0.035
+      60-99: 0.035
+  - id: psoriasis_topical_steroid_rate
+    kind: emit_presence_rate
+    condition_code: "9014002"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: MedicationRequest
+    target: 0.55
+    emit_code: "2590"
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm
+  - id: psoriasis_phototherapy_rate
+    kind: emit_presence_rate
+    condition_code: "9014002"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: Procedure
+    target: 0.12
+    emit_code: "90105005"
+    emit_code_system: http://snomed.info/sct

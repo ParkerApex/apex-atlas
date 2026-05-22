@@ -1,0 +1,40 @@
+module: postpartum_depression
+version: 0.1.0
+description: >
+  Postpartum depression module for maternal health, behavioral health, and quality-measure workflows.
+cites:
+  - source: ACOG screening and diagnosis of mental health conditions during pregnancy and postpartum
+    url: https://www.acog.org/clinical/clinical-guidance/clinical-practice-guideline
+    summary: Perinatal and postpartum care includes screening for depression and anxiety with validated tools.
+conditions:
+  - id: postpartum_depression
+    code: {system: http://snomed.info/sct, code: "47821001", display: Postpartum depression}
+    prevalence:
+      female:
+        "0-17": 0.003
+        "18-39": 0.055
+        "40-59": 0.005
+        "60-99": 0.000
+      male:
+        "0-17": 0.000
+        "18-39": 0.000
+        "40-59": 0.000
+        "60-99": 0.000
+    onset_age: {min: 15, max: 45}
+    emits:
+      - resource_type: Encounter
+        spec_id: ppd_postpartum_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "47821001", display: Postpartum depression}
+      - resource_type: Observation
+        spec_id: ppd_epds
+        when: today
+        link_to: ppd_postpartum_visit
+        probability: 0.80
+        category: vital-signs
+        code: {system: http://loinc.org, code: "71354-5", display: Edinburgh Postnatal Depression Scale total score}
+        value_range: {low: 10, high: 24, precision: 0}
+        unit: score
+        unit_code: "{score}"

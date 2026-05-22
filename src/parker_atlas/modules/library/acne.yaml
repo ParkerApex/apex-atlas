@@ -1,0 +1,31 @@
+module: acne
+version: 0.1.0
+description: >
+  Acne vulgaris module for adolescent and young-adult dermatology workflows.
+cites:
+  - source: American Academy of Dermatology acne guideline
+    url: https://www.aad.org/member/clinical-quality/guidelines/acne
+    summary: Acne care includes topical retinoids, benzoyl peroxide, and selective antibiotic therapy.
+conditions:
+  - id: acne_vulgaris
+    code: {system: http://snomed.info/sct, code: "11381005", display: Acne vulgaris}
+    prevalence:
+      "0-17": 0.120
+      "18-39": 0.180
+      "40-59": 0.040
+      "60-99": 0.010
+    onset_age: {min: 10, max: 45}
+    emits:
+      - resource_type: Encounter
+        spec_id: acne_dermatology_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "11381005", display: Acne vulgaris}
+      - resource_type: MedicationRequest
+        spec_id: acne_adapalene
+        when: today
+        link_to: acne_dermatology_visit
+        probability: 0.55
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "602", display: Adapalene}
+        reason: {system: http://snomed.info/sct, code: "11381005", display: Acne vulgaris}

@@ -1,0 +1,46 @@
+module: covid19
+version: 0.1.0
+source:
+  name: CDC COVID-19 clinical data and NIH treatment guidance
+  provenance: sourced
+  url: https://www.cdc.gov/covid/
+  note: >
+    Targets mirror the module's seasonal outpatient COVID-19 approximation and
+    representative test and antiviral emits.
+  citations:
+    - source: CDC COVID-19
+      url: https://www.cdc.gov/covid/
+      accessed: "2026-05-22"
+    - source: NIH COVID-19 Treatment Guidelines
+      url: https://www.covid19treatmentguidelines.nih.gov/
+      accessed: "2026-05-22"
+metrics:
+  - id: covid19_prevalence_by_age
+    kind: conditional_prevalence
+    condition_code: "840539006"
+    condition_system: http://snomed.info/sct
+    stratify_by: age_bracket
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      0-17: 0.060
+      18-39: 0.070
+      40-59: 0.060
+      60-99: 0.050
+  - id: covid19_test_rate
+    kind: emit_presence_rate
+    condition_code: "840539006"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: Procedure
+    target: 0.70
+    emit_code: "871562009"
+    emit_code_system: http://snomed.info/sct
+  - id: covid19_antiviral_rate
+    kind: emit_presence_rate
+    condition_code: "840539006"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: MedicationRequest
+    target: 0.18
+    emit_code: "2599543"
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm

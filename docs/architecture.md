@@ -49,7 +49,7 @@ parker-atlas/
 │   │   └── provider.py         # NPI-keyed provider/location assignment
 │   ├── modules/            # Clinical pathway modules
 │   │   ├── runtime.py          # Module DSL parser + probability runtime
-│   │   └── library/            # 75 bundled module YAMLs, growing toward 100+
+│   │   └── library/            # 100 bundled module YAMLs
 │   ├── fhir/               # FHIR R4 resource construction
 │   │   ├── patient.py          # US Core 6.1 Patient
 │   │   ├── condition.py        # US Core Condition
@@ -83,7 +83,7 @@ parker-atlas/
 │   │   ├── cohort.py           # Aggregate metric comparison vs. sourced expectations
 │   │   ├── structural.py       # Schema + US Core Patient/Condition minimums
 │   │   ├── report.py           # Fidelity scorecard (Markdown + JSON)
-│   │   └── expectations/library/  # Sourced fidelity expectation YAMLs (14 modules)
+│   │   └── expectations/library/  # Sourced fidelity expectation YAMLs (28 modules)
 │   ├── references/tables/  # Demographic reference CSVs (ACS age/sex/race/ethnicity)
 │   ├── gpx.py              # Parker GPX identifier (deterministic UUID5 namespace)
 │   └── cli.py              # Typer CLI: generate / validate / report / modules / status / ingest

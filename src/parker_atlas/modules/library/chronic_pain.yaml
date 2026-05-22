@@ -1,0 +1,31 @@
+module: chronic_pain
+version: 0.1.0
+description: >
+  Chronic pain module for longitudinal pain management, non-opioid therapy, and utilization workflows.
+cites:
+  - source: CDC guideline for prescribing opioids for pain
+    url: https://www.cdc.gov/overdose-prevention/hcp/clinical-guidance/index.html
+    summary: Chronic pain care emphasizes functional goals, non-opioid therapies, and careful medication stewardship.
+conditions:
+  - id: chronic_pain
+    code: {system: http://snomed.info/sct, code: "82423001", display: Chronic pain}
+    prevalence:
+      "0-17": 0.020
+      "18-39": 0.090
+      "40-59": 0.170
+      "60-99": 0.240
+    onset_age: {min: 18, max: 90}
+    emits:
+      - resource_type: Encounter
+        spec_id: chronic_pain_followup
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "82423001", display: Chronic pain}
+      - resource_type: MedicationRequest
+        spec_id: chronic_pain_duloxetine
+        when: today
+        link_to: chronic_pain_followup
+        probability: 0.22
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "72625", display: Duloxetine}
+        reason: {system: http://snomed.info/sct, code: "82423001", display: Chronic pain}

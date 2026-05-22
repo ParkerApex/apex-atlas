@@ -1,0 +1,31 @@
+module: conjunctivitis
+version: 0.1.0
+description: >
+  Conjunctivitis module for pediatric, urgent-care, and ophthalmology access workflows.
+cites:
+  - source: American Academy of Ophthalmology Preferred Practice Pattern
+    url: https://www.aao.org/preferred-practice-pattern/conjunctivitis-ppp
+    summary: Conjunctivitis care depends on allergic, viral, and bacterial presentations.
+conditions:
+  - id: conjunctivitis
+    code: {system: http://snomed.info/sct, code: "9826008", display: Conjunctivitis}
+    prevalence:
+      "0-17": 0.055
+      "18-39": 0.035
+      "40-59": 0.025
+      "60-99": 0.020
+    onset_age: {min: 1, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: conjunctivitis_visit
+        when: onset
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "185345009", display: Encounter for symptom}
+        reason: {system: http://snomed.info/sct, code: "9826008", display: Conjunctivitis}
+      - resource_type: MedicationRequest
+        spec_id: conjunctivitis_polytrim
+        when: onset
+        link_to: conjunctivitis_visit
+        probability: 0.30
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "108873", display: Polymyxin B / Trimethoprim Ophthalmic Solution}
+        reason: {system: http://snomed.info/sct, code: "9826008", display: Conjunctivitis}

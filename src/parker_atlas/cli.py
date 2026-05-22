@@ -125,6 +125,57 @@ class Profile(str, Enum):
     BASE = "base"
 
 
+GTM_HARDENED_MODULES = [
+    "allergic_rhinitis",
+    "benign_prostatic_hyperplasia",
+    "cataract",
+    "covid19",
+    "gout",
+    "hepatitis_c",
+    "hyperthyroidism",
+    "iron_deficiency_anemia",
+    "metabolic_syndrome",
+    "migraine",
+    "nephrolithiasis",
+    "osteoporosis",
+    "peripheral_artery_disease",
+    "pneumonia",
+    "prediabetes",
+    "psoriasis",
+    "pulmonary_embolism",
+    "urinary_tract_infection",
+]
+
+
+LAUNCH_DEMO_MODULES = [
+    "hypertension",
+    "diabetes",
+    "prediabetes",
+    "hypercholesterolemia",
+    "heart_failure",
+    "asthma",
+    "copd",
+    "pneumonia",
+    "covid19",
+    "ckd",
+    "urinary_tract_infection",
+    "nephrolithiasis",
+    "depression",
+    "anxiety",
+    "adult_immunizations",
+    "pediatric_wellness",
+    "maternal_health",
+    "osteoporosis",
+    "migraine",
+    "gout",
+    "psoriasis",
+    "cataract",
+    "hearing_loss",
+    "fall_risk",
+    "frailty",
+]
+
+
 def _write_generation_metadata(
     out: Path,
     *,
@@ -622,6 +673,65 @@ def _validate_cohort(
         f"[yellow]{len(report.skipped)} skipped[/yellow]"
     )
     raise typer.Exit(code=0 if report.passed else 1)
+
+
+def _validate_gtm(path: Path, *, min_samples: int, as_of: str | None) -> None:
+    """Run structural validation plus all launch-hardened cohort expectations."""
+
+    summary = validate_path(path)
+    console.print(
+        f"Structural validation: [bold]{summary.total}[/bold] file(s), "
+        f"[green]{summary.passed} passed[/green], "
+        f"[red]{summary.failed} failed[/red], "
+        f"[yellow]{summary.warnings} warning(s)[/yellow]"
+    )
+    if summary.total == 0:
+        err_console.print(f"[yellow]No JSON files found under[/yellow] {path}")
+        raise typer.Exit(code=1)
+
+    reference_date = date.fromisoformat(as_of) if as_of else None
+    table = Table(title="GTM fidelity expectations")
+    table.add_column("Module", style="bold")
+    table.add_column("Patients", justify="right")
+    table.add_column("Bundles", justify="right")
+    table.add_column("Passed", justify="right")
+    table.add_column("Failed", justify="right")
+    table.add_column("Skipped", justify="right")
+    table.add_column("Status")
+
+    cohort_failed = False
+    for module_name in GTM_HARDENED_MODULES:
+        try:
+            expectation = load_bundled_expectation(module_name)
+        except ExpectationError as exc:
+            err_console.print(f"[red]{module_name}: {exc}[/red]")
+            cohort_failed = True
+            continue
+
+        report = evaluate_cohort(
+            path,
+            expectation,
+            min_samples=min_samples,
+            reference_date=reference_date,
+        )
+        passed = sum(1 for r in report.results if r.within_tolerance)
+        failed = len(report.failing_metrics)
+        if failed:
+            cohort_failed = True
+        status = "[green]OK[/green]" if report.passed else "[red]FAIL[/red]"
+        table.add_row(
+            module_name,
+            str(report.total_patients),
+            str(report.bundles_scanned),
+            str(passed),
+            str(failed),
+            str(len(report.skipped)),
+            status,
+        )
+
+    console.print(table)
+    failed = summary.failed > 0 or cohort_failed
+    raise typer.Exit(code=1 if failed else 0)
 
 
 @app.command()
@@ -1234,6 +1344,34 @@ def generate(
         )
 
 
+@app.command("launch-demo")
+def launch_demo(
+    patients: Annotated[int, typer.Option(help="Number of demo patients to generate.")] = 2500,
+    out: Annotated[Path, typer.Option(help="Output directory.")] = Path("./atlas-launch-demo"),
+    seed: Annotated[int, typer.Option(help="RNG seed for reproducibility.")] = 20260522,
+    summary: Annotated[bool, typer.Option("--summary", help="Print cohort demographics and condition summary after generation.")] = True,
+) -> None:
+    """Generate the curated launch-demo cohort used for GTM demos and screenshots."""
+
+    generate(
+        patients=patients,
+        out=out,
+        format=OutputFormat.FHIR_R4,
+        module=",".join(LAUNCH_DEMO_MODULES),
+        profile=Profile.US_CORE_6_1,
+        seed=seed,
+        summary=summary,
+        with_notes=True,
+        notes_strategy=NoteStrategy.TEMPLATE,
+        llm_model=None,
+        with_coverage=True,
+        with_providers=True,
+        with_claims=True,
+        with_sdoh=True,
+        with_measures=True,
+    )
+
+
 @app.command()
 def validate(
     path: Annotated[Path, typer.Argument(help="Path to FHIR resources to validate.")],
@@ -1241,6 +1379,7 @@ def validate(
     verbose: Annotated[bool, typer.Option("--verbose", "-v", help="Show per-file errors and warnings.")] = False,
     strict: Annotated[bool, typer.Option("--strict", help="Treat warnings as errors.")] = False,
     cohort: Annotated[bool, typer.Option("--cohort", help="Run cohort fidelity harness instead of per-file structural.")] = False,
+    gtm: Annotated[bool, typer.Option("--gtm", help="Run structural validation plus all launch-hardened sourced expectations.")] = False,
     module: Annotated[str | None, typer.Option(help="Module whose bundled expectation to run under --cohort.")] = None,
     min_samples: Annotated[int, typer.Option(help="Minimum bracket N under --cohort; smaller brackets are skipped.")] = 30,
     as_of: Annotated[str | None, typer.Option(help="ISO date used as the reference for age computation under --cohort.")] = None,
@@ -1254,6 +1393,9 @@ def validate(
     `--cohort --module NAME` runs the cohort fidelity harness instead: load the
     bundled expectation for `NAME`, compute aggregate metrics over the cohort,
     and compare each target within tolerance.
+
+    `--gtm` runs structural validation and every launch-hardened sourced
+    expectation in one pass.
     """
     if not path.exists():
         err_console.print(f"[red]path does not exist:[/red] {path}")
@@ -1264,6 +1406,10 @@ def validate(
             "Milestone 1 implements only us-core-6.1."
         )
         raise typer.Exit(code=2)
+
+    if gtm:
+        _validate_gtm(path, min_samples=min_samples, as_of=as_of)
+        return
 
     if cohort:
         _validate_cohort(path, module=module, min_samples=min_samples, as_of=as_of)
@@ -1429,8 +1575,8 @@ def status() -> None:
         ("atlas validate",        "[green]structural[/green]",     "M1"),
         ("atlas validate --cohort","[green]first cut[/green]",      "M2"),
         ("Module runtime",        "[green]cross-module reqs[/green]", "M2"),
-        ("Module library",        "[green]11 modules[/green]",     "M2"),
-        ("Fidelity harness",      "[green]11 modules[/green]",     "M2"),
+        ("Module library",        "[green]100 modules[/green]",    "M2"),
+        ("Fidelity harness",      "[green]18 sourced modules[/green]", "M2"),
         ("LLM authoring",         "[dim]not started[/dim]",        "M3"),
         ("Clinical notes",        "[green]template[/green]",       "M4"),
         ("SDoH overlay",          "[green]implemented[/green]",    "Diff-2"),

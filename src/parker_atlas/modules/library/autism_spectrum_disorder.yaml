@@ -1,0 +1,31 @@
+module: autism_spectrum_disorder
+version: 0.1.0
+description: >
+  Autism spectrum disorder module for pediatric developmental and care-coordination cohorts.
+cites:
+  - source: CDC Autism and Developmental Disabilities Monitoring Network
+    url: https://www.cdc.gov/autism/data-research/index.html
+    summary: CDC ADDM monitors autism spectrum disorder prevalence among children in the United States.
+conditions:
+  - id: autism_spectrum_disorder
+    code: {system: http://snomed.info/sct, code: "35919005", display: Autism spectrum disorder}
+    prevalence:
+      "0-17": 0.030
+      "18-39": 0.018
+      "40-59": 0.010
+      "60-99": 0.004
+    onset_age: {min: 2, max: 12}
+    emits:
+      - resource_type: Encounter
+        spec_id: autism_developmental_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "35919005", display: Autism spectrum disorder}
+      - resource_type: Procedure
+        spec_id: autism_developmental_assessment
+        when: today
+        link_to: autism_developmental_visit
+        probability: 0.40
+        code: {system: http://snomed.info/sct, code: "410620009", display: Developmental assessment}
+        reason: {system: http://snomed.info/sct, code: "35919005", display: Autism spectrum disorder}

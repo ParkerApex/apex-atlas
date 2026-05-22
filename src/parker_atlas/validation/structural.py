@@ -16,8 +16,8 @@ Not implemented here:
 - Full US Core profile validation against the official StructureDefinition
   (needs a real FHIR validator such as HAPI or Firely).
 - Terminology binding checks against canonical value sets.
-- Validation of non-Patient resources (added when Milestone 2 lands
-  Encounter / Condition / Observation).
+- Standalone resource validation is schema-level only unless a resource has
+  explicit Atlas checks below.
 """
 
 from __future__ import annotations
@@ -36,6 +36,7 @@ from fhir.resources.R4B.documentreference import DocumentReference as _DocRef
 from fhir.resources.R4B.encounter import Encounter as _Encounter
 from fhir.resources.R4B.explanationofbenefit import ExplanationOfBenefit as _EOB
 from fhir.resources.R4B.immunization import Immunization as _Immunization
+from fhir.resources.R4B.measurereport import MeasureReport as _MeasureReport
 from fhir.resources.R4B.medicationrequest import MedicationRequest as _MedReq
 from fhir.resources.R4B.observation import Observation as _Observation
 from fhir.resources.R4B.patient import Patient as _Patient
@@ -60,6 +61,7 @@ _FHIR_R4B_CLASSES: dict[str, type] = {
     "Encounter": _Encounter,
     "ExplanationOfBenefit": _EOB,
     "Immunization": _Immunization,
+    "MeasureReport": _MeasureReport,
     "Observation": _Observation,
     "MedicationRequest": _MedReq,
     "DocumentReference": _DocRef,
@@ -446,9 +448,12 @@ def validate_file(path: Path) -> FileReport:
         _validate_bundle(data, report)
     elif rtype == "Patient":
         _validate_patient(data, report)
+    elif rtype in _FHIR_R4B_CLASSES:
+        _validate_resource_dict(data, report, context="top-level")
     else:
         report.errors.append(
-            f"top-level resourceType {rtype!r} — expected Bundle or Patient"
+            f"top-level resourceType {rtype!r} — expected Bundle, Patient, "
+            f"or supported standalone resourceType ({sorted(_FHIR_R4B_CLASSES)})"
         )
     return report
 

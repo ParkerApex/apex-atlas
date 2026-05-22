@@ -27,7 +27,7 @@ Existing synthetic patient generators share a common set of limitations: disease
 
 - **SDoH as a causal simulation variable** — food insecurity, housing instability, transportation barriers, financial strain, and social isolation are sampled from BRFSS-grounded distributions and causally reduce outpatient encounter completion and medication adherence rates. Patients with barriers miss appointments and don't fill prescriptions — not as a tag, but as a change in what resources get generated.
 - **Quality MeasureReport output** — Apex Atlas is the only open generator that emits DEQM-profiled MeasureReport resources alongside patient records. Five HEDIS-analog measures (HbA1c testing in diabetics, BP control in hypertensives, preventive care, flu immunization, pediatric well-child) are evaluated per patient and summarized for the cohort.
-- **Full lifecycle coverage** — pediatric well-child visits with the ACIP 2024 immunization schedule, maternal health and obstetric complications, and 37 clinical modules spanning 14 domains (cardiovascular, metabolic, pulmonary, GI, renal, musculoskeletal, mental health, substance use, neurology, oncology, infectious disease, hematology, pediatric/OB, and adult immunizations).
+- **Full lifecycle coverage** — pediatric well-child visits with the ACIP 2024 immunization schedule, maternal health and obstetric complications, and 100 clinical modules spanning 14 domains (cardiovascular, metabolic, pulmonary, GI, renal/urology, musculoskeletal/rheumatology, mental health, substance use, neurology, oncology/hematology, infectious disease, pediatric/OB/prevention, dermatology/allergy, and ENT/ophthalmology).
 - **Grounded clinical notes** — progress notes, H&Ps, and discharge summaries generated with structured-data grounding. LLM-authored notes (Claude, configurable) are available today via `--notes-strategy llm`.
 - **Statistical validation against public norms** — every module declares its prevalence sources (NHANES, CDC, SEER, AHA) and the cohort fidelity harness checks aggregate distributions against those targets.
 - **FHIR-first, always** — R4 and R5 output, US Core 6.1 conformance, FHIR Bulk Data Access-compatible NDJSON, Gravity Project SDOHCC Observations, and DEQM MeasureReport profiles.
@@ -63,8 +63,8 @@ Apex Atlas is not trained on, derived from, or in any way informed by restricted
 | `atlas report`               | ✅ Implemented        | Self-contained HTML cohort report (demographics + fidelity) |
 | `atlas modules`              | ✅ Implemented        | List and inspect bundled modules |
 | Module runtime               | ✅ Implemented        | Time-aware emits, onset dating, cross-module `requires`, progressions |
-| Module library               | ✅ 75 modules         | CV (HTN/HF/IHD/AFib/stroke/cholesterol/PAD/VTE/valvular/cardiomyopathy) · Metabolic (DM/T1D/obesity/thyroid/prediabetes/osteoporosis/metabolic syndrome) · Pulmonary (asthma/COPD/sleep apnea/pneumonia/PE/PH) · GI/hepatology (GERD/NAFLD/IBD/liver/gallbladder) · Renal/urology (CKD+ESRD/UTI/stones/BPH/incontinence) · MSK/rheum · Mental health · SUD · Neuro · Oncology/heme · ID · Pediatric/OB/prevention · Derm/allergy · Ophthalmology/ENT |
-| Fidelity expectations        | ✅ 14 modules         | Sourced from NHANES, SEER, AHA, CDC |
+| Module library               | ✅ 100 modules        | CV · metabolic/endocrine · pulmonary · GI/hepatology · renal/urology · MSK/rheum · mental health · SUD · neuro/cognition · oncology/heme · ID · pediatric/OB/prevention · derm/allergy · ENT/ophthalmology |
+| Fidelity expectations        | ✅ 28 modules         | 18 launch-hardened sourced expectations available through `atlas validate --gtm` |
 | Cross-module dependencies    | ✅ Implemented        | `requires: module:cond_id` gates cross-module comorbidity chains |
 | State-machine progressions   | ✅ One-hop            | 13+ chains live: HTN→CKD/HF/stroke, DM→CKD/retinopathy, AFib→stroke, CKD→ESRD, NAFLD→cirrhosis, pregnancy→GDM/preeclampsia/PPD, SCD→VOC, T1D→DKA |
 | SDoH causal overlay          | ✅ Implemented        | `--with-sdoh`: BRFSS-grounded sampling; encounter + medication adherence modifiers; Gravity Project SDOHCC Observations |
@@ -80,24 +80,24 @@ Apex Atlas is not trained on, derived from, or in any way informed by restricted
 
 See [`docs/roadmap.md`](./docs/roadmap.md) for milestone timeline and exit criteria.
 
-## Path to 100 modules
+## Launch Library
 
-Apex Atlas currently ships **75 bundled modules** across 14 clinical domains. The v1.0 target is **100+ clinician-reviewable modules**, with every module carrying citations and every high-priority module backed by sourced fidelity expectations.
+Apex Atlas currently ships **100 bundled modules** across 14 clinical domains. Every module carries public-source citations and representative FHIR emits; high-priority GTM modules are backed by sourced fidelity expectations and can be checked together with `atlas validate --gtm`.
 
-The expansion plan is deliberately balanced across GTM use cases:
+The launch library is deliberately balanced across GTM use cases:
 
-| Track | Current | v1.0 target | Why it matters |
-| --- | ---: | ---: | --- |
-| Chronic disease and cardiometabolic care | 18 | 18 | Primary-care panels, care management, risk adjustment |
-| Pulmonary, GI, renal, and MSK | 23 | 26 | Specialty workflows and high-volume outpatient testing |
-| Mental health, SUD, and neurology | 12 | 21 | Whole-person care, utilization variance, longitudinal complexity |
-| Oncology, hematology, and infectious disease | 11 | 18 | Specialty demos, procedures, diagnostics, staging, survivorship |
-| Pediatric, OB, prevention, and immunizations | 5 | 9 | Full lifecycle coverage and payer quality programs |
-| Dermatology, allergy, ENT, and ophthalmology | 6 | 8 | Common ambulatory use cases that make demos feel complete |
+| Track | Modules | Why it matters |
+| --- | ---: | --- |
+| Chronic disease and cardiometabolic care | 20 | Primary-care panels, care management, risk adjustment |
+| Pulmonary, GI, renal, and MSK | 29 | Specialty workflows and high-volume outpatient testing |
+| Mental health, SUD, and neurology | 16 | Whole-person care, utilization variance, longitudinal complexity |
+| Oncology, hematology, and infectious disease | 14 | Specialty demos, procedures, diagnostics, staging, survivorship |
+| Pediatric, OB, prevention, and immunizations | 12 | Full lifecycle coverage and payer quality programs |
+| Dermatology, allergy, ENT, and ophthalmology | 9 | Common ambulatory use cases that make demos feel complete |
 
 Module growth is not just a count. A module is v1-ready when it has public-source citations, deterministic smoke tests, representative FHIR emits, cohort fidelity expectations where prevalence is clinically material, and a documented review status.
 
-See [`docs/module-catalog.md`](./docs/module-catalog.md) for the current module catalog, [`docs/roadmap.md`](./docs/roadmap.md) for the full module expansion plan, and [`docs/gtm.md`](./docs/gtm.md) for the prime-time launch checklist.
+See [`docs/module-catalog.md`](./docs/module-catalog.md) for the current module catalog, [`docs/roadmap.md`](./docs/roadmap.md) for the launch-readiness plan, and [`docs/gtm.md`](./docs/gtm.md) for the prime-time checklist.
 
 ## Quick start
 
@@ -117,6 +117,11 @@ ls ./out
 
 # Structurally validate the output
 atlas validate ./out
+
+# Generate the curated launch-demo cohort with notes, SDoH, coverage,
+# claims, providers, and quality MeasureReports
+atlas launch-demo --patients 2500 --out ./atlas-launch-demo
+atlas validate ./atlas-launch-demo --gtm
 
 # See what's built
 atlas status
@@ -270,7 +275,7 @@ apex-atlas/
 │   │   └── sdoh.py         # BRFSS-grounded SDoH profile + causal modifiers
 │   ├── modules/
 │   │   ├── runtime.py      # Module DSL parser and probability runtime
-│   │   └── library/        # 75 bundled YAML clinical modules, growing toward 100+
+│   │   └── library/        # 100 bundled YAML clinical modules
 │   ├── fhir/               # FHIR resource builders (US Core 6.1)
 │   │   ├── measure_report.py   # DEQM MeasureReport (individual + summary)
 │   │   └── sdoh_observation.py # Gravity Project SDOHCC Observations

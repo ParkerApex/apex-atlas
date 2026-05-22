@@ -1,0 +1,31 @@
+module: dental_caries
+version: 0.1.0
+description: >
+  Dental caries module for whole-person health, pediatric prevention, and utilization workflows.
+cites:
+  - source: CDC oral health data
+    url: https://www.cdc.gov/oral-health/data-research/index.html
+    summary: Dental caries is common across childhood and adulthood and is preventable.
+conditions:
+  - id: dental_caries
+    code: {system: http://snomed.info/sct, code: "80967001", display: Dental caries}
+    prevalence:
+      "0-17": 0.160
+      "18-39": 0.210
+      "40-59": 0.180
+      "60-99": 0.120
+    onset_age: {min: 2, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: dental_caries_dental_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "185349003", display: Encounter for check up}
+        reason: {system: http://snomed.info/sct, code: "80967001", display: Dental caries}
+      - resource_type: Procedure
+        spec_id: dental_caries_restoration
+        when: today
+        link_to: dental_caries_dental_visit
+        probability: 0.50
+        code: {system: http://snomed.info/sct, code: "23470003", display: Dental restoration}
+        reason: {system: http://snomed.info/sct, code: "80967001", display: Dental caries}

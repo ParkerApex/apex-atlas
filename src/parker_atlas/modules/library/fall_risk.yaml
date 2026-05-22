@@ -1,0 +1,31 @@
+module: fall_risk
+version: 0.1.0
+description: >
+  Fall risk module for older-adult care management, quality, and home-safety workflows.
+cites:
+  - source: CDC STEADI older adult fall prevention
+    url: https://www.cdc.gov/steadi/index.html
+    summary: CDC STEADI supports screening, assessment, and intervention for older adults at risk for falls.
+conditions:
+  - id: risk_for_falls
+    code: {system: http://snomed.info/sct, code: "129839007", display: At risk for falls}
+    prevalence:
+      "0-17": 0.002
+      "18-39": 0.006
+      "40-59": 0.020
+      "60-99": 0.180
+    onset_age: {min: 55, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: fall_risk_assessment_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "129839007", display: At risk for falls}
+      - resource_type: Procedure
+        spec_id: fall_risk_screening
+        when: today
+        link_to: fall_risk_assessment_visit
+        probability: 0.70
+        code: {system: http://snomed.info/sct, code: "225337009", display: Fall risk assessment}
+        reason: {system: http://snomed.info/sct, code: "129839007", display: At risk for falls}
