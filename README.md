@@ -2,7 +2,7 @@
 
 # Apex Atlas
 
-**A next-generation synthetic FHIR patient population generator.**
+**Synthetic FHIR patient populations for AI training, integration testing, demos, and quality workflows.**
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![FHIR R4](https://img.shields.io/badge/FHIR-R4-red.svg)](https://hl7.org/fhir/R4/)
@@ -15,7 +15,7 @@
 
 ---
 
-Apex Atlas generates large-scale, fully synthetic patient populations in FHIR-native format, grounded in public epidemiological data. It is built by [Parker](https://parkerapex.com) to support training healthcare AI models, validating FHIR integrations, populating demo environments, and serving as shared data infrastructure across the APEX platform.
+Apex Atlas generates large-scale, fully synthetic patient populations in FHIR-native format, grounded in public epidemiological data. It is built by [Parker](https://parkerapex.com) to support training healthcare AI models, validating FHIR integrations, populating demo environments, quality-measure testing, and shared data infrastructure across the APEX platform.
 
 Every synthetic patient receives a Parker Global Patient Identifier (GPX) under the synthetic prefix namespace, making Atlas-generated data fully interoperable with the broader APEX ecosystem while remaining clearly distinguishable from production clinical data.
 
@@ -63,7 +63,7 @@ Apex Atlas is not trained on, derived from, or in any way informed by restricted
 | `atlas report`               | ✅ Implemented        | Self-contained HTML cohort report (demographics + fidelity) |
 | `atlas modules`              | ✅ Implemented        | List and inspect bundled modules |
 | Module runtime               | ✅ Implemented        | Time-aware emits, onset dating, cross-module `requires`, progressions |
-| Module library               | ✅ 37 modules         | CV (HTN/HF/IHD/AFib/stroke/cholesterol) · Metabolic (DM/T1D/obesity/hypothyroid) · Pulmonary (asthma/COPD/sleep apnea/lung cancer) · GI (GERD/NAFLD/IBD) · Renal (CKD+ESRD) · MSK (OA/RA) · Mental health (depression/anxiety/bipolar) · SUD (AUD/OUD/tobacco) · Neuro (Alzheimer's) · Oncology (CRC/breast/prostate) · ID (HIV) · Heme (SCD) · Pediatric/OB · Adult immunizations |
+| Module library               | ✅ 75 modules         | CV (HTN/HF/IHD/AFib/stroke/cholesterol/PAD/VTE/valvular/cardiomyopathy) · Metabolic (DM/T1D/obesity/thyroid/prediabetes/osteoporosis/metabolic syndrome) · Pulmonary (asthma/COPD/sleep apnea/pneumonia/PE/PH) · GI/hepatology (GERD/NAFLD/IBD/liver/gallbladder) · Renal/urology (CKD+ESRD/UTI/stones/BPH/incontinence) · MSK/rheum · Mental health · SUD · Neuro · Oncology/heme · ID · Pediatric/OB/prevention · Derm/allergy · Ophthalmology/ENT |
 | Fidelity expectations        | ✅ 14 modules         | Sourced from NHANES, SEER, AHA, CDC |
 | Cross-module dependencies    | ✅ Implemented        | `requires: module:cond_id` gates cross-module comorbidity chains |
 | State-machine progressions   | ✅ One-hop            | 13+ chains live: HTN→CKD/HF/stroke, DM→CKD/retinopathy, AFib→stroke, CKD→ESRD, NAFLD→cirrhosis, pregnancy→GDM/preeclampsia/PPD, SCD→VOC, T1D→DKA |
@@ -79,6 +79,25 @@ Apex Atlas is not trained on, derived from, or in any way informed by restricted
 | $export endpoint             | ⏳ Post-v1            | REST API for on-demand Bulk Data generation |
 
 See [`docs/roadmap.md`](./docs/roadmap.md) for milestone timeline and exit criteria.
+
+## Path to 100 modules
+
+Apex Atlas currently ships **75 bundled modules** across 14 clinical domains. The v1.0 target is **100+ clinician-reviewable modules**, with every module carrying citations and every high-priority module backed by sourced fidelity expectations.
+
+The expansion plan is deliberately balanced across GTM use cases:
+
+| Track | Current | v1.0 target | Why it matters |
+| --- | ---: | ---: | --- |
+| Chronic disease and cardiometabolic care | 18 | 18 | Primary-care panels, care management, risk adjustment |
+| Pulmonary, GI, renal, and MSK | 23 | 26 | Specialty workflows and high-volume outpatient testing |
+| Mental health, SUD, and neurology | 12 | 21 | Whole-person care, utilization variance, longitudinal complexity |
+| Oncology, hematology, and infectious disease | 11 | 18 | Specialty demos, procedures, diagnostics, staging, survivorship |
+| Pediatric, OB, prevention, and immunizations | 5 | 9 | Full lifecycle coverage and payer quality programs |
+| Dermatology, allergy, ENT, and ophthalmology | 6 | 8 | Common ambulatory use cases that make demos feel complete |
+
+Module growth is not just a count. A module is v1-ready when it has public-source citations, deterministic smoke tests, representative FHIR emits, cohort fidelity expectations where prevalence is clinically material, and a documented review status.
+
+See [`docs/module-catalog.md`](./docs/module-catalog.md) for the current module catalog, [`docs/roadmap.md`](./docs/roadmap.md) for the full module expansion plan, and [`docs/gtm.md`](./docs/gtm.md) for the prime-time launch checklist.
 
 ## Quick start
 
@@ -190,7 +209,7 @@ atlas generate --patients 500 --seed 42 \
 
 ### Generation metadata
 
-Every `atlas generate` run now writes a `generation-metadata.json` file into the output directory. This artifact captures run-level provenance and cohort metrics for governance and marketing.
+Every `atlas generate` run writes a `generation-metadata.json` file into the output directory. This artifact is a run manifest, not a FHIR resource. It captures synthetic patient count, active modules / illness types, output format, feature flags, and cohort-level audit breadcrumbs for governance and marketing. `atlas validate` ignores this manifest during FHIR structural validation.
 
 Example fields:
 
@@ -251,7 +270,7 @@ apex-atlas/
 │   │   └── sdoh.py         # BRFSS-grounded SDoH profile + causal modifiers
 │   ├── modules/
 │   │   ├── runtime.py      # Module DSL parser and probability runtime
-│   │   └── library/        # 16 bundled YAML clinical modules
+│   │   └── library/        # 75 bundled YAML clinical modules, growing toward 100+
 │   ├── fhir/               # FHIR resource builders (US Core 6.1)
 │   │   ├── measure_report.py   # DEQM MeasureReport (individual + summary)
 │   │   └── sdoh_observation.py # Gravity Project SDOHCC Observations

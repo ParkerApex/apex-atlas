@@ -1,0 +1,51 @@
+module: lupus
+version: 0.1.0
+description: >
+  Systemic lupus erythematosus module for rheumatology care. It emits
+  rheumatology follow-up, ANA testing, complement testing, and
+  hydroxychloroquine therapy.
+cites:
+  - source: CDC Lupus
+    url: https://www.cdc.gov/lupus/
+    summary: >
+      Lupus is an autoimmune disease more common among women and certain
+      racial/ethnic groups; rheumatology management includes laboratory
+      monitoring and immunomodulatory therapy.
+conditions:
+  - id: systemic_lupus_erythematosus
+    code: {system: http://snomed.info/sct, code: "55464009", display: Systemic lupus erythematosus}
+    prevalence:
+      female:
+        "0-17": 0.001
+        "18-39": 0.006
+        "40-59": 0.008
+        "60-99": 0.005
+      male:
+        "0-17": 0.0003
+        "18-39": 0.001
+        "40-59": 0.002
+        "60-99": 0.001
+    onset_age: {min: 12, max: 70}
+    emits:
+      - resource_type: Encounter
+        spec_id: lupus_rheumatology_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "55464009", display: Systemic lupus erythematosus}
+      - resource_type: Observation
+        spec_id: lupus_ana
+        when: today
+        link_to: lupus_rheumatology_visit
+        category: laboratory
+        code: {system: http://loinc.org, code: "5048-4", display: "Nuclear Ab [Titer] in Serum by Immunofluorescence"}
+        value_range: {low: 160, high: 1280, precision: 0}
+        unit: titer
+        unit_code: "{titer}"
+      - resource_type: MedicationRequest
+        spec_id: lupus_hydroxychloroquine
+        when: today
+        link_to: lupus_rheumatology_visit
+        probability: 0.70
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "5521", display: Hydroxychloroquine}
+        reason: {system: http://snomed.info/sct, code: "55464009", display: Systemic lupus erythematosus}

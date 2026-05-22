@@ -1,0 +1,94 @@
+module: nephrolithiasis
+version: 0.1.0
+description: >
+  Nephrolithiasis module for common acute urology / emergency care. It
+  emits an acute encounter, hematuria-range urinalysis Observation,
+  CT imaging, and tamsulosin in a subset of patients.
+cites:
+  - source: >
+      Scales CD et al. Prevalence of kidney stones in the United States.
+      European Urology. 2012.
+    url: https://pubmed.ncbi.nlm.nih.gov/22498635/
+    summary: >
+      NHANES-based analysis estimating kidney stone prevalence in the US,
+      higher in men and increasing with age.
+  - source: American Urological Association Medical Management of Kidney Stones Guideline
+    url: https://www.auanet.org/guidelines-and-quality/guidelines/kidney-stones-medical-mangement-guideline
+    summary: >
+      Guideline covers evaluation, recurrence prevention, and medical
+      management for kidney stone disease.
+conditions:
+  - id: nephrolithiasis
+    code:
+      system: http://snomed.info/sct
+      code: "95570007"
+      display: Kidney stone
+    prevalence:
+      female:
+        "0-17": 0.005
+        "18-39": 0.050
+        "40-59": 0.080
+        "60-99": 0.090
+      male:
+        "0-17": 0.005
+        "18-39": 0.070
+        "40-59": 0.120
+        "60-99": 0.140
+    onset_age:
+      min: 15
+      max: 85
+    emits:
+      - resource_type: Encounter
+        spec_id: nephrolithiasis_acute_visit
+        when: onset
+        encounter_class: EMER
+        type:
+          system: http://snomed.info/sct
+          code: "50849002"
+          display: Emergency room admission
+        reason:
+          system: http://snomed.info/sct
+          code: "95570007"
+          display: Kidney stone
+
+      - resource_type: Observation
+        spec_id: nephrolithiasis_urine_rbc
+        when: onset
+        link_to: nephrolithiasis_acute_visit
+        probability: 0.75
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "13945-1"
+          display: Erythrocytes [#/area] in Urine sediment by Microscopy high power field
+        value_range: {low: 5, high: 50, precision: 0}
+        unit: /HPF
+        unit_code: /[HPF]
+
+      - resource_type: Procedure
+        spec_id: nephrolithiasis_ct
+        when: onset
+        link_to: nephrolithiasis_acute_visit
+        probability: 0.70
+        code:
+          system: http://snomed.info/sct
+          code: "77477000"
+          display: Computed tomography
+        reason:
+          system: http://snomed.info/sct
+          code: "95570007"
+          display: Kidney stone
+
+      - resource_type: MedicationRequest
+        spec_id: nephrolithiasis_tamsulosin
+        when: onset
+        link_to: nephrolithiasis_acute_visit
+        probability: 0.35
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "77492"
+          display: Tamsulosin
+        reason:
+          system: http://snomed.info/sct
+          code: "95570007"
+          display: Kidney stone

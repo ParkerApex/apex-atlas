@@ -1,0 +1,40 @@
+module: melanoma
+version: 0.1.0
+description: >
+  Melanoma module for dermatology/oncology coverage. It emits a
+  dermatology visit, skin biopsy, and excision procedure.
+cites:
+  - source: SEER Cancer Stat Facts — Melanoma of the Skin
+    url: https://seer.cancer.gov/statfacts/html/melan.html
+    summary: >
+      SEER publishes US melanoma incidence, prevalence, and survival
+      statistics by age and sex.
+conditions:
+  - id: melanoma
+    code: {system: http://snomed.info/sct, code: "372244006", display: Malignant melanoma}
+    prevalence:
+      "0-17": 0.0002
+      "18-39": 0.003
+      "40-59": 0.012
+      "60-99": 0.035
+    onset_age: {min: 18, max: 90}
+    emits:
+      - resource_type: Encounter
+        spec_id: melanoma_dermatology_visit
+        when: onset
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "185349003", display: Encounter for check up}
+        reason: {system: http://snomed.info/sct, code: "372244006", display: Malignant melanoma}
+      - resource_type: Procedure
+        spec_id: melanoma_skin_biopsy
+        when: onset
+        link_to: melanoma_dermatology_visit
+        probability: 0.95
+        code: {system: http://snomed.info/sct, code: "274314003", display: Skin biopsy}
+        reason: {system: http://snomed.info/sct, code: "372244006", display: Malignant melanoma}
+      - resource_type: Procedure
+        spec_id: melanoma_excision
+        when: today
+        probability: 0.80
+        code: {system: http://snomed.info/sct, code: "65801008", display: Excision}
+        reason: {system: http://snomed.info/sct, code: "372244006", display: Malignant melanoma}

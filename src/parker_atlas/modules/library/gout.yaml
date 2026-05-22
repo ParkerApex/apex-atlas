@@ -1,0 +1,95 @@
+module: gout
+version: 0.1.0
+description: >
+  Gout module for common inflammatory arthritis care. Adult male
+  prevalence is higher than female prevalence and rises with age. The
+  module emits a rheumatology or primary-care visit, serum urate
+  Observation, anti-inflammatory treatment, and urate-lowering therapy
+  in a subset of patients.
+cites:
+  - source: >
+      Zhu Y, Pandya BJ, Choi HK. Prevalence of gout and hyperuricemia
+      in the US general population. Arthritis & Rheumatism. 2011.
+    url: https://pubmed.ncbi.nlm.nih.gov/21800283/
+    summary: >
+      NHANES 2007-2008 analysis estimated gout prevalence around 3.9%
+      among US adults, higher in men and older adults.
+  - source: 2020 American College of Rheumatology Guideline for the Management of Gout
+    url: https://acrjournals.onlinelibrary.wiley.com/doi/10.1002/acr.24180
+    summary: >
+      Guideline covers anti-inflammatory flare treatment and
+      urate-lowering therapy such as allopurinol for selected patients.
+conditions:
+  - id: gout
+    code:
+      system: http://snomed.info/sct
+      code: "90560007"
+      display: Gout
+    prevalence:
+      female:
+        "0-17": 0.0
+        "18-39": 0.005
+        "40-59": 0.025
+        "60-99": 0.055
+      male:
+        "0-17": 0.0
+        "18-39": 0.020
+        "40-59": 0.060
+        "60-99": 0.095
+    onset_age:
+      min: 18
+      max: 85
+    emits:
+      - resource_type: Encounter
+        spec_id: gout_followup_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "90560007"
+          display: Gout
+
+      - resource_type: Observation
+        spec_id: gout_serum_urate
+        when: today
+        link_to: gout_followup_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "3084-1"
+          display: Urate [Mass/volume] in Serum or Plasma
+        value_range: {low: 6.8, high: 10.5, precision: 1}
+        unit: mg/dL
+        unit_code: mg/dL
+
+      - resource_type: MedicationRequest
+        spec_id: gout_colchicine
+        when: today
+        link_to: gout_followup_visit
+        probability: 0.35
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "6160"
+          display: Colchicine
+        reason:
+          system: http://snomed.info/sct
+          code: "90560007"
+          display: Gout
+
+      - resource_type: MedicationRequest
+        spec_id: gout_allopurinol
+        when: today
+        link_to: gout_followup_visit
+        probability: 0.45
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "519"
+          display: Allopurinol
+        reason:
+          system: http://snomed.info/sct
+          code: "90560007"
+          display: Gout

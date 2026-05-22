@@ -1,0 +1,45 @@
+module: gout
+version: 0.1.0
+source:
+  name: NHANES gout prevalence literature + ACR gout guideline
+  provenance: sourced
+  url: https://pubmed.ncbi.nlm.nih.gov/21800283/
+  note: >
+    Targets mirror the module's age/sex approximation based on US NHANES
+    gout prevalence literature, with higher male and older-adult rates.
+  citations:
+    - source: >
+        Zhu Y, Pandya BJ, Choi HK. Prevalence of gout and hyperuricemia
+        in the US general population. Arthritis & Rheumatism. 2011.
+      url: https://pubmed.ncbi.nlm.nih.gov/21800283/
+      accessed: "2026-05-22"
+    - source: 2020 American College of Rheumatology Guideline for the Management of Gout
+      url: https://acrjournals.onlinelibrary.wiley.com/doi/10.1002/acr.24180
+      accessed: "2026-05-22"
+metrics:
+  - id: gout_prevalence_by_sex_and_age
+    kind: conditional_prevalence
+    condition_code: "90560007"
+    condition_system: http://snomed.info/sct
+    stratify_by: sex_and_age
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      female:
+        0-17: 0.0
+        18-39: 0.005
+        40-59: 0.025
+        60-99: 0.055
+      male:
+        0-17: 0.0
+        18-39: 0.020
+        40-59: 0.060
+        60-99: 0.095
+  - id: gout_serum_urate_presence_rate
+    kind: emit_presence_rate
+    condition_code: "90560007"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: absolute, value: 0.001}
+    emit_resource_type: Observation
+    target: 1.0
+    emit_code: "3084-1"
+    emit_code_system: http://loinc.org

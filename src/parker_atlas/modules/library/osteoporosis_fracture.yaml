@@ -1,0 +1,35 @@
+module: osteoporosis_fracture
+version: 0.1.0
+description: >
+  Osteoporotic fragility fracture module for geriatric and orthopedic
+  workflows. It emits an acute encounter, fracture imaging, and orthopedic
+  follow-up.
+cites:
+  - source: Bone Health and Osteoporosis Foundation fracture resources
+    url: https://www.bonehealthandosteoporosis.org/
+    summary: >
+      Fragility fractures are a major consequence of osteoporosis and
+      commonly require imaging and orthopedic or fracture liaison care.
+conditions:
+  - id: osteoporotic_fracture
+    code: {system: http://snomed.info/sct, code: "443165006", display: Osteoporotic fracture}
+    prevalence:
+      "0-17": 0.0
+      "18-39": 0.001
+      "40-59": 0.010
+      "60-99": 0.060
+    onset_age: {min: 50, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: osteoporotic_fracture_acute_visit
+        when: onset
+        encounter_class: EMER
+        type: {system: http://snomed.info/sct, code: "50849002", display: Emergency room admission}
+        reason: {system: http://snomed.info/sct, code: "443165006", display: Osteoporotic fracture}
+      - resource_type: Procedure
+        spec_id: osteoporotic_fracture_xray
+        when: onset
+        link_to: osteoporotic_fracture_acute_visit
+        probability: 0.95
+        code: {system: http://snomed.info/sct, code: "363680008", display: Radiographic imaging procedure}
+        reason: {system: http://snomed.info/sct, code: "443165006", display: Osteoporotic fracture}

@@ -13,7 +13,11 @@ runner = CliRunner()
 
 
 def _bundles(out: Path) -> list[dict]:
-    return [json.loads(p.read_text()) for p in sorted(out.glob("*.json"))]
+    return [
+        json.loads(p.read_text())
+        for p in sorted(out.glob("*.json"))
+        if p.name != "generation-metadata.json"
+    ]
 
 
 def _resources(bundle: dict, rtype: str) -> list[dict]:

@@ -22,6 +22,16 @@ def _write_generated_bundles(tmp_path, n: int = 3) -> None:
     assert result.exit_code == 0, result.output
 
 
+def _single_patient_bundle(tmp_path):
+    files = [
+        file
+        for file in tmp_path.glob("*.json")
+        if file.name != "generation-metadata.json"
+    ]
+    assert len(files) == 1
+    return files[0]
+
+
 class TestStructuralValidator:
     def test_validates_generated_bundles(self, tmp_path):
         _write_generated_bundles(tmp_path, 5)
@@ -33,7 +43,7 @@ class TestStructuralValidator:
 
     def test_flags_missing_identifier(self, tmp_path):
         _write_generated_bundles(tmp_path, 1)
-        [file] = list(tmp_path.glob("*.json"))
+        file = _single_patient_bundle(tmp_path)
         data = json.loads(file.read_text())
         data["entry"][0]["resource"]["identifier"] = []
         file.write_text(json.dumps(data))
@@ -44,7 +54,7 @@ class TestStructuralValidator:
 
     def test_flags_missing_gender(self, tmp_path):
         _write_generated_bundles(tmp_path, 1)
-        [file] = list(tmp_path.glob("*.json"))
+        file = _single_patient_bundle(tmp_path)
         data = json.loads(file.read_text())
         del data["entry"][0]["resource"]["gender"]
         file.write_text(json.dumps(data))
@@ -55,7 +65,7 @@ class TestStructuralValidator:
 
     def test_flags_missing_family_name(self, tmp_path):
         _write_generated_bundles(tmp_path, 1)
-        [file] = list(tmp_path.glob("*.json"))
+        file = _single_patient_bundle(tmp_path)
         data = json.loads(file.read_text())
         data["entry"][0]["resource"]["name"][0].pop("family")
         file.write_text(json.dumps(data))
@@ -66,7 +76,7 @@ class TestStructuralValidator:
 
     def test_warns_on_missing_htest_tag(self, tmp_path):
         _write_generated_bundles(tmp_path, 1)
-        [file] = list(tmp_path.glob("*.json"))
+        file = _single_patient_bundle(tmp_path)
         data = json.loads(file.read_text())
         data["entry"][0]["resource"]["meta"]["tag"] = []
         file.write_text(json.dumps(data))
@@ -103,7 +113,7 @@ class TestValidateCLI:
 
     def test_exits_nonzero_on_broken_file(self, tmp_path):
         _write_generated_bundles(tmp_path, 1)
-        [file] = list(tmp_path.glob("*.json"))
+        file = _single_patient_bundle(tmp_path)
         data = json.loads(file.read_text())
         data["entry"][0]["resource"]["identifier"] = []
         file.write_text(json.dumps(data))
@@ -113,7 +123,7 @@ class TestValidateCLI:
 
     def test_strict_fails_on_warnings(self, tmp_path):
         _write_generated_bundles(tmp_path, 1)
-        [file] = list(tmp_path.glob("*.json"))
+        file = _single_patient_bundle(tmp_path)
         data = json.loads(file.read_text())
         data["entry"][0]["resource"]["meta"]["tag"] = []
         file.write_text(json.dumps(data))

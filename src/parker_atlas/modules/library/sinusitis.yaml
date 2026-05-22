@@ -1,0 +1,35 @@
+module: sinusitis
+version: 0.1.0
+description: >
+  Acute sinusitis module for common primary-care and ENT workflows. It
+  emits an acute visit and antibiotic therapy in a subset, reflecting
+  stewardship-aware care.
+cites:
+  - source: IDSA Clinical Practice Guideline for Acute Bacterial Rhinosinusitis
+    url: https://academic.oup.com/cid/article/54/8/e72/367144
+    summary: >
+      Acute bacterial rhinosinusitis diagnosis and treatment includes
+      clinical criteria and selective antibiotic use.
+conditions:
+  - id: acute_sinusitis
+    code: {system: http://snomed.info/sct, code: "36971009", display: Sinusitis}
+    prevalence:
+      "0-17": 0.060
+      "18-39": 0.080
+      "40-59": 0.070
+      "60-99": 0.045
+    onset_age: {min: 2, max: 90}
+    emits:
+      - resource_type: Encounter
+        spec_id: sinusitis_acute_visit
+        when: onset
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "185345009", display: Encounter for symptom}
+        reason: {system: http://snomed.info/sct, code: "36971009", display: Sinusitis}
+      - resource_type: MedicationRequest
+        spec_id: sinusitis_amoxicillin_clavulanate
+        when: onset
+        link_to: sinusitis_acute_visit
+        probability: 0.35
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "562508", display: Amoxicillin 875 MG / Clavulanate 125 MG Oral Tablet}
+        reason: {system: http://snomed.info/sct, code: "36971009", display: Sinusitis}

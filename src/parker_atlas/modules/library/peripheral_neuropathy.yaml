@@ -1,0 +1,46 @@
+module: peripheral_neuropathy
+version: 0.1.0
+description: >
+  Peripheral neuropathy module for neurology and diabetes-adjacent care.
+  It emits neurology/primary-care follow-up, B12 testing, and gabapentin
+  therapy in a subset.
+cites:
+  - source: NINDS Peripheral Neuropathy
+    url: https://www.ninds.nih.gov/health-information/disorders/peripheral-neuropathy
+    summary: >
+      Peripheral neuropathy has many causes, including diabetes, and
+      commonly presents with sensory symptoms requiring evaluation and
+      symptom management.
+conditions:
+  - id: peripheral_neuropathy
+    code: {system: http://snomed.info/sct, code: "302226006", display: Peripheral neuropathy}
+    prevalence:
+      "0-17": 0.002
+      "18-39": 0.020
+      "40-59": 0.060
+      "60-99": 0.140
+    onset_age: {min: 18, max: 90}
+    emits:
+      - resource_type: Encounter
+        spec_id: neuropathy_followup_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "302226006", display: Peripheral neuropathy}
+      - resource_type: Observation
+        spec_id: neuropathy_b12
+        when: today
+        link_to: neuropathy_followup_visit
+        probability: 0.35
+        category: laboratory
+        code: {system: http://loinc.org, code: "2132-9", display: "Cobalamin (Vitamin B12) [Mass/volume] in Serum or Plasma"}
+        value_range: {low: 120, high: 650, precision: 0}
+        unit: pg/mL
+        unit_code: pg/mL
+      - resource_type: MedicationRequest
+        spec_id: neuropathy_gabapentin
+        when: today
+        link_to: neuropathy_followup_visit
+        probability: 0.45
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "25480", display: Gabapentin}
+        reason: {system: http://snomed.info/sct, code: "302226006", display: Peripheral neuropathy}

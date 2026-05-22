@@ -1,0 +1,48 @@
+module: osteoporosis
+version: 0.1.0
+description: >
+  Osteoporosis module for endocrine and preventive-care workflows. It is
+  weighted toward older women and emits DXA screening plus calcium /
+  vitamin D and bisphosphonate therapy in representative subsets.
+cites:
+  - source: Bone Health and Osteoporosis Foundation clinician resources
+    url: https://www.bonehealthandosteoporosis.org/
+    summary: >
+      Osteoporosis prevalence rises strongly with age and is higher in
+      postmenopausal women; DXA is the standard diagnostic test.
+conditions:
+  - id: osteoporosis
+    code: {system: http://snomed.info/sct, code: "64859006", display: Osteoporosis}
+    prevalence:
+      female:
+        "0-17": 0.0
+        "18-39": 0.005
+        "40-59": 0.060
+        "60-99": 0.280
+      male:
+        "0-17": 0.0
+        "18-39": 0.002
+        "40-59": 0.020
+        "60-99": 0.100
+    onset_age: {min: 45, max: 90}
+    emits:
+      - resource_type: Encounter
+        spec_id: osteoporosis_followup_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "64859006", display: Osteoporosis}
+      - resource_type: Procedure
+        spec_id: osteoporosis_dxa
+        when: today
+        link_to: osteoporosis_followup_visit
+        probability: 0.75
+        code: {system: http://snomed.info/sct, code: "312681000", display: Dual-energy X-ray absorptiometry}
+        reason: {system: http://snomed.info/sct, code: "64859006", display: Osteoporosis}
+      - resource_type: MedicationRequest
+        spec_id: osteoporosis_alendronate
+        when: today
+        link_to: osteoporosis_followup_visit
+        probability: 0.40
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "46041", display: Alendronate}
+        reason: {system: http://snomed.info/sct, code: "64859006", display: Osteoporosis}

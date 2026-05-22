@@ -1,0 +1,37 @@
+module: cataract
+version: 0.1.0
+source:
+  name: National Eye Institute cataract overview + AAO cataract guidance
+  provenance: sourced
+  url: https://www.nei.nih.gov/learn-about-eye-health/eye-conditions-and-diseases/cataracts
+  note: >
+    Targets mirror the module's older-adult cataract approximation and
+    representative ophthalmology emit rates.
+  citations:
+    - source: National Eye Institute — Cataracts
+      url: https://www.nei.nih.gov/learn-about-eye-health/eye-conditions-and-diseases/cataracts
+      accessed: "2026-05-22"
+    - source: American Academy of Ophthalmology cataract guidance
+      url: https://www.aao.org/education/guidelines
+      accessed: "2026-05-22"
+metrics:
+  - id: cataract_prevalence_by_age
+    kind: conditional_prevalence
+    condition_code: "193570009"
+    condition_system: http://snomed.info/sct
+    stratify_by: age_bracket
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      0-17: 0.0
+      18-39: 0.002
+      40-59: 0.040
+      60-99: 0.320
+  - id: cataract_extraction_rate
+    kind: emit_presence_rate
+    condition_code: "193570009"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: Procedure
+    target: 0.35
+    emit_code: "54885007"
+    emit_code_system: http://snomed.info/sct

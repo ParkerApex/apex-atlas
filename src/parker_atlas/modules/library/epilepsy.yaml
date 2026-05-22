@@ -1,0 +1,72 @@
+module: epilepsy
+version: 0.1.0
+description: >
+  Epilepsy module for chronic neurologic disease coverage. The module
+  emits a neurology follow-up encounter, EEG Procedure, and antiseizure
+  medication for most diagnosed patients.
+cites:
+  - source: CDC Epilepsy Data and Statistics
+    url: https://www.cdc.gov/epilepsy/data-research/index.html
+    summary: >
+      CDC reports epilepsy affects millions of people in the United
+      States, including both adults and children.
+  - source: American Academy of Neurology epilepsy quality measures and guidance
+    url: https://www.aan.com/practice/quality-measures
+    summary: >
+      Epilepsy care commonly includes diagnostic evaluation, seizure
+      classification, follow-up, and antiseizure medication management.
+conditions:
+  - id: epilepsy
+    code:
+      system: http://snomed.info/sct
+      code: "84757009"
+      display: Epilepsy
+    prevalence:
+      "0-17": 0.008
+      "18-39": 0.010
+      "40-59": 0.011
+      "60-99": 0.015
+    onset_age:
+      min: 0
+      max: 80
+    emits:
+      - resource_type: Encounter
+        spec_id: epilepsy_neurology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "84757009"
+          display: Epilepsy
+
+      - resource_type: Procedure
+        spec_id: epilepsy_eeg
+        when: today
+        link_to: epilepsy_neurology_visit
+        probability: 0.45
+        code:
+          system: http://snomed.info/sct
+          code: "54550000"
+          display: Electroencephalography
+        reason:
+          system: http://snomed.info/sct
+          code: "84757009"
+          display: Epilepsy
+
+      - resource_type: MedicationRequest
+        spec_id: epilepsy_levetiracetam
+        when: today
+        link_to: epilepsy_neurology_visit
+        probability: 0.65
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "114477"
+          display: Levetiracetam
+        reason:
+          system: http://snomed.info/sct
+          code: "84757009"
+          display: Epilepsy

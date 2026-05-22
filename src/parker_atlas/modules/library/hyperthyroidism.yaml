@@ -1,0 +1,80 @@
+module: hyperthyroidism
+version: 0.1.0
+description: >
+  Hyperthyroidism module for endocrine coverage. Prevalence is higher
+  in adult females. The module emits an endocrine follow-up encounter,
+  suppressed TSH Observation, and methimazole therapy for most treated
+  patients.
+cites:
+  - source: >
+      Hollowell JG et al. Serum TSH, T4, and thyroid antibodies in the
+      United States population (NHANES III). J Clin Endocrinol Metab. 2002.
+    url: https://academic.oup.com/jcem/article/87/2/489/2846790
+    summary: >
+      NHANES III thyroid disease analysis includes population estimates
+      for thyroid dysfunction.
+  - source: 2016 American Thyroid Association Guidelines for Diagnosis and Management of Hyperthyroidism
+    url: https://www.liebertpub.com/doi/10.1089/thy.2016.0229
+    summary: >
+      Hyperthyroidism management includes biochemical monitoring and
+      antithyroid drugs such as methimazole for appropriate patients.
+conditions:
+  - id: hyperthyroidism
+    code:
+      system: http://snomed.info/sct
+      code: "34486009"
+      display: Hyperthyroidism
+    prevalence:
+      female:
+        "0-17": 0.001
+        "18-39": 0.010
+        "40-59": 0.018
+        "60-99": 0.025
+      male:
+        "0-17": 0.001
+        "18-39": 0.004
+        "40-59": 0.007
+        "60-99": 0.010
+    onset_age:
+      min: 15
+      max: 80
+    emits:
+      - resource_type: Encounter
+        spec_id: hyperthyroidism_endocrine_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "34486009"
+          display: Hyperthyroidism
+
+      - resource_type: Observation
+        spec_id: hyperthyroidism_tsh
+        when: today
+        link_to: hyperthyroidism_endocrine_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "3016-3"
+          display: Thyrotropin [Units/volume] in Serum or Plasma
+        value_range: {low: 0.01, high: 0.30, precision: 2}
+        unit: mIU/L
+        unit_code: m[IU]/L
+
+      - resource_type: MedicationRequest
+        spec_id: hyperthyroidism_methimazole
+        when: today
+        link_to: hyperthyroidism_endocrine_visit
+        probability: 0.65
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "6835"
+          display: Methimazole
+        reason:
+          system: http://snomed.info/sct
+          code: "34486009"
+          display: Hyperthyroidism

@@ -1,0 +1,44 @@
+module: hepatitis_c
+version: 0.1.0
+description: >
+  Chronic hepatitis C module for infectious disease and liver-care
+  workflows. It emits HCV RNA testing and direct-acting antiviral
+  therapy in a treatment subset.
+cites:
+  - source: CDC Hepatitis C Basics
+    url: https://www.cdc.gov/hepatitis-c/
+    summary: >
+      Hepatitis C can become chronic and is diagnosed with antibody and
+      RNA testing; curative direct-acting antiviral treatment is available.
+conditions:
+  - id: chronic_hepatitis_c
+    code: {system: http://snomed.info/sct, code: "128302006", display: Chronic hepatitis C}
+    prevalence:
+      "0-17": 0.001
+      "18-39": 0.010
+      "40-59": 0.018
+      "60-99": 0.014
+    onset_age: {min: 18, max: 85}
+    emits:
+      - resource_type: Encounter
+        spec_id: hcv_followup_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "128302006", display: Chronic hepatitis C}
+      - resource_type: Observation
+        spec_id: hcv_rna
+        when: today
+        link_to: hcv_followup_visit
+        category: laboratory
+        code: {system: http://loinc.org, code: "11011-4", display: "Hepatitis C virus RNA [Units/volume] in Serum or Plasma by NAA with probe detection"}
+        value_range: {low: 15000, high: 2000000, precision: 0}
+        unit: IU/mL
+        unit_code: "[IU]/mL"
+      - resource_type: MedicationRequest
+        spec_id: hcv_sofosbuvir_velpatasvir
+        when: today
+        link_to: hcv_followup_visit
+        probability: 0.45
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "1799218", display: Sofosbuvir 400 MG / Velpatasvir 100 MG Oral Tablet}
+        reason: {system: http://snomed.info/sct, code: "128302006", display: Chronic hepatitis C}

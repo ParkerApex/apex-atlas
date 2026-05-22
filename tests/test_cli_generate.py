@@ -12,6 +12,12 @@ from parker_atlas.cli import app
 runner = CliRunner()
 
 
+def _bundle_files(path):
+    return sorted(
+        p for p in path.glob("*.json") if p.name != "generation-metadata.json"
+    )
+
+
 def test_generate_writes_valid_bundles(tmp_path):
     result = runner.invoke(
         app,
@@ -19,7 +25,7 @@ def test_generate_writes_valid_bundles(tmp_path):
     )
     assert result.exit_code == 0, result.output
 
-    files = sorted(tmp_path.glob("*.json"))
+    files = _bundle_files(tmp_path)
     assert len(files) == 5
 
     for f in files:
@@ -41,8 +47,8 @@ def test_generate_is_reproducible_with_seed(tmp_path):
         )
         assert res.exit_code == 0, res.output
 
-    files_a = sorted(p.name for p in out_a.glob("*.json"))
-    files_b = sorted(p.name for p in out_b.glob("*.json"))
+    files_a = sorted(p.name for p in _bundle_files(out_a))
+    files_b = sorted(p.name for p in _bundle_files(out_b))
     assert files_a == files_b
 
     for name in files_a:
@@ -89,7 +95,7 @@ def test_generate_with_hypertension_produces_mixed_bundles(tmp_path):
 
     has_condition = 0
     patient_only = 0
-    for f in sorted(tmp_path.glob("*.json")):
+    for f in _bundle_files(tmp_path):
         entries = json.loads(f.read_text())["entry"]
         types = {e["resource"]["resourceType"] for e in entries}
         if "Condition" in types:

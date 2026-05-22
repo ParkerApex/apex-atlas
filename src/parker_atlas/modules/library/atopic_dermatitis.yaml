@@ -1,0 +1,76 @@
+module: atopic_dermatitis
+version: 0.1.0
+description: >
+  Atopic dermatitis module for common dermatology and pediatric primary
+  care coverage. Prevalence is highest in children, with persistent or
+  adult disease in a smaller adult population. The module emits an
+  ambulatory visit and topical anti-inflammatory therapy.
+cites:
+  - source: >
+      Silverberg JI, Hanifin JM. Adult eczema prevalence and associations
+      with asthma and other health and demographic factors. J Allergy Clin
+      Immunol. 2013.
+    url: https://pubmed.ncbi.nlm.nih.gov/23664230/
+    summary: >
+      US survey analysis describing adult eczema prevalence and common
+      allergic comorbidity patterns.
+  - source: American Academy of Dermatology atopic dermatitis guidelines
+    url: https://www.aad.org/member/clinical-quality/guidelines/atopic-dermatitis
+    summary: >
+      Guideline-based care includes moisturizers, topical corticosteroids,
+      topical calcineurin inhibitors, and escalation for refractory disease.
+conditions:
+  - id: atopic_dermatitis
+    code:
+      system: http://snomed.info/sct
+      code: "24079001"
+      display: Atopic dermatitis
+    prevalence:
+      "0-17": 0.120
+      "18-39": 0.060
+      "40-59": 0.045
+      "60-99": 0.030
+    onset_age:
+      min: 0
+      max: 70
+    emits:
+      - resource_type: Encounter
+        spec_id: atopic_dermatitis_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "24079001"
+          display: Atopic dermatitis
+
+      - resource_type: MedicationRequest
+        spec_id: atopic_dermatitis_hydrocortisone
+        when: today
+        link_to: atopic_dermatitis_visit
+        probability: 0.60
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "5492"
+          display: Hydrocortisone
+        reason:
+          system: http://snomed.info/sct
+          code: "24079001"
+          display: Atopic dermatitis
+
+      - resource_type: MedicationRequest
+        spec_id: atopic_dermatitis_triamcinolone
+        when: today
+        link_to: atopic_dermatitis_visit
+        probability: 0.25
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "10759"
+          display: Triamcinolone
+        reason:
+          system: http://snomed.info/sct
+          code: "24079001"
+          display: Atopic dermatitis

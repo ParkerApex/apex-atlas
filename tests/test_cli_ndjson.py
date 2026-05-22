@@ -41,6 +41,12 @@ def _generate_ndjson(tmp_path, *, patients: int, seed: int = 0, module: str | No
     return result
 
 
+def _bundle_files(path):
+    return sorted(
+        p for p in path.glob("*.json") if p.name != "generation-metadata.json"
+    )
+
+
 class TestNDJSONOutputShape:
     def test_writes_one_file_per_resource_type(self, tmp_path):
         _generate_ndjson(tmp_path, patients=10, module="hypertension")
@@ -48,8 +54,8 @@ class TestNDJSONOutputShape:
         # Patient is always present; the hypertension module emits the
         # other types when its conditions fire.
         assert "Patient.ndjson" in present
-        # No JSON Bundle files in NDJSON mode.
-        assert not list(tmp_path.glob("*.json"))
+        # No JSON Bundle files in NDJSON mode; the run manifest is allowed.
+        assert not _bundle_files(tmp_path)
 
     def test_patient_file_has_one_line_per_patient(self, tmp_path):
         _generate_ndjson(tmp_path, patients=15)
@@ -143,7 +149,7 @@ class TestNDJSONCohortInteroperability:
 
         # Count resources by type in the bundle output.
         bundle_counts: dict[str, int] = {}
-        for f in bundle_dir.glob("*.json"):
+        for f in _bundle_files(bundle_dir):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 rt = entry["resource"]["resourceType"]

@@ -1,0 +1,95 @@
+module: peripheral_artery_disease
+version: 0.1.0
+description: >
+  Peripheral artery disease module for common cardiometabolic vascular
+  disease. Prevalence rises sharply with age and is higher in males.
+  The module emits a vascular follow-up encounter, ankle-brachial index
+  Observation, antiplatelet therapy, and low-probability lower-extremity
+  arterial ultrasound.
+cites:
+  - source: >
+      Criqui MH, Aboyans V. Epidemiology of peripheral artery disease.
+      Circulation Research. 2015;116(9):1509-1526.
+    url: https://www.ahajournals.org/doi/10.1161/CIRCRESAHA.116.303849
+    summary: >
+      Review describing PAD as common in older adults, strongly
+      associated with age, smoking, diabetes, and cardiovascular risk.
+  - source: 2024 ACC/AHA Guideline for Lower Extremity Peripheral Artery Disease
+    url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001251
+    summary: >
+      Guideline supports ABI testing for diagnosis and antiplatelet /
+      risk-factor management for symptomatic PAD.
+conditions:
+  - id: peripheral_artery_disease
+    code:
+      system: http://snomed.info/sct
+      code: "399957001"
+      display: Peripheral arterial disease
+    prevalence:
+      female:
+        "0-17": 0.0
+        "18-39": 0.002
+        "40-59": 0.030
+        "60-99": 0.120
+      male:
+        "0-17": 0.0
+        "18-39": 0.003
+        "40-59": 0.040
+        "60-99": 0.150
+    onset_age:
+      min: 40
+      max: 90
+    emits:
+      - resource_type: Encounter
+        spec_id: pad_vascular_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "399957001"
+          display: Peripheral arterial disease
+
+      - resource_type: Observation
+        spec_id: pad_abi
+        when: today
+        link_to: pad_vascular_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "89287-4"
+          display: Ankle brachial index
+        value_range: {low: 0.45, high: 0.89, precision: 2}
+        unit: ratio
+        unit_code: "{ratio}"
+
+      - resource_type: MedicationRequest
+        spec_id: pad_aspirin
+        when: today
+        link_to: pad_vascular_visit
+        probability: 0.65
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "1191"
+          display: Aspirin
+        reason:
+          system: http://snomed.info/sct
+          code: "399957001"
+          display: Peripheral arterial disease
+
+      - resource_type: Procedure
+        spec_id: pad_arterial_ultrasound
+        when: today
+        link_to: pad_vascular_visit
+        probability: 0.35
+        code:
+          system: http://snomed.info/sct
+          code: "431972007"
+          display: Ultrasound scan of artery of lower limb
+        reason:
+          system: http://snomed.info/sct
+          code: "399957001"
+          display: Peripheral arterial disease

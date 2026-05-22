@@ -1,0 +1,35 @@
+module: traumatic_brain_injury
+version: 0.1.0
+description: >
+  Traumatic brain injury module for acute neurology / emergency care. It
+  emits an emergency encounter, head CT, and neurology follow-up in a
+  subset.
+cites:
+  - source: CDC Traumatic Brain Injury and Concussion
+    url: https://www.cdc.gov/traumatic-brain-injury/
+    summary: >
+      TBI is a common injury-related condition that may require emergency
+      evaluation, imaging, and follow-up depending on severity.
+conditions:
+  - id: traumatic_brain_injury
+    code: {system: http://snomed.info/sct, code: "127295002", display: Traumatic brain injury}
+    prevalence:
+      "0-17": 0.025
+      "18-39": 0.030
+      "40-59": 0.020
+      "60-99": 0.025
+    onset_age: {min: 0, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: tbi_emergency_visit
+        when: onset
+        encounter_class: EMER
+        type: {system: http://snomed.info/sct, code: "50849002", display: Emergency room admission}
+        reason: {system: http://snomed.info/sct, code: "127295002", display: Traumatic brain injury}
+      - resource_type: Procedure
+        spec_id: tbi_head_ct
+        when: onset
+        link_to: tbi_emergency_visit
+        probability: 0.50
+        code: {system: http://snomed.info/sct, code: "77477000", display: Computed tomography of head}
+        reason: {system: http://snomed.info/sct, code: "127295002", display: Traumatic brain injury}

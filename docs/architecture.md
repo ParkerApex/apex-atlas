@@ -49,7 +49,7 @@ parker-atlas/
 │   │   └── provider.py         # NPI-keyed provider/location assignment
 │   ├── modules/            # Clinical pathway modules
 │   │   ├── runtime.py          # Module DSL parser + probability runtime
-│   │   └── library/            # 37 bundled module YAMLs (growing toward 100+)
+│   │   └── library/            # 75 bundled module YAMLs, growing toward 100+
 │   ├── fhir/               # FHIR R4 resource construction
 │   │   ├── patient.py          # US Core 6.1 Patient
 │   │   ├── condition.py        # US Core Condition
@@ -91,6 +91,7 @@ parker-atlas/
 ├── docs/
 │   ├── architecture.md     # This file
 │   ├── roadmap.md          # Milestone plan (updated 2026-05-22)
+│   ├── module-catalog.md   # GTM-facing module count and readiness tiers
 │   ├── why-atlas.md        # Strategic rationale (V.J. Lopez)
 │   └── ingestion.md        # atlas ingest usage guide
 └── pyproject.toml
@@ -200,7 +201,7 @@ Output is always valid FHIR. Conformance is verified by the `fhir.resources` Pyd
 - FHIR Bundle JSON — one file per patient, transaction bundle
 - NDJSON — one resource per line, aligned to FHIR Bulk Data Access ($export)
 - Parquet — columnar, one file per resource type, for data science workloads
-- generation-metadata.json — run-level provenance, patient counts, CLI feature flags, and optional summary metrics
+- generation-metadata.json — non-FHIR run manifest with synthetic patient counts, active modules / illness types, CLI feature flags, output format, and optional summary metrics
 
 Every Patient resource includes a GPX identifier in the SYN category. Every resource includes the HL7 HTEST meta tag.
 

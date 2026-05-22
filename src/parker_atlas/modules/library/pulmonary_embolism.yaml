@@ -1,0 +1,52 @@
+module: pulmonary_embolism
+version: 0.1.0
+description: >
+  Pulmonary embolism module for acute cardiopulmonary care. It emits an
+  emergency encounter, elevated D-dimer, CT pulmonary angiography, and
+  anticoagulation.
+cites:
+  - source: CHEST Guideline and Expert Panel Report on Antithrombotic Therapy for VTE Disease
+    url: https://journal.chestnet.org/article/S0012-3692(15)00335-9/fulltext
+    summary: >
+      Pulmonary embolism workup and management commonly include D-dimer,
+      CT pulmonary angiography, and anticoagulation.
+conditions:
+  - id: pulmonary_embolism
+    code: {system: http://snomed.info/sct, code: "59282003", display: Pulmonary embolism}
+    prevalence:
+      "0-17": 0.001
+      "18-39": 0.002
+      "40-59": 0.006
+      "60-99": 0.018
+    onset_age: {min: 18, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: pe_emergency_visit
+        when: onset
+        encounter_class: EMER
+        type: {system: http://snomed.info/sct, code: "50849002", display: Emergency room admission}
+        reason: {system: http://snomed.info/sct, code: "59282003", display: Pulmonary embolism}
+      - resource_type: Observation
+        spec_id: pe_d_dimer
+        when: onset
+        link_to: pe_emergency_visit
+        probability: 0.80
+        category: laboratory
+        code: {system: http://loinc.org, code: "48065-7", display: "Fibrin D-dimer FEU [Mass/volume] in Platelet poor plasma"}
+        value_range: {low: 0.9, high: 6.0, precision: 2}
+        unit: ug/mL
+        unit_code: ug/mL
+      - resource_type: Procedure
+        spec_id: pe_ctpa
+        when: onset
+        link_to: pe_emergency_visit
+        probability: 0.75
+        code: {system: http://snomed.info/sct, code: "169069000", display: Computed tomography pulmonary angiography}
+        reason: {system: http://snomed.info/sct, code: "59282003", display: Pulmonary embolism}
+      - resource_type: MedicationRequest
+        spec_id: pe_apixaban
+        when: onset
+        link_to: pe_emergency_visit
+        probability: 0.70
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "1364430", display: Apixaban 5 MG Oral Tablet}
+        reason: {system: http://snomed.info/sct, code: "59282003", display: Pulmonary embolism}

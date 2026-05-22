@@ -1,0 +1,73 @@
+module: influenza
+version: 0.1.0
+description: >
+  Seasonal influenza module. This is modeled as an acute infection with
+  higher probability in children and older adults. It emits an acute
+  ambulatory encounter, optional influenza test Procedure, and
+  oseltamivir treatment in a subset of patients.
+cites:
+  - source: CDC Disease Burden of Flu
+    url: https://www.cdc.gov/flu-burden/php/about/index.html
+    summary: >
+      CDC estimates seasonal influenza causes millions of illnesses and
+      substantial outpatient, emergency, and inpatient utilization each year.
+  - source: CDC Influenza Antiviral Medications
+    url: https://www.cdc.gov/flu/hcp/antivirals/index.html
+    summary: >
+      Antiviral treatment such as oseltamivir may be used for suspected
+      or confirmed influenza, especially in higher-risk patients.
+conditions:
+  - id: seasonal_influenza
+    code:
+      system: http://snomed.info/sct
+      code: "6142004"
+      display: Influenza
+    prevalence:
+      "0-17": 0.080
+      "18-39": 0.045
+      "40-59": 0.035
+      "60-99": 0.060
+    onset_age:
+      min: 0
+      max: 95
+    emits:
+      - resource_type: Encounter
+        spec_id: influenza_acute_visit
+        when: onset
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185345009"
+          display: Encounter for symptom
+        reason:
+          system: http://snomed.info/sct
+          code: "6142004"
+          display: Influenza
+
+      - resource_type: Procedure
+        spec_id: influenza_test
+        when: onset
+        link_to: influenza_acute_visit
+        probability: 0.45
+        code:
+          system: http://snomed.info/sct
+          code: "44185002"
+          display: Laboratory test
+        reason:
+          system: http://snomed.info/sct
+          code: "6142004"
+          display: Influenza
+
+      - resource_type: MedicationRequest
+        spec_id: influenza_oseltamivir
+        when: onset
+        link_to: influenza_acute_visit
+        probability: 0.35
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "261246"
+          display: Oseltamivir 75 MG Oral Capsule
+        reason:
+          system: http://snomed.info/sct
+          code: "6142004"
+          display: Influenza

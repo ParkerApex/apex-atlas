@@ -1,0 +1,89 @@
+module: low_back_pain
+version: 0.1.0
+description: >
+  Low back pain module for common ambulatory musculoskeletal care. It
+  intentionally avoids implying a specific structural diagnosis for most
+  patients. The module emits a primary-care encounter, NSAID therapy,
+  physical therapy referral Procedure, and low-probability lumbar imaging.
+cites:
+  - source: CDC National Health Statistics Reports — Back, lower limb, and upper limb pain
+    url: https://www.cdc.gov/nchs/products/nhsr.htm
+    summary: >
+      NCHS reports back pain as one of the most common pain complaints
+      among US adults, with prevalence increasing through middle age.
+  - source: >
+      Qaseem A et al. Noninvasive Treatments for Acute, Subacute, and
+      Chronic Low Back Pain. American College of Physicians Guideline.
+    url: https://www.acpjournals.org/doi/10.7326/M16-2367
+    summary: >
+      Guideline recommends nonpharmacologic therapy first for many
+      patients and NSAIDs as a pharmacologic option when medication is used.
+conditions:
+  - id: low_back_pain
+    code:
+      system: http://snomed.info/sct
+      code: "279039007"
+      display: Low back pain
+    prevalence:
+      "0-17": 0.050
+      "18-39": 0.220
+      "40-59": 0.310
+      "60-99": 0.280
+    onset_age:
+      min: 12
+      max: 85
+    emits:
+      - resource_type: Encounter
+        spec_id: low_back_pain_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "279039007"
+          display: Low back pain
+
+      - resource_type: MedicationRequest
+        spec_id: low_back_pain_ibuprofen
+        when: today
+        link_to: low_back_pain_visit
+        probability: 0.45
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "5640"
+          display: Ibuprofen
+        reason:
+          system: http://snomed.info/sct
+          code: "279039007"
+          display: Low back pain
+
+      - resource_type: Procedure
+        spec_id: low_back_pain_physical_therapy
+        when: today
+        link_to: low_back_pain_visit
+        probability: 0.35
+        code:
+          system: http://snomed.info/sct
+          code: "91251008"
+          display: Physical therapy procedure
+        reason:
+          system: http://snomed.info/sct
+          code: "279039007"
+          display: Low back pain
+
+      - resource_type: Procedure
+        spec_id: low_back_pain_lumbar_xray
+        when: today
+        link_to: low_back_pain_visit
+        probability: 0.12
+        code:
+          system: http://snomed.info/sct
+          code: "168537006"
+          display: X-ray of lumbar spine
+        reason:
+          system: http://snomed.info/sct
+          code: "279039007"
+          display: Low back pain
