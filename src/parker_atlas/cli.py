@@ -25,6 +25,7 @@ from rich.table import Table
 from parker_atlas import __version__
 from parker_atlas.core.demographics import race_display, sample_demographics
 from parker_atlas.core.payer import sample_payer
+from parker_atlas.core.sdoh import sample_sdoh
 from parker_atlas.fhir.allergy_intolerance import build_allergy_intolerance_resource
 from parker_atlas.fhir.bundle import build_bundle, fullurl_for_gpx, fullurl_for_resource
 from parker_atlas.fhir.claim import (
@@ -45,6 +46,10 @@ from parker_atlas.fhir.practitioner import build_practitioner_resource
 from parker_atlas.fhir.practitioner_role import build_practitioner_role_resource
 from parker_atlas.fhir.immunization import build_immunization_resource
 from parker_atlas.fhir.medication_request import build_medication_request_resource
+from parker_atlas.fhir.measure_report import (
+    build_individual_measure_report,
+    build_summary_measure_report,
+)
 from parker_atlas.fhir.mortality import build_cause_of_death_observation_resource
 from parker_atlas.fhir.observation import (
     ObservationComponent,
@@ -53,6 +58,13 @@ from parker_atlas.fhir.observation import (
 )
 from parker_atlas.fhir.patient import build_patient_resource
 from parker_atlas.fhir.procedure import build_procedure_resource
+from parker_atlas.fhir.sdoh_observation import build_sdoh_observations
+from parker_atlas.measures import (
+    ALL_MEASURE_IDS,
+    MEASURE_TITLES,
+    MeasureTally,
+    evaluate_measures,
+)
 from parker_atlas.notes import (
     NoteContext,
     NoteStrategy,
@@ -395,6 +407,7 @@ def _print_generate_summary(
     condition_counter: Counter[str],
     summary_brackets: tuple[tuple[int, int], ...],
     modules: list[str],
+    measure_tallies: dict | None = None,
 ) -> None:
     console.print()
     age_tbl = Table(title="Age brackets", show_edge=False)
@@ -440,6 +453,23 @@ def _print_generate_summary(
                 pct = 100.0 * n / patients if patients else 0.0
                 cond_tbl.add_row(label, str(n), f"{pct:.1f}%")
         console.print(cond_tbl)
+
+    if measure_tallies:
+        meas_tbl = Table(title="Quality measures", show_edge=False)
+        meas_tbl.add_column("Measure", style="bold")
+        meas_tbl.add_column("Denom", justify="right")
+        meas_tbl.add_column("Numer", justify="right")
+        meas_tbl.add_column("Rate", justify="right")
+        for tally in measure_tallies.values():
+            if tally.denominator == 0:
+                continue
+            meas_tbl.add_row(
+                tally.measure_title,
+                str(tally.denominator),
+                str(tally.numerator),
+                f"{tally.rate:.1%}",
+            )
+        console.print(meas_tbl)
 
 
 def _not_implemented(command: str, milestone: str) -> None:
@@ -557,6 +587,8 @@ def generate(
     with_coverage: Annotated[bool, typer.Option("--with-coverage", help="Sample a payer per patient and emit Coverage + payer Organization + InsurancePlan resources.")] = False,
     with_providers: Annotated[bool, typer.Option("--with-providers", help="Sample a Practitioner + facility Organization + Location per encounter; attach as Encounter.participant / .location / .serviceProvider.")] = False,
     with_claims: Annotated[bool, typer.Option("--with-claims", help="Emit one Claim + ExplanationOfBenefit per Encounter. Requires --with-coverage; uninsured patients receive no claims.")] = False,
+    with_sdoh: Annotated[bool, typer.Option("--with-sdoh", help="Sample SDoH risk factors per patient (food insecurity, housing, transport, financial strain, social support) and emit Gravity Project SDOHCC Observations. SDoH domains causally reduce outpatient encounter and medication adherence rates.")] = False,
+    with_measures: Annotated[bool, typer.Option("--with-measures", help="Emit DEQM MeasureReport resources: one individual report per patient per applicable measure, plus a population-level summary MeasureReport per measure at the end of the run.")] = False,
 ) -> None:
     """Generate a synthetic FHIR patient population."""
     if patients < 1:
@@ -602,6 +634,8 @@ def generate(
     allocator = Allocator(Category.SYNTHETIC)
 
     today = date.today()
+    measure_period_start = today.replace(month=1, day=1)
+    measure_period_end = today.replace(month=12, day=31)
 
     # Summary counters are populated regardless; only rendered if --summary.
     age_counter: Counter[tuple[int, int]] = Counter()
@@ -628,6 +662,12 @@ def generate(
     # per provider/location/role across the whole run); Bundles always
     # self-contain the rows used by their Encounters.
     emitted_provider_ids_ndjson: set[str] = set()
+
+    # MeasureReport tallies — one per measure, accumulated across all patients.
+    measure_tallies: dict[str, MeasureTally] = {
+        mid: MeasureTally(measure_id=mid, measure_title=MEASURE_TITLES[mid])
+        for mid in ALL_MEASURE_IDS
+    }
 
     # Parquet writer state — accumulate rows per resourceType in memory,
     # flushed to one file per resourceType at the end. Schema is uniform:
@@ -692,6 +732,10 @@ def generate(
                     extras.append(payer_org)
                     extras.append(plan)
                     extras.append(coverage)
+            # SDoH profile — sampled before module runs so causal modifiers
+            # are available when building emitted resources.
+            sdoh_profile = sample_sdoh(rng, age_years=age_years) if with_sdoh else None
+
             # First pass: run every active module to collect this patient's
             # full set of fired diagnoses, in the order modules were run.
             # Cross-module `requires` (e.g. hypertension:essential_hypertension)
@@ -776,6 +820,23 @@ def generate(
                     provider_rng=provider_rng,
                     bundle_emitted_ids=bundle_provider_ids,
                 )
+                # SDoH causal filter: probabilistically drop AMB Encounters
+                # (transport/cost barriers) and MedicationRequests (adherence)
+                # when SDoH risk is present. IMP and EMER encounters are not
+                # affected — those represent care sought despite barriers.
+                if sdoh_profile is not None:
+                    filtered: list[dict] = []
+                    for r in dx_emits:
+                        rtype = r.get("resourceType")
+                        if rtype == "Encounter":
+                            enc_class = r.get("class", {}).get("code", "")
+                            if enc_class == "AMB" and rng.random() > sdoh_profile.encounter_completion_rate:
+                                continue  # patient missed this outpatient visit
+                        elif rtype == "MedicationRequest":
+                            if rng.random() > sdoh_profile.medication_adherence_rate:
+                                continue  # patient did not fill this prescription
+                        filtered.append(r)
+                    dx_emits = filtered
                 extras.extend(dx_emits)
                 if with_notes:
                     # Anchor the note to the first Encounter emitted for
@@ -852,6 +913,20 @@ def generate(
                     )
                 )
 
+            # SDoH FHIR Observations — always emit all 5 domains (positive and
+            # negative) so downstream can distinguish screened-negative from
+            # not-screened. Emitted after module resources so SDoH records
+            # don't interfere with encounter linking.
+            if sdoh_profile is not None:
+                extras.extend(
+                    build_sdoh_observations(
+                        gpx=gpx,
+                        patient_fullurl=patient_url,
+                        profile=sdoh_profile,
+                        effective=today,
+                    )
+                )
+
             if with_claims and patient_coverage_url is not None:
                 claim_resources: list[dict] = []
                 for encounter in [r for r in extras if r["resourceType"] == "Encounter"]:
@@ -885,6 +960,29 @@ def generate(
                     )
                     claim_resources.extend((claim, eob))
                 extras.extend(claim_resources)
+
+            # Quality MeasureReport — evaluate all measures for this patient
+            # and emit individual MeasureReport resources into the bundle.
+            if with_measures:
+                patient_measure_results = evaluate_measures(
+                    age_years=age_years,
+                    sex=demo.gender.value,
+                    resources=extras,
+                )
+                for result in patient_measure_results:
+                    measure_tallies[result.measure_id].add(result)
+                    indv_report = build_individual_measure_report(
+                        gpx=gpx,
+                        patient_fullurl=patient_url,
+                        measure_id=result.measure_id,
+                        measure_title=MEASURE_TITLES[result.measure_id],
+                        in_initial_population=result.in_initial_population,
+                        in_denominator=result.in_denominator,
+                        in_numerator=result.in_numerator,
+                        period_start=measure_period_start,
+                        period_end=measure_period_end,
+                    )
+                    extras.append(indv_report)
 
             if format is OutputFormat.FHIR_R4:
                 bundle = build_bundle(gpx, patient, extras)
@@ -968,6 +1066,40 @@ def generate(
         for fh in ndjson_files.values():
             fh.close()
 
+    # Population-level summary MeasureReports — one JSON file per measure
+    # (fhir-r4 format) or appended to MeasureReport.ndjson/parquet.
+    if with_measures:
+        summary_reports = [
+            build_summary_measure_report(
+                measure_id=tally.measure_id,
+                measure_title=tally.measure_title,
+                initial_population_count=tally.initial_population,
+                denominator_count=tally.denominator,
+                numerator_count=tally.numerator,
+                period_start=measure_period_start,
+                period_end=measure_period_end,
+            )
+            for tally in measure_tallies.values()
+        ]
+        if format is OutputFormat.FHIR_R4:
+            for report in summary_reports:
+                (out / f"MeasureReport-{report['id']}.json").write_text(
+                    json.dumps(report, indent=2)
+                )
+        elif format is OutputFormat.NDJSON:
+            with (out / "MeasureReport-summary.ndjson").open("w", encoding="utf-8") as fh:
+                for report in summary_reports:
+                    fh.write(json.dumps(report) + "\n")
+        else:  # PARQUET — append to parquet_rows for the flush below
+            for report in summary_reports:
+                parquet_rows.setdefault("MeasureReport", []).append(
+                    {
+                        "id": report.get("id"),
+                        "subject_reference": None,
+                        "raw_json": json.dumps(report),
+                    }
+                )
+
     if format is OutputFormat.FHIR_R4:
         console.print(
             f"[green]✓[/green] Wrote {patients} patient bundle"
@@ -1010,6 +1142,7 @@ def generate(
             condition_counter=condition_counter,
             summary_brackets=summary_brackets,
             modules=[m.name for m in active_modules],
+            measure_tallies=measure_tallies if with_measures else None,
         )
 
 
@@ -1212,6 +1345,10 @@ def status() -> None:
         ("Fidelity harness",      "[green]11 modules[/green]",     "M2"),
         ("LLM authoring",         "[dim]not started[/dim]",        "M3"),
         ("Clinical notes",        "[green]template[/green]",       "M4"),
+        ("SDoH overlay",          "[green]implemented[/green]",    "Diff-2"),
+        ("Pediatric well-child",  "[green]implemented[/green]",    "Diff-1"),
+        ("Maternal health / OB",  "[green]implemented[/green]",    "Diff-1"),
+        ("Quality MeasureReport", "[green]implemented[/green]",    "Diff-3"),
     ]
     for row in rows:
         table.add_row(*row)
