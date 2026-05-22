@@ -105,6 +105,7 @@ atlas ingest prevalence \
 
 # Then verify the cohort harness still passes:
 atlas generate --patients 20000 --seed 42 --module hypertension --out ./cohort
+# cohort generation metadata is also written to cohort/generation-metadata.json for audit and tracking
 atlas validate ./cohort --cohort --module hypertension
 ```
 

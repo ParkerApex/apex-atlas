@@ -200,6 +200,7 @@ Output is always valid FHIR. Conformance is verified by the `fhir.resources` Pyd
 - FHIR Bundle JSON — one file per patient, transaction bundle
 - NDJSON — one resource per line, aligned to FHIR Bulk Data Access ($export)
 - Parquet — columnar, one file per resource type, for data science workloads
+- generation-metadata.json — run-level provenance, patient counts, CLI feature flags, and optional summary metrics
 
 Every Patient resource includes a GPX identifier in the SYN category. Every resource includes the HL7 HTEST meta tag.
 

@@ -12,10 +12,11 @@ from __future__ import annotations
 import json
 import random
 from collections import Counter
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from enum import Enum
 from pathlib import Path
 from typing import Annotated, Any
+import uuid
 
 import typer
 from rich.console import Console
@@ -122,6 +123,57 @@ class Profile(str, Enum):
     US_CORE_6_1 = "us-core-6.1"
     IPS = "ips"
     BASE = "base"
+
+
+def _write_generation_metadata(
+    out: Path,
+    *,
+    cohort_id: str,
+    generated_at: str,
+    requested_patients: int,
+    actual_patients: int,
+    module_names: list[str],
+    format: OutputFormat,
+    profile: Profile,
+    seed: int | None,
+    with_notes: bool,
+    notes_strategy: NoteStrategy,
+    llm_model: str | None,
+    with_coverage: bool,
+    with_providers: bool,
+    with_claims: bool,
+    with_sdoh: bool,
+    with_measures: bool,
+    summary_counts: dict[str, Any] | None = None,
+) -> None:
+    metadata: dict[str, Any] = {
+        "cohort_id": cohort_id,
+        "generated_at": generated_at,
+        "generated_by": "atlas generate",
+        "version": __version__,
+        "output_path": str(out),
+        "requested_patients": requested_patients,
+        "actual_patients": actual_patients,
+        "module_names": module_names,
+        "format": format.value,
+        "profile": profile.value,
+        "seed": seed,
+        "with_notes": with_notes,
+        "notes_strategy": notes_strategy.value,
+        "llm_model": llm_model,
+        "with_coverage": with_coverage,
+        "with_providers": with_providers,
+        "with_claims": with_claims,
+        "with_sdoh": with_sdoh,
+        "with_measures": with_measures,
+    }
+    if summary_counts is not None:
+        metadata["summary"] = summary_counts
+
+    out.mkdir(parents=True, exist_ok=True)
+    (out / "generation-metadata.json").write_text(
+        json.dumps(metadata, indent=2), encoding="utf-8"
+    )
 
 
 def _build_provider_resources(
@@ -1132,6 +1184,42 @@ def generate(
             f"{'s' if patients != 1 else ''} to [bold]{out}[/bold] "
             f"as Parquet ({', '.join(f'{rt}.parquet' for rt in rtypes)})"
         )
+    cohort_id = (
+        f"atlas-{datetime.now(timezone.utc).strftime('%Y%m%dT%H%M%SZ')}"
+        f"-{uuid.uuid4().hex[:8]}"
+    )
+    generation_metadata: dict[str, Any] | None = None
+    if summary:
+        generation_metadata = {
+            "age_brackets": {
+                f"{lo}-{hi}": age_counter.get((lo, hi), 0)
+                for lo, hi in summary_brackets
+            },
+            "sex": dict(sorted(sex_counter.items(), key=lambda kv: -kv[1])),
+            "race": dict(sorted(race_counter.items(), key=lambda kv: -kv[1])),
+            "conditions": dict(condition_counter.most_common()),
+        }
+
+    _write_generation_metadata(
+        out,
+        cohort_id=cohort_id,
+        generated_at=datetime.now(timezone.utc).isoformat(),
+        requested_patients=patients,
+        actual_patients=patients,
+        module_names=[m.name for m in active_modules],
+        format=format,
+        profile=profile,
+        seed=seed,
+        with_notes=with_notes,
+        notes_strategy=notes_strategy,
+        llm_model=llm_model,
+        with_coverage=with_coverage,
+        with_providers=with_providers,
+        with_claims=with_claims,
+        with_sdoh=with_sdoh,
+        with_measures=with_measures,
+        summary_counts=generation_metadata,
+    )
 
     if summary:
         _print_generate_summary(
