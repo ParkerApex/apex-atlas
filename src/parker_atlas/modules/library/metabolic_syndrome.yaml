@@ -1,0 +1,47 @@
+module: metabolic_syndrome
+version: 0.1.0
+description: >
+  Metabolic syndrome module for cardiometabolic risk clustering. It
+  emits primary-care follow-up, waist circumference, triglycerides, and
+  lifestyle/risk-factor management.
+cites:
+  - source: AHA/NHLBI Scientific Statement on Metabolic Syndrome
+    url: https://www.ahajournals.org/doi/10.1161/CIRCULATIONAHA.105.169404
+    summary: >
+      Metabolic syndrome is defined by clustered cardiometabolic risk
+      factors including abdominal obesity, dyslipidemia, hypertension,
+      and impaired glucose metabolism.
+conditions:
+  - id: metabolic_syndrome
+    code: {system: http://snomed.info/sct, code: "237602007", display: Metabolic syndrome}
+    prevalence:
+      "0-17": 0.020
+      "18-39": 0.180
+      "40-59": 0.340
+      "60-99": 0.420
+    onset_age: {min: 18, max: 80}
+    emits:
+      - resource_type: Encounter
+        spec_id: metabolic_syndrome_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "237602007", display: Metabolic syndrome}
+      - resource_type: Observation
+        spec_id: metabolic_syndrome_triglycerides
+        when: today
+        link_to: metabolic_syndrome_visit
+        category: laboratory
+        code: {system: http://loinc.org, code: "2571-8", display: "Triglyceride [Mass/volume] in Serum or Plasma"}
+        value_range: {low: 150, high: 320, precision: 0}
+        unit: mg/dL
+        unit_code: mg/dL
+      - resource_type: Observation
+        spec_id: metabolic_syndrome_waist
+        when: today
+        link_to: metabolic_syndrome_visit
+        category: vital-signs
+        code: {system: http://loinc.org, code: "8280-0", display: Waist circumference}
+        value_range: {low: 95, high: 130, precision: 0}
+        unit: cm
+        unit_code: cm

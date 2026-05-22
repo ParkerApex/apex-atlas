@@ -1,0 +1,72 @@
+module: cataract
+version: 0.1.0
+description: >
+  Cataract module for high-volume ophthalmology coverage. Prevalence is
+  concentrated in older adults. The module emits an ophthalmology visit,
+  visual acuity Observation, and cataract extraction Procedure in a
+  subset of patients.
+cites:
+  - source: National Eye Institute — Cataracts
+    url: https://www.nei.nih.gov/learn-about-eye-health/eye-conditions-and-diseases/cataracts
+    summary: >
+      NEI describes cataracts as very common with aging and a leading
+      cause of treatable vision impairment.
+  - source: American Academy of Ophthalmology cataract guidance
+    url: https://www.aao.org/education/guidelines
+    summary: >
+      Cataract management includes ophthalmologic evaluation, visual
+      acuity assessment, and surgery when visual function is affected.
+conditions:
+  - id: age_related_cataract
+    code:
+      system: http://snomed.info/sct
+      code: "193570009"
+      display: Age-related cataract
+    prevalence:
+      "0-17": 0.0
+      "18-39": 0.002
+      "40-59": 0.040
+      "60-99": 0.320
+    onset_age:
+      min: 45
+      max: 95
+    emits:
+      - resource_type: Encounter
+        spec_id: cataract_ophthalmology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "193570009"
+          display: Age-related cataract
+
+      - resource_type: Observation
+        spec_id: cataract_visual_acuity
+        when: today
+        link_to: cataract_ophthalmology_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "28631-0"
+          display: Visual acuity
+        value_range: {low: 20, high: 80, precision: 0}
+        unit: Snellen denominator
+        unit_code: "{score}"
+
+      - resource_type: Procedure
+        spec_id: cataract_extraction
+        when: today
+        link_to: cataract_ophthalmology_visit
+        probability: 0.35
+        code:
+          system: http://snomed.info/sct
+          code: "54885007"
+          display: Extraction of cataract
+        reason:
+          system: http://snomed.info/sct
+          code: "193570009"
+          display: Age-related cataract

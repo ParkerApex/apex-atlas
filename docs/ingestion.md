@@ -13,8 +13,10 @@ currently supported:
 1. **Fidelity expectations** (`atlas ingest prevalence`) — age- and
    optionally sex-stratified condition prevalence from NHANES /
    BRFSS / Million Hearts / CDC FastStats.
-2. **Demographic distributions** (planned: `atlas ingest demographics`)
+2. **Demographic distributions** (`atlas ingest demographics`)
    — age × sex / race / ethnicity marginals from US Census ACS.
+3. **Progression rates** (`atlas ingest progression`) — sourced
+   transition rates for existing module progression edges.
 
 ## Why CSV + metadata
 

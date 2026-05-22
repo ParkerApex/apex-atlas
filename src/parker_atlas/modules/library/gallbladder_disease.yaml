@@ -1,0 +1,47 @@
+module: gallbladder_disease
+version: 0.1.0
+description: >
+  Gallbladder disease module centered on symptomatic cholelithiasis.
+  It emits acute abdominal-pain evaluation, right upper quadrant
+  ultrasound, and cholecystectomy in a subset.
+cites:
+  - source: NIDDK Gallstones
+    url: https://www.niddk.nih.gov/health-information/digestive-diseases/gallstones
+    summary: >
+      Gallstones are common and may lead to biliary colic,
+      cholecystitis, imaging, and surgical management.
+conditions:
+  - id: gallbladder_disease
+    code: {system: http://snomed.info/sct, code: "266474003", display: Gallbladder disease}
+    prevalence:
+      female:
+        "0-17": 0.002
+        "18-39": 0.035
+        "40-59": 0.090
+        "60-99": 0.150
+      male:
+        "0-17": 0.001
+        "18-39": 0.020
+        "40-59": 0.055
+        "60-99": 0.095
+    onset_age: {min: 18, max: 90}
+    emits:
+      - resource_type: Encounter
+        spec_id: gallbladder_acute_visit
+        when: onset
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "185345009", display: Encounter for symptom}
+        reason: {system: http://snomed.info/sct, code: "266474003", display: Gallbladder disease}
+      - resource_type: Procedure
+        spec_id: gallbladder_ultrasound
+        when: onset
+        link_to: gallbladder_acute_visit
+        probability: 0.75
+        code: {system: http://snomed.info/sct, code: "16310003", display: Ultrasonography of abdomen}
+        reason: {system: http://snomed.info/sct, code: "266474003", display: Gallbladder disease}
+      - resource_type: Procedure
+        spec_id: gallbladder_cholecystectomy
+        when: today
+        probability: 0.25
+        code: {system: http://snomed.info/sct, code: "38102005", display: Cholecystectomy}
+        reason: {system: http://snomed.info/sct, code: "266474003", display: Gallbladder disease}

@@ -1,0 +1,73 @@
+module: allergic_rhinitis
+version: 0.1.0
+description: >
+  Allergic rhinitis module for common ambulatory allergy / ENT symptoms.
+  Prevalence is high in children and adults. The module emits a primary
+  care or allergy visit plus antihistamine and intranasal steroid therapy
+  in representative proportions.
+cites:
+  - source: CDC NCHS FastStats — Allergies and Hay Fever
+    url: https://www.cdc.gov/nchs/fastats/allergies.htm
+    summary: >
+      NCHS reports allergic rhinitis / hay fever as a common condition
+      in children and adults.
+  - source: ARIA allergic rhinitis guideline
+    url: https://www.jacionline.org/article/S0091-6749(19)30997-9/fulltext
+    summary: >
+      Allergic rhinitis management commonly includes antihistamines and
+      intranasal corticosteroids depending on symptom pattern and severity.
+conditions:
+  - id: allergic_rhinitis
+    code:
+      system: http://snomed.info/sct
+      code: "61582004"
+      display: Allergic rhinitis
+    prevalence:
+      "0-17": 0.180
+      "18-39": 0.170
+      "40-59": 0.140
+      "60-99": 0.090
+    onset_age:
+      min: 2
+      max: 70
+    emits:
+      - resource_type: Encounter
+        spec_id: allergic_rhinitis_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "61582004"
+          display: Allergic rhinitis
+
+      - resource_type: MedicationRequest
+        spec_id: allergic_rhinitis_cetirizine
+        when: today
+        link_to: allergic_rhinitis_visit
+        probability: 0.55
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "20610"
+          display: Cetirizine
+        reason:
+          system: http://snomed.info/sct
+          code: "61582004"
+          display: Allergic rhinitis
+
+      - resource_type: MedicationRequest
+        spec_id: allergic_rhinitis_fluticasone
+        when: today
+        link_to: allergic_rhinitis_visit
+        probability: 0.35
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "41126"
+          display: Fluticasone propionate
+        reason:
+          system: http://snomed.info/sct
+          code: "61582004"
+          display: Allergic rhinitis

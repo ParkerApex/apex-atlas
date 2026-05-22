@@ -1,0 +1,59 @@
+module: cardiomyopathy
+version: 0.1.0
+description: >
+  Cardiomyopathy module for structural myocardial disease distinct from
+  the heart failure module. It emits cardiology follow-up,
+  echocardiography, NT-proBNP laboratory testing, and beta-blocker
+  therapy for many patients.
+cites:
+  - source: 2022 AHA/ACC/HFSA Guideline for the Management of Heart Failure
+    url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001063
+    summary: >
+      Cardiomyopathy evaluation commonly includes imaging, biomarkers,
+      and guideline-directed medical therapy when systolic dysfunction
+      or heart failure features are present.
+conditions:
+  - id: cardiomyopathy
+    code:
+      system: http://snomed.info/sct
+      code: "85898001"
+      display: Cardiomyopathy
+    prevalence:
+      "0-17": 0.002
+      "18-39": 0.006
+      "40-59": 0.018
+      "60-99": 0.040
+    onset_age:
+      min: 10
+      max: 85
+    emits:
+      - resource_type: Encounter
+        spec_id: cardiomyopathy_cardiology_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "85898001", display: Cardiomyopathy}
+      - resource_type: Procedure
+        spec_id: cardiomyopathy_echo
+        when: today
+        link_to: cardiomyopathy_cardiology_visit
+        probability: 0.80
+        code: {system: http://snomed.info/sct, code: "40701008", display: Echocardiography}
+        reason: {system: http://snomed.info/sct, code: "85898001", display: Cardiomyopathy}
+      - resource_type: Observation
+        spec_id: cardiomyopathy_ntprobnp
+        when: today
+        link_to: cardiomyopathy_cardiology_visit
+        probability: 0.55
+        category: laboratory
+        code: {system: http://loinc.org, code: "33762-6", display: N terminal pro b natriuretic peptide}
+        value_range: {low: 300, high: 3000, precision: 0}
+        unit: pg/mL
+        unit_code: pg/mL
+      - resource_type: MedicationRequest
+        spec_id: cardiomyopathy_metoprolol
+        when: today
+        link_to: cardiomyopathy_cardiology_visit
+        probability: 0.55
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "6918", display: Metoprolol}
+        reason: {system: http://snomed.info/sct, code: "85898001", display: Cardiomyopathy}

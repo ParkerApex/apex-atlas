@@ -103,7 +103,16 @@ def _iter_json_files(path: Path) -> list[Path]:
     """Return JSON-Bundle and NDJSON files at or beneath `path`."""
     if path.is_file():
         return [path]
-    return sorted([*path.rglob("*.json"), *path.rglob("*.ndjson")])
+    return sorted(
+        [
+            *(
+                candidate
+                for candidate in path.rglob("*.json")
+                if candidate.name != "generation-metadata.json"
+            ),
+            *path.rglob("*.ndjson"),
+        ]
+    )
 
 
 def _validate_patient(patient: dict[str, Any], report: FileReport) -> None:

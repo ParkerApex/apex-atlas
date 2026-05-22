@@ -1,0 +1,34 @@
+module: parkinsons_disease
+version: 0.1.0
+description: >
+  Parkinson's disease module for neurology and geriatric workflows. It
+  emits neurology follow-up and dopaminergic therapy.
+cites:
+  - source: Parkinson's Foundation statistics
+    url: https://www.parkinson.org/understanding-parkinsons/statistics
+    summary: >
+      Parkinson's disease prevalence increases strongly with age and
+      is a major neurodegenerative condition in older adults.
+conditions:
+  - id: parkinsons_disease
+    code: {system: http://snomed.info/sct, code: "49049000", display: Parkinson's disease}
+    prevalence:
+      "0-17": 0.0
+      "18-39": 0.001
+      "40-59": 0.005
+      "60-99": 0.025
+    onset_age: {min: 45, max: 90}
+    emits:
+      - resource_type: Encounter
+        spec_id: parkinsons_neurology_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "49049000", display: Parkinson's disease}
+      - resource_type: MedicationRequest
+        spec_id: parkinsons_carbidopa_levodopa
+        when: today
+        link_to: parkinsons_neurology_visit
+        probability: 0.70
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "1049621", display: Carbidopa 25 MG / Levodopa 100 MG Oral Tablet}
+        reason: {system: http://snomed.info/sct, code: "49049000", display: Parkinson's disease}

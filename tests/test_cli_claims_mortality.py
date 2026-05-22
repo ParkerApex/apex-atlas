@@ -13,7 +13,11 @@ runner = CliRunner()
 
 
 def _bundles(out_dir: Path) -> list[dict]:
-    return [json.loads(p.read_text()) for p in sorted(out_dir.glob("*.json"))]
+    return [
+        json.loads(p.read_text())
+        for p in sorted(out_dir.glob("*.json"))
+        if p.name != "generation-metadata.json"
+    ]
 
 
 def test_generate_with_claims_requires_coverage(tmp_path: Path) -> None:

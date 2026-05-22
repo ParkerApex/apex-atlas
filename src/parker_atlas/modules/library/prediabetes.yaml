@@ -1,0 +1,81 @@
+module: prediabetes
+version: 0.1.0
+description: >
+  Prediabetes module for adults with elevated glycemic risk that has
+  not crossed the diagnostic threshold for type 2 diabetes. The module
+  uses conservative adult prevalence rates anchored to CDC National
+  Diabetes Statistics Report estimates and emits a primary-care
+  follow-up visit, HbA1c Observation in the prediabetes range, and a
+  low-probability metformin MedicationRequest for higher-risk patients.
+cites:
+  - source: CDC National Diabetes Statistics Report
+    url: https://www.cdc.gov/diabetes/php/data-research/index.html
+    summary: >
+      CDC reports that more than one in three US adults have
+      prediabetes, with prevalence increasing with age.
+  - source: American Diabetes Association Standards of Care in Diabetes
+    url: https://diabetesjournals.org/care/issue
+    summary: >
+      Prediabetes is defined by laboratory ranges including HbA1c
+      5.7-6.4%. Lifestyle intervention is first-line; metformin may be
+      considered in selected high-risk adults.
+conditions:
+  - id: prediabetes
+    code:
+      system: http://snomed.info/sct
+      code: "15777000"
+      display: Prediabetes
+    prevalence:
+      female:
+        "0-17": 0.005
+        "18-39": 0.220
+        "40-59": 0.360
+        "60-99": 0.480
+      male:
+        "0-17": 0.005
+        "18-39": 0.250
+        "40-59": 0.400
+        "60-99": 0.520
+    onset_age:
+      min: 18
+      max: 75
+    emits:
+      - resource_type: Encounter
+        spec_id: prediabetes_primary_care_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "15777000"
+          display: Prediabetes
+
+      - resource_type: Observation
+        spec_id: prediabetes_hba1c
+        when: today
+        link_to: prediabetes_primary_care_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "4548-4"
+          display: Hemoglobin A1c/Hemoglobin.total in Blood
+        value_range: {low: 5.7, high: 6.4, precision: 1}
+        unit: "%"
+        unit_code: "%"
+
+      - resource_type: MedicationRequest
+        spec_id: prediabetes_metformin
+        when: today
+        link_to: prediabetes_primary_care_visit
+        probability: 0.12
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "860975"
+          display: Metformin hydrochloride 500 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "15777000"
+          display: Prediabetes

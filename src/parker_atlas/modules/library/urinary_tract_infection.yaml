@@ -1,0 +1,95 @@
+module: urinary_tract_infection
+version: 0.1.0
+description: >
+  Uncomplicated urinary tract infection module. Adult females have the
+  highest probability, with lower rates in males and children. The
+  module emits an acute ambulatory encounter, urinalysis Observation,
+  optional urine culture Procedure, and nitrofurantoin therapy.
+cites:
+  - source: >
+      Foxman B. The epidemiology of urinary tract infection. Nature
+      Reviews Urology. 2010;7:653-660.
+    url: https://www.nature.com/articles/nrurol.2010.190
+    summary: >
+      Review describing UTIs as among the most common bacterial
+      infections, with a strong female predominance and high lifetime
+      incidence.
+  - source: Infectious Diseases Society of America uncomplicated cystitis guideline
+    url: https://academic.oup.com/cid/article/52/5/e103/388285
+    summary: >
+      Nitrofurantoin is one recommended first-line treatment option for
+      acute uncomplicated cystitis.
+conditions:
+  - id: acute_uncomplicated_uti
+    code:
+      system: http://snomed.info/sct
+      code: "68566005"
+      display: Urinary tract infectious disease
+    prevalence:
+      female:
+        "0-17": 0.025
+        "18-39": 0.120
+        "40-59": 0.090
+        "60-99": 0.110
+      male:
+        "0-17": 0.010
+        "18-39": 0.015
+        "40-59": 0.025
+        "60-99": 0.060
+    onset_age:
+      min: 1
+      max: 95
+    emits:
+      - resource_type: Encounter
+        spec_id: uti_acute_visit
+        when: onset
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185345009"
+          display: Encounter for symptom
+        reason:
+          system: http://snomed.info/sct
+          code: "68566005"
+          display: Urinary tract infectious disease
+
+      - resource_type: Observation
+        spec_id: uti_urine_leukocytes
+        when: onset
+        link_to: uti_acute_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "5799-2"
+          display: Leukocyte esterase [Presence] in Urine by Test strip
+        value_range: {low: 1, high: 3, precision: 0}
+        unit: score
+        unit_code: "{score}"
+
+      - resource_type: Procedure
+        spec_id: uti_urine_culture
+        when: onset
+        link_to: uti_acute_visit
+        probability: 0.35
+        code:
+          system: http://snomed.info/sct
+          code: "252390002"
+          display: Urine culture
+        reason:
+          system: http://snomed.info/sct
+          code: "68566005"
+          display: Urinary tract infectious disease
+
+      - resource_type: MedicationRequest
+        spec_id: uti_nitrofurantoin
+        when: onset
+        link_to: uti_acute_visit
+        probability: 0.70
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "313996"
+          display: Nitrofurantoin 100 MG Oral Capsule
+        reason:
+          system: http://snomed.info/sct
+          code: "68566005"
+          display: Urinary tract infectious disease

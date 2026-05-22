@@ -1,0 +1,45 @@
+module: pulmonary_hypertension
+version: 0.1.0
+description: >
+  Pulmonary hypertension module for pulmonary/cardiology specialty
+  workflows. It emits specialty follow-up, echocardiography, and BNP
+  testing.
+cites:
+  - source: 2022 ESC/ERS Guidelines for the diagnosis and treatment of pulmonary hypertension
+    url: https://academic.oup.com/eurheartj/article/43/38/3618/6673929
+    summary: >
+      Pulmonary hypertension evaluation includes echocardiography,
+      biomarkers, and specialty assessment.
+conditions:
+  - id: pulmonary_hypertension
+    code: {system: http://snomed.info/sct, code: "70995007", display: Pulmonary hypertension}
+    prevalence:
+      "0-17": 0.001
+      "18-39": 0.003
+      "40-59": 0.008
+      "60-99": 0.020
+    onset_age: {min: 18, max: 90}
+    emits:
+      - resource_type: Encounter
+        spec_id: ph_specialty_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "70995007", display: Pulmonary hypertension}
+      - resource_type: Procedure
+        spec_id: ph_echocardiogram
+        when: today
+        link_to: ph_specialty_visit
+        probability: 0.70
+        code: {system: http://snomed.info/sct, code: "40701008", display: Echocardiography}
+        reason: {system: http://snomed.info/sct, code: "70995007", display: Pulmonary hypertension}
+      - resource_type: Observation
+        spec_id: ph_bnp
+        when: today
+        link_to: ph_specialty_visit
+        probability: 0.55
+        category: laboratory
+        code: {system: http://loinc.org, code: "30934-4", display: "Natriuretic peptide B [Mass/volume] in Serum or Plasma"}
+        value_range: {low: 120, high: 1200, precision: 0}
+        unit: pg/mL
+        unit_code: pg/mL

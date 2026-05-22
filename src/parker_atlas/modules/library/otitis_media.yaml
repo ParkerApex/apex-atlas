@@ -1,0 +1,59 @@
+module: otitis_media
+version: 0.1.0
+description: >
+  Acute otitis media module, weighted toward pediatric primary and
+  urgent care. It emits an acute ambulatory encounter and amoxicillin
+  therapy in a subset of cases.
+cites:
+  - source: American Academy of Pediatrics acute otitis media guideline
+    url: https://publications.aap.org/pediatrics/article/131/3/e964/30989/The-Diagnosis-and-Management-of-Acute-Otitis-Media
+    summary: >
+      Acute otitis media is among the most common pediatric infections;
+      guideline management includes observation or antibiotic therapy
+      depending on age, severity, and diagnostic certainty.
+  - source: CDC Outpatient Clinical Care for Pediatric Populations
+    url: https://www.cdc.gov/antibiotic-use/hcp/clinical-care/pediatric-outpatient.html
+    summary: >
+      CDC pediatric outpatient guidance includes acute otitis media
+      diagnosis and antibiotic stewardship recommendations.
+conditions:
+  - id: acute_otitis_media
+    code:
+      system: http://snomed.info/sct
+      code: "65363002"
+      display: Otitis media
+    prevalence:
+      "0-17": 0.120
+      "18-39": 0.020
+      "40-59": 0.010
+      "60-99": 0.010
+    onset_age:
+      min: 0
+      max: 80
+    emits:
+      - resource_type: Encounter
+        spec_id: otitis_media_acute_visit
+        when: onset
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185345009"
+          display: Encounter for symptom
+        reason:
+          system: http://snomed.info/sct
+          code: "65363002"
+          display: Otitis media
+
+      - resource_type: MedicationRequest
+        spec_id: otitis_media_amoxicillin
+        when: onset
+        link_to: otitis_media_acute_visit
+        probability: 0.55
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "723"
+          display: Amoxicillin
+        reason:
+          system: http://snomed.info/sct
+          code: "65363002"
+          display: Otitis media

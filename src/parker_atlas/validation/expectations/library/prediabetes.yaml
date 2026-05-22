@@ -1,0 +1,58 @@
+module: prediabetes
+version: 0.1.0
+source:
+  name: CDC National Diabetes Statistics Report + ADA Standards of Care
+  provenance: sourced
+  url: https://www.cdc.gov/diabetes/php/data-research/index.html
+  note: >
+    Adult prediabetes prevalence targets mirror the module's conservative
+    CDC-anchored age/sex targets. Pediatric prevalence is intentionally
+    low and functions as a pipeline guardrail until a pediatric-specific
+    public source is ingested.
+  citations:
+    - source: CDC National Diabetes Statistics Report
+      url: https://www.cdc.gov/diabetes/php/data-research/index.html
+      accessed: "2026-05-22"
+      note: >
+        CDC reports that more than one in three US adults have prediabetes,
+        with prevalence increasing with age.
+    - source: American Diabetes Association Standards of Care in Diabetes
+      url: https://diabetesjournals.org/care/issue
+      accessed: "2026-05-22"
+      note: HbA1c 5.7-6.4% is a diagnostic laboratory range for prediabetes.
+metrics:
+  - id: prediabetes_prevalence_by_sex_and_age
+    kind: conditional_prevalence
+    condition_code: "15777000"
+    condition_system: http://snomed.info/sct
+    stratify_by: sex_and_age
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      female:
+        0-17: 0.005
+        18-39: 0.220
+        40-59: 0.360
+        60-99: 0.480
+      male:
+        0-17: 0.005
+        18-39: 0.250
+        40-59: 0.400
+        60-99: 0.520
+  - id: prediabetes_hba1c_presence_rate
+    kind: emit_presence_rate
+    condition_code: "15777000"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: absolute, value: 0.001}
+    emit_resource_type: Observation
+    target: 1.0
+    emit_code: "4548-4"
+    emit_code_system: http://loinc.org
+  - id: prediabetes_metformin_rate
+    kind: emit_presence_rate
+    condition_code: "15777000"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: MedicationRequest
+    target: 0.12
+    emit_code: "860975"
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm

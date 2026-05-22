@@ -1,0 +1,49 @@
+module: pneumonia
+version: 0.1.0
+source:
+  name: CDC Pneumonia + ATS/IDSA community-acquired pneumonia guideline
+  provenance: sourced
+  url: https://www.cdc.gov/pneumonia/
+  note: >
+    Acute community-acquired pneumonia targets mirror the module's
+    conservative age-gradient probabilities and outpatient diagnostic /
+    treatment emits.
+  citations:
+    - source: CDC Pneumonia
+      url: https://www.cdc.gov/pneumonia/
+      accessed: "2026-05-22"
+    - source: >
+        Metlay JP et al. Diagnosis and Treatment of Adults with
+        Community-acquired Pneumonia. ATS/IDSA Clinical Practice Guideline.
+      url: https://www.atsjournals.org/doi/full/10.1164/rccm.201908-1581ST
+      accessed: "2026-05-22"
+metrics:
+  - id: pneumonia_prevalence_by_age
+    kind: conditional_prevalence
+    condition_code: "233604007"
+    condition_system: http://snomed.info/sct
+    stratify_by: age_bracket
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      0-17: 0.025
+      18-39: 0.010
+      40-59: 0.015
+      60-99: 0.040
+  - id: pneumonia_chest_xray_rate
+    kind: emit_presence_rate
+    condition_code: "233604007"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: Procedure
+    target: 0.85
+    emit_code: "168731009"
+    emit_code_system: http://snomed.info/sct
+  - id: pneumonia_azithromycin_rate
+    kind: emit_presence_rate
+    condition_code: "233604007"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: MedicationRequest
+    target: 0.55
+    emit_code: "308460"
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm

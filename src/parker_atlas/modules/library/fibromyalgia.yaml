@@ -1,0 +1,48 @@
+module: fibromyalgia
+version: 0.1.0
+description: >
+  Fibromyalgia module for chronic pain and rheumatology workflows. It
+  emits a follow-up visit, pregabalin therapy in a subset, and physical
+  therapy referral.
+cites:
+  - source: CDC Fibromyalgia
+    url: https://www.cdc.gov/arthritis/basics/fibromyalgia.htm
+    summary: >
+      Fibromyalgia is a chronic pain condition associated with fatigue,
+      sleep disturbance, and functional impairment.
+conditions:
+  - id: fibromyalgia
+    code: {system: http://snomed.info/sct, code: "203082005", display: Fibromyalgia}
+    prevalence:
+      female:
+        "0-17": 0.005
+        "18-39": 0.030
+        "40-59": 0.045
+        "60-99": 0.035
+      male:
+        "0-17": 0.003
+        "18-39": 0.010
+        "40-59": 0.018
+        "60-99": 0.015
+    onset_age: {min: 18, max: 80}
+    emits:
+      - resource_type: Encounter
+        spec_id: fibromyalgia_followup_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "203082005", display: Fibromyalgia}
+      - resource_type: MedicationRequest
+        spec_id: fibromyalgia_pregabalin
+        when: today
+        link_to: fibromyalgia_followup_visit
+        probability: 0.25
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "187832", display: Pregabalin}
+        reason: {system: http://snomed.info/sct, code: "203082005", display: Fibromyalgia}
+      - resource_type: Procedure
+        spec_id: fibromyalgia_physical_therapy
+        when: today
+        link_to: fibromyalgia_followup_visit
+        probability: 0.30
+        code: {system: http://snomed.info/sct, code: "91251008", display: Physical therapy procedure}
+        reason: {system: http://snomed.info/sct, code: "203082005", display: Fibromyalgia}

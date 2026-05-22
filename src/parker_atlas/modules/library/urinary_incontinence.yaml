@@ -1,0 +1,42 @@
+module: urinary_incontinence
+version: 0.1.0
+description: >
+  Urinary incontinence module for common primary-care and urology
+  workflows. It emits follow-up care, urinalysis, and pelvic floor
+  therapy referral in a subset.
+cites:
+  - source: NIDDK Urinary Incontinence
+    url: https://www.niddk.nih.gov/health-information/urologic-diseases/bladder-control-problems
+    summary: >
+      Urinary incontinence is common, especially in older adults and
+      women, and is managed with behavioral, pelvic floor, medication,
+      and procedural strategies.
+conditions:
+  - id: urinary_incontinence
+    code: {system: http://snomed.info/sct, code: "165232002", display: Urinary incontinence}
+    prevalence:
+      female:
+        "0-17": 0.010
+        "18-39": 0.080
+        "40-59": 0.180
+        "60-99": 0.320
+      male:
+        "0-17": 0.008
+        "18-39": 0.020
+        "40-59": 0.080
+        "60-99": 0.180
+    onset_age: {min: 18, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: urinary_incontinence_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "165232002", display: Urinary incontinence}
+      - resource_type: Procedure
+        spec_id: urinary_incontinence_pelvic_floor_pt
+        when: today
+        link_to: urinary_incontinence_visit
+        probability: 0.30
+        code: {system: http://snomed.info/sct, code: "91251008", display: Physical therapy procedure}
+        reason: {system: http://snomed.info/sct, code: "165232002", display: Urinary incontinence}

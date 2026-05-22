@@ -41,28 +41,29 @@ Dates are indicative; actual delivery depends on team capacity and clinical revi
 
 ---
 
-## Milestone 2 — Module Library ✅ Complete (target: 10 modules; achieved: 37)
+## Milestone 2 — Module Library ✅ Complete (target: 10 modules; achieved: 75)
 
-**Goal:** Prove the module DSL and runtime by authoring high-prevalence clinical conditions across the full care spectrum. Original target was 10 modules; as of this milestone close we have 37 modules across 14 clinical domains.
+**Goal:** Prove the module DSL and runtime by authoring high-prevalence clinical conditions across the full care spectrum. Original target was 10 modules; as of this milestone close we have 75 modules across 14 clinical domains.
 
-### Module library (37 modules as of 2026-05-22)
+### Module library (75 modules as of 2026-05-22)
 
 | Domain | Modules |
 |---|---|
-| Cardiovascular | hypertension, heart_failure, ischemic_heart_disease, atrial_fibrillation, stroke, hypercholesterolemia |
-| Metabolic / Endocrine | diabetes (T2D), type1_diabetes, obesity, hypothyroidism |
-| Pulmonary | asthma, copd, sleep_apnea, lung_cancer |
-| Gastrointestinal | gerd, nafld, inflammatory_bowel_disease |
-| Renal | ckd (+ ESRD progression) |
-| Musculoskeletal | osteoarthritis, rheumatoid_arthritis |
+| Cardiovascular | hypertension, heart_failure, ischemic_heart_disease, atrial_fibrillation, stroke, hypercholesterolemia, peripheral_artery_disease, venous_thromboembolism, valvular_heart_disease, cardiomyopathy |
+| Metabolic / Endocrine | diabetes (T2D), type1_diabetes, obesity, hypothyroidism, prediabetes, hyperthyroidism, osteoporosis, metabolic_syndrome |
+| Pulmonary | asthma, copd, sleep_apnea, pneumonia, pulmonary_embolism, pulmonary_hypertension |
+| Gastrointestinal | gerd, nafld, inflammatory_bowel_disease, chronic_liver_disease, gallbladder_disease |
+| Renal / Urology | ckd (+ ESRD progression), urinary_tract_infection, nephrolithiasis, benign_prostatic_hyperplasia, urinary_incontinence |
+| Musculoskeletal | osteoarthritis, rheumatoid_arthritis, low_back_pain, gout, fibromyalgia, lupus, osteoporosis_fracture |
 | Mental health | depression, anxiety, bipolar_disorder |
 | Substance use | alcohol_use_disorder, opioid_use_disorder, tobacco_use_disorder |
-| Neurology / Cognition | alzheimers_dementia |
+| Neurology / Cognition | alzheimers_dementia, migraine, epilepsy, parkinsons_disease, peripheral_neuropathy, traumatic_brain_injury |
 | Oncology | lung_cancer, colorectal_cancer, breast_cancer, prostate_cancer |
-| Infectious disease | hiv |
-| Hematology | sickle_cell (+ vaso-occlusive crisis progression) |
-| Pediatric / OB | pediatric_wellness, maternal_health, wellness, complications |
-| Prevention | adult_immunizations (8 vaccine cohorts: flu, pneumo, shingles, Tdap, RSV, COVID-19, HPV) |
+| Infectious disease | hiv, influenza, covid19, hepatitis_c |
+| Hematology | sickle_cell (+ vaso-occlusive crisis progression), iron_deficiency_anemia |
+| Pediatric / OB / Prevention | pediatric_wellness, maternal_health, wellness, complications, adult_immunizations (8 vaccine cohorts: flu, pneumo, shingles, Tdap, RSV, COVID-19, HPV) |
+| Dermatology / Allergy | allergic_rhinitis, atopic_dermatitis, psoriasis, melanoma |
+| ENT / Ophthalmology | cataract, otitis_media, sinusitis |
 
 ### Cross-module progressions (active chains)
 
@@ -86,11 +87,11 @@ Dates are indicative; actual delivery depends on team capacity and clinical revi
 
 ## Milestone 3 — LLM-Assisted Authoring 🔄 In Progress
 
-**Goal:** Enable faster module authorship through LLM assistance and establish a structured clinician review workflow.
+**Goal:** Scale the module library from 75 to 100+ without letting provenance, test coverage, or clinical review quality degrade.
 
 **Delivered:**
 
-- LLM-to-DSL authoring pipeline: ✅ Working (37 modules authored via Claude Code integration)
+- LLM-to-DSL authoring pipeline: ✅ Working (75 modules authored via Claude Code integration)
 - Epidemiology citation embedding: ✅ Every module carries `cites:` with source, URL, and summary
 - Automated validation loop: ✅ smoke-test + full test suite on every authoring batch
 - Authoring workflow documentation: ⏳ Module authoring guide not yet written
@@ -99,10 +100,48 @@ Dates are indicative; actual delivery depends on team capacity and clinical revi
 
 - Formal clinician review UI (web-based) for sign-off workflow
 - Authoring documentation: `docs/authoring/module_dsl.md` spec
-- Automated prevalence validation for all 37 modules against sourced expectations (currently ~14 modules have sourced fidelity expectations)
+- Automated prevalence validation for all 75 modules against sourced expectations (currently 19 modules have sourced fidelity expectations)
 - LLM provider abstraction for non-Claude backends
 
 **Exit criteria (revised):** 100 total modules in the library, all with sourced citations; clinician review workflow established with at least one licensed clinician sign-off per module.
+
+### 100-module expansion plan
+
+The v1.0 library target is 100 modules. The count matters for GTM only if the library remains useful and auditable, so each new module must ship with citations, deterministic smoke tests, and a documented validation tier. The current catalog lives in [`docs/module-catalog.md`](./module-catalog.md).
+
+| Domain | Current | v1.0 target | Net new | Candidate additions |
+|---|---:|---:|---:|---|
+| Cardiovascular | 10 | 10 | 0 | Complete for v1.0 target |
+| Metabolic / Endocrine | 8 | 8 | 0 | Complete for v1.0 target |
+| Pulmonary | 6 | 7 | 1 | interstitial_lung_disease |
+| GI / Hepatology | 5 | 7 | 2 | peptic_ulcer_disease, pancreatitis |
+| Renal / Urology | 5 | 5 | 0 | Complete for v1.0 target |
+| Musculoskeletal / Rheumatology | 7 | 7 | 0 | Complete for v1.0 target |
+| Mental health / Behavioral | 3 | 8 | 5 | ptsd, schizophrenia, adhd, eating_disorder, insomnia |
+| Substance use | 3 | 5 | 2 | cannabis_use_disorder, stimulant_use_disorder |
+| Neurology / Cognition | 6 | 8 | 2 | multiple_sclerosis, dementia_unspecified |
+| Oncology / Hematology | 7 | 11 | 4 | lymphoma, leukemia, bladder_cancer, kidney_cancer |
+| Infectious disease | 4 | 7 | 3 | hepatitis_b, tuberculosis, cellulitis |
+| Pediatric / OB / Prevention | 5 | 9 | 4 | contraception, infertility, menopause, neonatal_jaundice |
+| Dermatology / Allergy | 4 | 4 | 0 | Complete for v1.0 target |
+| ENT / Ophthalmology | 3 | 4 | 1 | glaucoma |
+
+### Module quality tiers
+
+| Tier | Meaning | Required for |
+|---|---|---|
+| Tier 1 | Citations + sourced fidelity expectations + cohort validation + clinical review | Headline GTM claims and sample cohorts |
+| Tier 2 | Citations + representative FHIR emits + smoke tests + pending fidelity expectations | Bundled v1.0 library |
+| Tier 3 | Experimental module, clearly labeled, not included in launch claims | Early community review only |
+
+### Batch plan
+
+| Batch | Target | Primary work |
+|---|---:|---|
+| Batch A | 50 modules | Complete: primary-care, acute-care, allergy/derm, neuro, vascular, and ophthalmology gaps filled |
+| Batch B | 75 modules | Complete: specialty breadth added across cardiovascular, endocrine, pulmonary, GI, urology, MSK, neurology, oncology/heme, ID, and ENT |
+| Batch C | 100 modules | Complete launch library; smoke-test all modules; tier all modules |
+| Batch D | 100+ modules | Convert remaining high-use modules to Tier 1 and publish sample cohorts |
 
 ---
 
@@ -140,8 +179,12 @@ Dates are indicative; actual delivery depends on team capacity and clinical revi
 - Dual-license go-live: PyPI package, GitHub release, commercial tier fully operational
 - Launch announcement timed to an industry event (HIMSS, FHIR DevDays, or HL7 Working Group)
 - Validation scorecard published alongside release
+- GTM launch assets complete: module catalog, sample cohort downloads, demo scripts, commercial one-pager, security/provenance FAQ
+- Public known-limitations page distinguishing sourced, validated, and experimental capabilities
 
 **Exit criteria:** 1,000 GitHub stars within 60 days; three signed enterprise licensing agreements; two academic citations in progress.
+
+See [`docs/gtm.md`](./gtm.md) for the prime-time GTM checklist and launch gates.
 
 ---
 

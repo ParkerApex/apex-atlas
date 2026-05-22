@@ -1,0 +1,72 @@
+module: covid19
+version: 0.1.0
+description: >
+  COVID-19 acute infection module. The module emits an acute ambulatory
+  encounter, diagnostic test Procedure, and antiviral therapy in a
+  smaller high-risk treatment subset.
+cites:
+  - source: CDC COVID Data Tracker and clinical guidance
+    url: https://www.cdc.gov/covid/
+    summary: >
+      COVID-19 remains a common respiratory infection with seasonal and
+      variant-driven waves, outpatient testing, and risk-stratified treatment.
+  - source: NIH COVID-19 Treatment Guidelines
+    url: https://www.covid19treatmentguidelines.nih.gov/
+    summary: >
+      Outpatient antivirals such as nirmatrelvir/ritonavir are used for
+      selected higher-risk non-hospitalized patients.
+conditions:
+  - id: covid19
+    code:
+      system: http://snomed.info/sct
+      code: "840539006"
+      display: Disease caused by severe acute respiratory syndrome coronavirus 2
+    prevalence:
+      "0-17": 0.060
+      "18-39": 0.070
+      "40-59": 0.060
+      "60-99": 0.050
+    onset_age:
+      min: 0
+      max: 95
+    emits:
+      - resource_type: Encounter
+        spec_id: covid19_acute_visit
+        when: onset
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185345009"
+          display: Encounter for symptom
+        reason:
+          system: http://snomed.info/sct
+          code: "840539006"
+          display: COVID-19
+
+      - resource_type: Procedure
+        spec_id: covid19_test
+        when: onset
+        link_to: covid19_acute_visit
+        probability: 0.70
+        code:
+          system: http://snomed.info/sct
+          code: "871562009"
+          display: Detection of severe acute respiratory syndrome coronavirus 2
+        reason:
+          system: http://snomed.info/sct
+          code: "840539006"
+          display: COVID-19
+
+      - resource_type: MedicationRequest
+        spec_id: covid19_nirmatrelvir_ritonavir
+        when: onset
+        link_to: covid19_acute_visit
+        probability: 0.18
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "2599543"
+          display: Nirmatrelvir 300 MG / Ritonavir 100 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "840539006"
+          display: COVID-19

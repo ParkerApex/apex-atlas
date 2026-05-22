@@ -1,0 +1,74 @@
+module: psoriasis
+version: 0.1.0
+description: >
+  Psoriasis module for common dermatology coverage. The module emits a
+  dermatology follow-up encounter, topical corticosteroid therapy, and
+  phototherapy in a subset of patients.
+cites:
+  - source: >
+      Rachakonda TD et al. Psoriasis prevalence among adults in the
+      United States. J Am Acad Dermatol. 2014.
+    url: https://pubmed.ncbi.nlm.nih.gov/24388724/
+    summary: >
+      US adult psoriasis prevalence is approximately 3%, with substantial
+      outpatient dermatology burden.
+  - source: American Academy of Dermatology psoriasis clinical guidelines
+    url: https://www.aad.org/member/clinical-quality/guidelines/psoriasis
+    summary: >
+      Psoriasis management includes topical therapies, phototherapy, and
+      systemic or biologic therapy depending on severity.
+conditions:
+  - id: psoriasis
+    code:
+      system: http://snomed.info/sct
+      code: "9014002"
+      display: Psoriasis
+    prevalence:
+      "0-17": 0.010
+      "18-39": 0.025
+      "40-59": 0.035
+      "60-99": 0.035
+    onset_age:
+      min: 8
+      max: 75
+    emits:
+      - resource_type: Encounter
+        spec_id: psoriasis_dermatology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "9014002"
+          display: Psoriasis
+
+      - resource_type: MedicationRequest
+        spec_id: psoriasis_clobetasol
+        when: today
+        link_to: psoriasis_dermatology_visit
+        probability: 0.55
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "2590"
+          display: Clobetasol
+        reason:
+          system: http://snomed.info/sct
+          code: "9014002"
+          display: Psoriasis
+
+      - resource_type: Procedure
+        spec_id: psoriasis_phototherapy
+        when: today
+        link_to: psoriasis_dermatology_visit
+        probability: 0.12
+        code:
+          system: http://snomed.info/sct
+          code: "90105005"
+          display: Phototherapy
+        reason:
+          system: http://snomed.info/sct
+          code: "9014002"
+          display: Psoriasis

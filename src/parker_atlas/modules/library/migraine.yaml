@@ -1,0 +1,82 @@
+module: migraine
+version: 0.1.0
+description: >
+  Migraine module with female-predominant adult prevalence. It emits a
+  neurology or primary-care follow-up encounter, triptan therapy for a
+  subset of patients, and low-probability head imaging for atypical or
+  changing headache patterns.
+cites:
+  - source: >
+      Burch R et al. The Prevalence and Burden of Migraine and Severe
+      Headache in the United States. Headache. 2015;55(1):21-34.
+    url: https://headachejournal.onlinelibrary.wiley.com/doi/10.1111/head.12482
+    summary: >
+      Analysis of US survey data showing migraine or severe headache is
+      common, especially among women and adults in working-age brackets.
+  - source: American Headache Society migraine treatment guidance
+    url: https://americanheadachesociety.org/research/library
+    summary: >
+      Triptans are established acute migraine-specific medications for
+      appropriate patients; neuroimaging is generally reserved for red
+      flags or atypical presentations.
+conditions:
+  - id: migraine
+    code:
+      system: http://snomed.info/sct
+      code: "37796009"
+      display: Migraine
+    prevalence:
+      female:
+        "0-17": 0.065
+        "18-39": 0.260
+        "40-59": 0.240
+        "60-99": 0.090
+      male:
+        "0-17": 0.035
+        "18-39": 0.090
+        "40-59": 0.080
+        "60-99": 0.035
+    onset_age:
+      min: 8
+      max: 55
+    emits:
+      - resource_type: Encounter
+        spec_id: migraine_followup_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "37796009"
+          display: Migraine
+
+      - resource_type: MedicationRequest
+        spec_id: migraine_sumatriptan
+        when: today
+        link_to: migraine_followup_visit
+        probability: 0.40
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "313161"
+          display: Sumatriptan 50 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "37796009"
+          display: Migraine
+
+      - resource_type: Procedure
+        spec_id: migraine_head_ct
+        when: today
+        link_to: migraine_followup_visit
+        probability: 0.08
+        code:
+          system: http://snomed.info/sct
+          code: "77477000"
+          display: Computed tomography of head
+        reason:
+          system: http://snomed.info/sct
+          code: "37796009"
+          display: Migraine

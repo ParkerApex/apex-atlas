@@ -5,11 +5,18 @@ from __future__ import annotations
 import base64
 import json
 
+import pytest
 from typer.testing import CliRunner
 
 from parker_atlas.cli import app
 
 runner = CliRunner()
+
+
+def _bundle_files(path):
+    return sorted(
+        p for p in path.glob("*.json") if p.name != "generation-metadata.json"
+    )
 
 
 def _generate(tmp_path, *, fmt: str = "fhir-r4", patients: int = 5, seed: int = 42, module: str = "hypertension", with_notes: bool = True):
@@ -35,7 +42,7 @@ class TestNotesInBundleOutput:
         # ratio should be 1:1 because we emit one progress note per condition.
         condition_count = 0
         doc_ref_count = 0
-        for f in tmp_path.glob("*.json"):
+        for f in _bundle_files(tmp_path):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 rt = entry["resource"]["resourceType"]
@@ -48,7 +55,7 @@ class TestNotesInBundleOutput:
 
     def test_without_with_notes_no_documentreference(self, tmp_path):
         _generate(tmp_path, patients=20, seed=42, with_notes=False)
-        for f in tmp_path.glob("*.json"):
+        for f in _bundle_files(tmp_path):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 assert entry["resource"]["resourceType"] != "DocumentReference"
@@ -58,7 +65,7 @@ class TestNotesInBundleOutput:
         # Hypertension module emits an Encounter per fired condition, so every
         # generated note should carry context.encounter.
         any_doc = False
-        for f in tmp_path.glob("*.json"):
+        for f in _bundle_files(tmp_path):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 if entry["resource"]["resourceType"] == "DocumentReference":
@@ -74,7 +81,7 @@ class TestNotesInBundleOutput:
         _generate(tmp_path, patients=20, seed=42)
         # At least one note should round-trip cleanly and mention age + sex.
         decoded_any = False
-        for f in tmp_path.glob("*.json"):
+        for f in _bundle_files(tmp_path):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 if entry["resource"]["resourceType"] == "DocumentReference":
@@ -105,6 +112,7 @@ class TestNotesInNDJSONOutput:
 
 class TestNotesInParquetOutput:
     def test_documentreference_parquet_file_exists(self, tmp_path):
+        pytest.importorskip("pyarrow")
         _generate(tmp_path, fmt="parquet", patients=20, seed=42)
         assert (tmp_path / "DocumentReference.parquet").exists()
 
@@ -135,5 +143,5 @@ class TestNoteReproducibility:
                 ],
             )
             assert r.exit_code == 0, r.output
-        for name in sorted(p.name for p in a.glob("*.json")):
+        for name in sorted(p.name for p in _bundle_files(a)):
             assert (a / name).read_text() == (b / name).read_text()

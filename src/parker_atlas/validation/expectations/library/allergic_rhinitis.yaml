@@ -1,0 +1,37 @@
+module: allergic_rhinitis
+version: 0.1.0
+source:
+  name: CDC NCHS FastStats allergies / hay fever + ARIA guideline
+  provenance: sourced
+  url: https://www.cdc.gov/nchs/fastats/allergies.htm
+  note: >
+    Targets mirror the module's common allergic rhinitis / hay fever
+    approximation across children and adults.
+  citations:
+    - source: CDC NCHS FastStats — Allergies and Hay Fever
+      url: https://www.cdc.gov/nchs/fastats/allergies.htm
+      accessed: "2026-05-22"
+    - source: ARIA allergic rhinitis guideline
+      url: https://www.jacionline.org/article/S0091-6749(19)30997-9/fulltext
+      accessed: "2026-05-22"
+metrics:
+  - id: allergic_rhinitis_prevalence_by_age
+    kind: conditional_prevalence
+    condition_code: "61582004"
+    condition_system: http://snomed.info/sct
+    stratify_by: age_bracket
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      0-17: 0.180
+      18-39: 0.170
+      40-59: 0.140
+      60-99: 0.090
+  - id: allergic_rhinitis_cetirizine_rate
+    kind: emit_presence_rate
+    condition_code: "61582004"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: MedicationRequest
+    target: 0.55
+    emit_code: "20610"
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm

@@ -1,0 +1,43 @@
+module: migraine
+version: 0.1.0
+source:
+  name: US migraine / severe headache survey literature
+  provenance: sourced
+  url: https://headachejournal.onlinelibrary.wiley.com/doi/10.1111/head.12482
+  note: >
+    Targets mirror the module's sex- and age-stratified approximation
+    based on US survey literature showing strong female predominance and
+    peak working-age burden.
+  citations:
+    - source: >
+        Burch R et al. The Prevalence and Burden of Migraine and Severe
+        Headache in the United States. Headache. 2015;55(1):21-34.
+      url: https://headachejournal.onlinelibrary.wiley.com/doi/10.1111/head.12482
+      accessed: "2026-05-22"
+metrics:
+  - id: migraine_prevalence_by_sex_and_age
+    kind: conditional_prevalence
+    condition_code: "37796009"
+    condition_system: http://snomed.info/sct
+    stratify_by: sex_and_age
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      female:
+        0-17: 0.065
+        18-39: 0.260
+        40-59: 0.240
+        60-99: 0.090
+      male:
+        0-17: 0.035
+        18-39: 0.090
+        40-59: 0.080
+        60-99: 0.035
+  - id: migraine_sumatriptan_rate
+    kind: emit_presence_rate
+    condition_code: "37796009"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: MedicationRequest
+    target: 0.40
+    emit_code: "313161"
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm

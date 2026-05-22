@@ -1,0 +1,91 @@
+module: pneumonia
+version: 0.1.0
+description: >
+  Community-acquired pneumonia module. This is modeled as an acute
+  condition with low annual point-in-cohort probability, higher in
+  children and older adults. It emits an ambulatory or urgent-care style
+  encounter, chest radiography, leukocytosis-range WBC Observation, and
+  outpatient antibiotic therapy.
+cites:
+  - source: CDC Pneumonia
+    url: https://www.cdc.gov/pneumonia/
+    summary: >
+      Pneumonia remains a common respiratory infection and a major cause
+      of healthcare utilization, especially among young children and
+      older adults.
+  - source: >
+      Metlay JP et al. Diagnosis and Treatment of Adults with
+      Community-acquired Pneumonia. ATS/IDSA Clinical Practice Guideline.
+    url: https://www.atsjournals.org/doi/full/10.1164/rccm.201908-1581ST
+    summary: >
+      Community-acquired pneumonia diagnosis and outpatient treatment
+      commonly involve chest imaging and empiric antibiotics.
+conditions:
+  - id: community_acquired_pneumonia
+    code:
+      system: http://snomed.info/sct
+      code: "233604007"
+      display: Pneumonia
+    prevalence:
+      "0-17": 0.025
+      "18-39": 0.010
+      "40-59": 0.015
+      "60-99": 0.040
+    onset_age:
+      min: 0
+      max: 95
+    emits:
+      - resource_type: Encounter
+        spec_id: pneumonia_acute_visit
+        when: onset
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185345009"
+          display: Encounter for symptom
+        reason:
+          system: http://snomed.info/sct
+          code: "233604007"
+          display: Pneumonia
+
+      - resource_type: Procedure
+        spec_id: pneumonia_chest_xray
+        when: onset
+        link_to: pneumonia_acute_visit
+        probability: 0.85
+        code:
+          system: http://snomed.info/sct
+          code: "168731009"
+          display: Chest X-ray
+        reason:
+          system: http://snomed.info/sct
+          code: "233604007"
+          display: Pneumonia
+
+      - resource_type: Observation
+        spec_id: pneumonia_wbc
+        when: onset
+        link_to: pneumonia_acute_visit
+        probability: 0.65
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "6690-2"
+          display: Leukocytes [#/volume] in Blood by Automated count
+        value_range: {low: 10.5, high: 18.0, precision: 1}
+        unit: 10*3/uL
+        unit_code: 10*3/uL
+
+      - resource_type: MedicationRequest
+        spec_id: pneumonia_azithromycin
+        when: onset
+        link_to: pneumonia_acute_visit
+        probability: 0.55
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "308460"
+          display: Azithromycin 250 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "233604007"
+          display: Pneumonia

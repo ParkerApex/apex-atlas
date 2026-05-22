@@ -1,0 +1,87 @@
+module: venous_thromboembolism
+version: 0.1.0
+description: >
+  Venous thromboembolism module covering acute DVT / PE-style care.
+  The module uses low annual probabilities with age gradient and emits
+  an acute encounter, D-dimer Observation, venous duplex ultrasound, and
+  direct oral anticoagulant therapy.
+cites:
+  - source: CDC Venous Thromboembolism
+    url: https://www.cdc.gov/ncbddd/dvt/
+    summary: >
+      CDC describes VTE as common and potentially life-threatening,
+      with hundreds of thousands of US cases annually.
+  - source: CHEST Guideline and Expert Panel Report on Antithrombotic Therapy for VTE Disease
+    url: https://journal.chestnet.org/article/S0012-3692(15)00335-9/fulltext
+    summary: >
+      Anticoagulation is the main treatment for most acute VTE events;
+      diagnostic workups commonly include D-dimer and imaging.
+conditions:
+  - id: venous_thromboembolism
+    code:
+      system: http://snomed.info/sct
+      code: "111293003"
+      display: Venous thromboembolism
+    prevalence:
+      "0-17": 0.001
+      "18-39": 0.003
+      "40-59": 0.008
+      "60-99": 0.020
+    onset_age:
+      min: 18
+      max: 95
+    emits:
+      - resource_type: Encounter
+        spec_id: vte_acute_visit
+        when: onset
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "185345009"
+          display: Encounter for symptom
+        reason:
+          system: http://snomed.info/sct
+          code: "111293003"
+          display: Venous thromboembolism
+
+      - resource_type: Observation
+        spec_id: vte_d_dimer
+        when: onset
+        link_to: vte_acute_visit
+        probability: 0.70
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "48065-7"
+          display: Fibrin D-dimer FEU [Mass/volume] in Platelet poor plasma
+        value_range: {low: 0.75, high: 4.50, precision: 2}
+        unit: ug/mL
+        unit_code: ug/mL
+
+      - resource_type: Procedure
+        spec_id: vte_venous_duplex
+        when: onset
+        link_to: vte_acute_visit
+        probability: 0.75
+        code:
+          system: http://snomed.info/sct
+          code: "241585008"
+          display: Duplex ultrasound scan of vein
+        reason:
+          system: http://snomed.info/sct
+          code: "111293003"
+          display: Venous thromboembolism
+
+      - resource_type: MedicationRequest
+        spec_id: vte_apixaban
+        when: onset
+        link_to: vte_acute_visit
+        probability: 0.70
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "1364430"
+          display: Apixaban 5 MG Oral Tablet
+        reason:
+          system: http://snomed.info/sct
+          code: "111293003"
+          display: Venous thromboembolism

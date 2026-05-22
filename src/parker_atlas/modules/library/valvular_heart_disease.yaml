@@ -1,0 +1,51 @@
+module: valvular_heart_disease
+version: 0.1.0
+description: >
+  Valvular heart disease module focused on common adult structural
+  valve disease. It emits a cardiology follow-up encounter,
+  echocardiography, and low-dose diuretic therapy in a subset of
+  symptomatic patients.
+cites:
+  - source: 2020 ACC/AHA Guideline for the Management of Patients With Valvular Heart Disease
+    url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000000923
+    summary: >
+      Guideline covers evaluation and management of adult valvular
+      disease, including echocardiographic assessment and symptom-driven care.
+conditions:
+  - id: valvular_heart_disease
+    code:
+      system: http://snomed.info/sct
+      code: "368009"
+      display: Heart valve disorder
+    prevalence:
+      "0-17": 0.002
+      "18-39": 0.006
+      "40-59": 0.025
+      "60-99": 0.110
+    onset_age:
+      min: 18
+      max: 90
+    emits:
+      - resource_type: Encounter
+        spec_id: valve_cardiology_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "368009", display: Heart valve disorder}
+      - resource_type: Procedure
+        spec_id: valve_echocardiogram
+        when: today
+        link_to: valve_cardiology_visit
+        probability: 0.85
+        code: {system: http://snomed.info/sct, code: "40701008", display: Echocardiography}
+        reason: {system: http://snomed.info/sct, code: "368009", display: Heart valve disorder}
+      - resource_type: MedicationRequest
+        spec_id: valve_furosemide
+        when: today
+        link_to: valve_cardiology_visit
+        probability: 0.25
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "4603"
+          display: Furosemide
+        reason: {system: http://snomed.info/sct, code: "368009", display: Heart valve disorder}

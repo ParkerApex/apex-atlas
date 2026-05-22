@@ -1,0 +1,47 @@
+module: chronic_liver_disease
+version: 0.1.0
+description: >
+  Chronic liver disease module for hepatology workflows. It emits a
+  hepatology follow-up encounter, ALT and bilirubin laboratory
+  observations, and abdominal ultrasound.
+cites:
+  - source: CDC chronic liver disease and cirrhosis statistics
+    url: https://www.cdc.gov/nchs/fastats/liver-disease.htm
+    summary: >
+      Chronic liver disease and cirrhosis remain important causes of
+      morbidity and mortality in the United States.
+conditions:
+  - id: chronic_liver_disease
+    code: {system: http://snomed.info/sct, code: "328383001", display: Chronic liver disease}
+    prevalence:
+      "0-17": 0.002
+      "18-39": 0.018
+      "40-59": 0.045
+      "60-99": 0.055
+    onset_age: {min: 18, max: 85}
+    emits:
+      - resource_type: Encounter
+        spec_id: cld_hepatology_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "328383001", display: Chronic liver disease}
+      - resource_type: Observation
+        spec_id: cld_alt
+        when: today
+        link_to: cld_hepatology_visit
+        category: laboratory
+        code: {system: http://loinc.org, code: "1742-6", display: "Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma"}
+        value_range: {low: 45, high: 180, precision: 0}
+        unit: U/L
+        unit_code: U/L
+      - resource_type: Observation
+        spec_id: cld_bilirubin
+        when: today
+        link_to: cld_hepatology_visit
+        probability: 0.55
+        category: laboratory
+        code: {system: http://loinc.org, code: "1975-2", display: "Bilirubin.total [Mass/volume] in Serum or Plasma"}
+        value_range: {low: 1.0, high: 4.0, precision: 1}
+        unit: mg/dL
+        unit_code: mg/dL

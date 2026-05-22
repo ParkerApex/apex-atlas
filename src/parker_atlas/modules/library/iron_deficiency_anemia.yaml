@@ -1,0 +1,58 @@
+module: iron_deficiency_anemia
+version: 0.1.0
+description: >
+  Iron deficiency anemia module for primary care, GI, OB, and hematology
+  workflows. It emits CBC and ferritin testing plus oral iron therapy.
+cites:
+  - source: Merck Manual Professional — Iron Deficiency Anemia
+    url: https://www.merckmanuals.com/professional/hematology-and-oncology/anemias-caused-by-defective-dna-synthesis/iron-deficiency-anemia
+    summary: >
+      Iron deficiency anemia evaluation includes hemoglobin and iron
+      studies; treatment commonly includes iron replacement.
+conditions:
+  - id: iron_deficiency_anemia
+    code: {system: http://snomed.info/sct, code: "87522002", display: Iron deficiency anemia}
+    prevalence:
+      female:
+        "0-17": 0.040
+        "18-39": 0.110
+        "40-59": 0.080
+        "60-99": 0.060
+      male:
+        "0-17": 0.030
+        "18-39": 0.020
+        "40-59": 0.025
+        "60-99": 0.045
+    onset_age: {min: 1, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: ida_followup_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "87522002", display: Iron deficiency anemia}
+      - resource_type: Observation
+        spec_id: ida_hemoglobin
+        when: today
+        link_to: ida_followup_visit
+        category: laboratory
+        code: {system: http://loinc.org, code: "718-7", display: "Hemoglobin [Mass/volume] in Blood"}
+        value_range: {low: 7.5, high: 11.5, precision: 1}
+        unit: g/dL
+        unit_code: g/dL
+      - resource_type: Observation
+        spec_id: ida_ferritin
+        when: today
+        link_to: ida_followup_visit
+        category: laboratory
+        code: {system: http://loinc.org, code: "2276-4", display: "Ferritin [Mass/volume] in Serum or Plasma"}
+        value_range: {low: 3, high: 25, precision: 0}
+        unit: ng/mL
+        unit_code: ng/mL
+      - resource_type: MedicationRequest
+        spec_id: ida_ferrous_sulfate
+        when: today
+        link_to: ida_followup_visit
+        probability: 0.65
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "24947", display: Ferrous sulfate}
+        reason: {system: http://snomed.info/sct, code: "87522002", display: Iron deficiency anemia}
