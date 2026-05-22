@@ -155,14 +155,20 @@ class TestNoteRendererDispatch:
         assert render_note(ctx) == build_progress_note_text(ctx)
         assert render_note(ctx, NoteStrategy.TEMPLATE) == build_progress_note_text(ctx)
 
-    def test_llm_strategy_raises_not_implemented(self):
+    def test_llm_strategy_unavailable_without_api_key(self, monkeypatch):
+        # M4 wires NoteStrategy.LLM to the Claude renderer. Without an API
+        # key the renderer raises LLMNotesUnavailable so callers can fall
+        # back to TEMPLATE rather than crashing the run.
+        from parker_atlas.notes import LLMNotesUnavailable
+
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
         ctx = NoteContext(
             patient_display_name="X",
             age_years=40,
             sex="male",
             today=date(2026, 4, 23),
         )
-        with pytest.raises(NotImplementedError, match="Milestone 4"):
+        with pytest.raises(LLMNotesUnavailable):
             render_note(ctx, NoteStrategy.LLM)
 
     def test_template_is_deterministic(self):

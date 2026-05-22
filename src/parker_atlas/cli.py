@@ -53,7 +53,11 @@ from parker_atlas.fhir.observation import (
 )
 from parker_atlas.fhir.patient import build_patient_resource
 from parker_atlas.fhir.procedure import build_procedure_resource
-from parker_atlas.notes import NoteContext, build_progress_note_text
+from parker_atlas.notes import (
+    NoteContext,
+    NoteStrategy,
+    build_progress_note_text,
+)
 from parker_atlas.gpx import Allocator, Category
 from parker_atlas.modules import (
     ModuleError,
@@ -74,6 +78,7 @@ from parker_atlas.validation.expectations import (
     ExpectationError,
     load_bundled_expectation,
 )
+from parker_atlas.validation.report import write_report
 from parker_atlas.validation.structural import validate_path
 
 app = typer.Typer(
@@ -546,7 +551,9 @@ def generate(
     profile: Annotated[Profile, typer.Option(help="FHIR profile to conform to.")] = Profile.US_CORE_6_1,
     seed: Annotated[int | None, typer.Option(help="RNG seed for reproducibility.")] = None,
     summary: Annotated[bool, typer.Option("--summary", help="Print cohort demographics and condition summary after generation.")] = False,
-    with_notes: Annotated[bool, typer.Option("--with-notes", help="Emit one DocumentReference (template-based progress note) per fired condition.")] = False,
+    with_notes: Annotated[bool, typer.Option("--with-notes", help="Emit one DocumentReference (progress note) per fired condition.")] = False,
+    notes_strategy: Annotated[NoteStrategy, typer.Option("--notes-strategy", help="Strategy for --with-notes: 'template' (deterministic, no API) or 'llm' (Claude-authored narrative; requires ANTHROPIC_API_KEY).")] = NoteStrategy.TEMPLATE,
+    llm_model: Annotated[str | None, typer.Option("--llm-model", help="Claude model id for --notes-strategy=llm (e.g. claude-haiku-4-5-20251001, claude-sonnet-4-6, claude-opus-4-7). Defaults to Haiku 4.5.")] = None,
     with_coverage: Annotated[bool, typer.Option("--with-coverage", help="Sample a payer per patient and emit Coverage + payer Organization + InsurancePlan resources.")] = False,
     with_providers: Annotated[bool, typer.Option("--with-providers", help="Sample a Practitioner + facility Organization + Location per encounter; attach as Encounter.participant / .location / .serviceProvider.")] = False,
     with_claims: Annotated[bool, typer.Option("--with-claims", help="Emit one Claim + ExplanationOfBenefit per Encounter. Requires --with-coverage; uninsured patients receive no claims.")] = False,
@@ -790,12 +797,28 @@ def generate(
                         diagnoses=all_diagnoses,
                         primary_diagnosis=dx,
                     )
+                    if notes_strategy is NoteStrategy.LLM:
+                        from parker_atlas.notes import (
+                            LLMNotesUnavailable,
+                            render_llm_note,
+                        )
+
+                        try:
+                            llm_kwargs = {"model": llm_model} if llm_model else {}
+                            note_text = render_llm_note(ctx, **llm_kwargs).text
+                        except LLMNotesUnavailable as exc:
+                            err_console.print(
+                                f"[red]LLM note authoring failed:[/red] {exc}"
+                            )
+                            raise typer.Exit(code=1) from exc
+                    else:
+                        note_text = build_progress_note_text(ctx)
                     extras.append(
                         build_document_reference_resource(
                             gpx=gpx,
                             patient_fullurl=patient_url,
                             doc_spec_id=f"progress_{mod_name}_{dx.condition.id}",
-                            note_text=build_progress_note_text(ctx),
+                            note_text=note_text,
                             authored_on=today,
                             encounter_fullurl=encounter_url,
                         )
@@ -1095,6 +1118,64 @@ def modules(
     console.print(table)
     if not list_:
         console.print("\nUse [bold]atlas modules --show NAME[/bold] for details.")
+
+
+@app.command()
+def report(
+    path: Annotated[Path, typer.Argument(help="Path to generated cohort (FHIR R4 bundles or NDJSON dir).")],
+    out: Annotated[Path, typer.Option("--out", "-o", help="Destination HTML file.")] = Path("./cohort-report.html"),
+    module: Annotated[str | None, typer.Option(help="Module whose bundled expectation to evaluate. Omit for demographics only.")] = None,
+    min_samples: Annotated[int, typer.Option(help="Minimum bracket N for fidelity metrics; smaller brackets are skipped.")] = 30,
+    as_of: Annotated[str | None, typer.Option(help="ISO date used as the reference for age computation.")] = None,
+) -> None:
+    """Build a self-contained HTML cohort report.
+
+    Always reports demographics (age, sex) and per-code condition counts. When
+    `--module NAME` is supplied, also runs the cohort fidelity harness and
+    embeds a pass/fail table with target / actual / tolerance per metric.
+
+    The output is a single HTML file with inline CSS, no JS, and no network
+    calls — safe to email, archive, or commit to a release notes folder.
+    """
+    if not path.exists():
+        err_console.print(f"[red]path does not exist:[/red] {path}")
+        raise typer.Exit(code=1)
+
+    expectation = None
+    if module is not None:
+        try:
+            expectation = load_bundled_expectation(module)
+        except ExpectationError as exc:
+            err_console.print(f"[red]{exc}[/red]")
+            raise typer.Exit(code=1) from exc
+
+    reference_date = date.fromisoformat(as_of) if as_of else None
+    demographics, fidelity = write_report(
+        path,
+        out,
+        expectation=expectation,
+        min_samples=min_samples,
+        reference_date=reference_date,
+    )
+
+    if demographics.total_patients == 0:
+        err_console.print(f"[yellow]No patients found under[/yellow] {path}")
+        raise typer.Exit(code=1)
+
+    console.print(
+        f"[green]✓[/green] Wrote cohort report to [bold]{out}[/bold] "
+        f"({demographics.total_patients:,} patient"
+        f"{'s' if demographics.total_patients != 1 else ''})"
+    )
+    if fidelity is not None:
+        passed = sum(1 for r in fidelity.results if r.within_tolerance)
+        failed = len(fidelity.failing_metrics)
+        status_color = "green" if fidelity.passed else "red"
+        console.print(
+            f"  fidelity: [{status_color}]{passed} passed, {failed} failed[/{status_color}], "
+            f"{len(fidelity.skipped)} skipped"
+        )
+        raise typer.Exit(code=0 if fidelity.passed else 1)
 
 
 @app.command()

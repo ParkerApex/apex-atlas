@@ -1,0 +1,165 @@
+module: lung_cancer
+version: 0.1.0
+description: >
+  Lung and bronchus malignant neoplasm (SEER site C34). Probability-
+  module flavor — each (sex, age) cell maps to a Bernoulli rate
+  anchored to NCI SEER prevalence figures.
+
+  Lung cancer is the leading cause of cancer death in the United States
+  and the second-most-diagnosed cancer in both sexes. SEER reports an
+  estimated 234,580 new cases and 125,070 deaths annually (2024 est),
+  with prevalence concentrated heavily in the 60+ age range due to the
+  long latency between smoking exposure and diagnosis.
+
+  When a patient is positive, the module emits:
+  - An oncology Encounter (AMB)
+  - A CT chest Procedure (SNOMED 169069000) — the standard staging
+    imaging study at diagnosis and follow-up
+  - A pembrolizumab MedicationRequest (RxNorm 1657750) in 30% of
+    cases — immune checkpoint inhibitors are now first-line for many
+    NSCLC subtypes per NCCN guidelines; the 30% rate reflects that not
+    every patient has PD-L1+ tumor biology or is fit for systemic
+    therapy
+  - A CEA tumor-marker Observation in the typical elevated range for
+    lung adenocarcinoma (5-50 ng/mL)
+
+  Mortality is high. SEER 2024 5-year relative survival across all
+  stages is 26.7%; we model this as a 30% 3-year mortality risk
+  anchored to the same SEER cohort. Stage-stratified mortality (much
+  worse for stage IV, much better for stage I detected by screening)
+  is a follow-up; the module currently emits no stage Observation, so
+  there's nothing for the mortality runtime to gate on.
+
+  Pediatric brackets are 0 — primary lung cancer is vanishingly rare
+  in children. Low-dose CT lung cancer screening (USPSTF 50-80 with
+  smoking history) is not yet emitted; it belongs in a future
+  `lung_cancer_screening` extension that exercises the at-risk cohort.
+cites:
+  - source: >
+      Siegel RL, Giaquinto AN, Jemal A. Cancer statistics, 2024.
+      CA Cancer J Clin. 2024;74(1):12-49. (American Cancer Society
+      analysis of NCI SEER + NCHS data.)
+    url: https://acsjournals.onlinelibrary.wiley.com/doi/10.3322/caac.21820
+    summary: >
+      US lung & bronchus cancer 2024 estimates: 234,580 new cases,
+      125,070 deaths. Lifetime probability of developing lung cancer
+      ~6.0% (men) / ~5.7% (women). Age-conditional incidence rises
+      sharply after age 55.
+  - source: >
+      National Cancer Institute SEER*Explorer — Lung and Bronchus,
+      Cancer Stat Facts (2024).
+    url: https://seer.cancer.gov/statfacts/html/lungb.html
+    summary: >
+      5-year relative survival (all stages combined, 2014-2020):
+      26.7%. Stage at diagnosis: 26% localized, 21% regional, 44%
+      distant, 9% unstaged. Median age at diagnosis: 71.
+  - source: >
+      NCCN Clinical Practice Guidelines in Oncology — Non-Small Cell
+      Lung Cancer, Version 4.2024.
+    url: https://www.nccn.org/professionals/physician_gls/pdf/nscl.pdf
+    summary: >
+      Pembrolizumab (Keytruda) is recommended as first-line systemic
+      therapy for metastatic NSCLC with PD-L1 ≥50% and no actionable
+      driver mutations (Category 1). Combination chemo-immunotherapy
+      regimens (carboplatin + pemetrexed + pembrolizumab) are
+      preferred for PD-L1 <50% non-squamous histology.
+conditions:
+  - id: lung_cancer
+    code:
+      system: http://snomed.info/sct
+      code: "254637007"
+      display: Non-small cell lung cancer (disorder)
+    # Age × sex prevalence brackets anchored to SEER age-specific rates
+    # × prevalence-vs-incidence multiplier. The 60-99 bracket aggregates
+    # SEER's 60-69, 70-79, and 80+ sub-buckets weighted by US population
+    # share. Men have slightly higher rates than women due to historical
+    # smoking exposure; the gap has been closing.
+    prevalence:
+      female:
+        "0-17": 0.0
+        "18-39": 0.0001
+        "40-59": 0.003
+        "60-99": 0.018
+      male:
+        "0-17": 0.0
+        "18-39": 0.0001
+        "40-59": 0.004
+        "60-99": 0.022
+    onset_age:
+      min: 55
+      max: 85
+    mortality:
+      # SEER 5-yr survival 26.7% → ~73% mortality at 5y. We model 30%
+      # mortality at 3y to capture the steep early decline characteristic
+      # of late-stage disease (which dominates the prevalence pool given
+      # how few patients are diagnosed via screening today).
+      after_years: 3
+      probability: 0.30
+      cause:
+        system: http://snomed.info/sct
+        code: "254637007"
+        display: Non-small cell lung cancer
+    emits:
+      - resource_type: Encounter
+        spec_id: lung_cancer_oncology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906007"
+          display: Follow-up encounter
+        reason:
+          system: http://snomed.info/sct
+          code: "254637007"
+          display: Non-small cell lung cancer
+
+      # CT chest — standard staging and surveillance imaging for lung
+      # cancer. SNOMED 169069000 "Computed tomography of chest" — every
+      # active lung cancer patient should have at least one on file.
+      - resource_type: Procedure
+        spec_id: lung_cancer_ct_chest
+        when: today
+        link_to: lung_cancer_oncology_visit
+        probability: 0.95
+        code:
+          system: http://snomed.info/sct
+          code: "169069000"
+          display: Computed tomography of chest (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "254637007"
+          display: Non-small cell lung cancer
+
+      # Pembrolizumab (Keytruda) — first-line immunotherapy per NCCN
+      # for many NSCLC subtypes. 30% reflects the subset on active
+      # immunotherapy at any given visit; the rest are on chemotherapy,
+      # targeted therapy, surveillance, or palliative care.
+      - resource_type: MedicationRequest
+        spec_id: lung_cancer_pembrolizumab
+        when: today
+        link_to: lung_cancer_oncology_visit
+        probability: 0.30
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "1657750"
+          display: Pembrolizumab 25 MG/ML Injectable Solution
+        reason:
+          system: http://snomed.info/sct
+          code: "254637007"
+          display: Non-small cell lung cancer
+
+      # CEA — carcinoembryonic antigen tumor marker. Elevated in
+      # ~50-70% of lung adenocarcinoma. Range 5-50 ng/mL covers the
+      # typical elevated band; normal cutoff is <5.
+      - resource_type: Observation
+        spec_id: lung_cancer_cea
+        when: today
+        link_to: lung_cancer_oncology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "2039-6"
+          display: Carcinoembryonic Ag [Mass/volume] in Serum or Plasma
+        value_range: {low: 5.0, high: 50.0, precision: 1}
+        unit: ng/mL
+        unit_code: ng/mL
