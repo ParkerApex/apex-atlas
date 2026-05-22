@@ -1,0 +1,31 @@
+module: diverticulitis
+version: 0.1.0
+description: >
+  Diverticulitis module for acute abdominal-pain and GI follow-up workflows.
+cites:
+  - source: American Gastroenterological Association clinical practice update on diverticulitis
+    url: https://www.gastrojournal.org/article/S0016-5085(20)35512-8/fulltext
+    summary: Diverticulitis care includes diagnosis, selective antibiotics, and follow-up colon evaluation when indicated.
+conditions:
+  - id: diverticulitis
+    code: {system: http://snomed.info/sct, code: "307496006", display: Diverticulitis}
+    prevalence:
+      "0-17": 0.001
+      "18-39": 0.010
+      "40-59": 0.035
+      "60-99": 0.060
+    onset_age: {min: 30, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: diverticulitis_acute_visit
+        when: onset
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "185345009", display: Encounter for symptom}
+        reason: {system: http://snomed.info/sct, code: "307496006", display: Diverticulitis}
+      - resource_type: MedicationRequest
+        spec_id: diverticulitis_amoxicillin_clavulanate
+        when: onset
+        link_to: diverticulitis_acute_visit
+        probability: 0.45
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "562508", display: Amoxicillin 875 MG / Clavulanate 125 MG Oral Tablet}
+        reason: {system: http://snomed.info/sct, code: "307496006", display: Diverticulitis}

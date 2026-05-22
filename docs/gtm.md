@@ -50,7 +50,7 @@ Apex Atlas is prime-time when a prospect can do three things without Parker engi
 
 ## 100-Module Launch Rule
 
-The launch target is 100+ modules, but the GTM promise should be quality-weighted:
+The launch target is 100 modules, but the GTM promise should be quality-weighted:
 
 - **Tier 1:** top launch modules with sourced fidelity expectations and tests.
 - **Tier 2:** modules with citations, realistic emits, and smoke tests.
@@ -70,9 +70,11 @@ Do not market a raw module count without the tiering. The count gets attention; 
 
 ## Launch Gates
 
-- 100+ modules load through `atlas modules`.
+- 100 modules load through `atlas modules`.
 - All modules have `cites:` metadata and pass module smoke tests.
 - Tier 1 modules have sourced fidelity expectations and pass cohort validation at documented cohort sizes.
+- `atlas launch-demo` generates a rich demo cohort with notes, SDoH, coverage, claims, providers, and MeasureReports.
+- `atlas validate --gtm` runs structural validation plus the launch-hardened sourced expectation set.
 - `atlas generate`, `atlas validate`, `atlas validate --cohort`, `atlas report`, NDJSON, and Parquet paths are tested in CI.
 - Sample cohorts include `generation-metadata.json`, validation scorecards, and a plain-language limitations file.
 - README, roadmap, architecture, ingestion, licensing, commercial, and contribution docs agree on counts and claims.

@@ -1,0 +1,31 @@
+module: constipation
+version: 0.1.0
+description: >
+  Constipation module for primary-care, GI, medication-safety, and older-adult cohorts.
+cites:
+  - source: American Gastroenterological Association constipation guideline
+    url: https://gastrojournal.org/article/S0016-5085(13)00152-5/fulltext
+    summary: Constipation evaluation and management includes history, medication review, and laxative therapy.
+conditions:
+  - id: constipation
+    code: {system: http://snomed.info/sct, code: "14760008", display: Constipation}
+    prevalence:
+      "0-17": 0.040
+      "18-39": 0.060
+      "40-59": 0.075
+      "60-99": 0.140
+    onset_age: {min: 1, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: constipation_primary_care_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "14760008", display: Constipation}
+      - resource_type: MedicationRequest
+        spec_id: constipation_polyethylene_glycol
+        when: today
+        link_to: constipation_primary_care_visit
+        probability: 0.45
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "8516", display: Polyethylene glycol}
+        reason: {system: http://snomed.info/sct, code: "14760008", display: Constipation}

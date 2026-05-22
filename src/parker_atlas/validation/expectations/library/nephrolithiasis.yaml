@@ -1,0 +1,52 @@
+module: nephrolithiasis
+version: 0.1.0
+source:
+  name: NHANES kidney stone prevalence analysis and AUA guideline
+  provenance: sourced
+  url: https://pubmed.ncbi.nlm.nih.gov/22498635/
+  note: >
+    Targets mirror the module's higher-male, age-increasing nephrolithiasis
+    approximation and representative emergency-care emits.
+  citations:
+    - source: Scales CD et al. Prevalence of kidney stones in the United States
+      url: https://pubmed.ncbi.nlm.nih.gov/22498635/
+      accessed: "2026-05-22"
+    - source: American Urological Association kidney stones medical management guideline
+      url: https://www.auanet.org/guidelines-and-quality/guidelines/kidney-stones-medical-mangement-guideline
+      accessed: "2026-05-22"
+metrics:
+  - id: nephrolithiasis_prevalence_by_sex_and_age
+    kind: conditional_prevalence
+    condition_code: "95570007"
+    condition_system: http://snomed.info/sct
+    stratify_by: sex_and_age
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      female:
+        0-17: 0.005
+        18-39: 0.050
+        40-59: 0.080
+        60-99: 0.090
+      male:
+        0-17: 0.005
+        18-39: 0.070
+        40-59: 0.120
+        60-99: 0.140
+  - id: nephrolithiasis_urine_rbc_rate
+    kind: emit_presence_rate
+    condition_code: "95570007"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: Observation
+    target: 0.75
+    emit_code: "13945-1"
+    emit_code_system: http://loinc.org
+  - id: nephrolithiasis_ct_rate
+    kind: emit_presence_rate
+    condition_code: "95570007"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: Procedure
+    target: 0.70
+    emit_code: "77477000"
+    emit_code_system: http://snomed.info/sct

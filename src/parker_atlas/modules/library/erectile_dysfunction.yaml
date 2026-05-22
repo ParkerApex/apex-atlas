@@ -1,0 +1,37 @@
+module: erectile_dysfunction
+version: 0.1.0
+description: >
+  Erectile dysfunction module for men's health, cardiometabolic risk, and medication workflows.
+cites:
+  - source: American Urological Association erectile dysfunction guideline
+    url: https://www.auanet.org/guidelines-and-quality/guidelines/erectile-dysfunction-(ed)-guideline
+    summary: Erectile dysfunction care includes risk assessment and phosphodiesterase-5 inhibitor therapy for many patients.
+conditions:
+  - id: erectile_dysfunction
+    code: {system: http://snomed.info/sct, code: "397803000", display: Erectile dysfunction}
+    prevalence:
+      female:
+        "0-17": 0.000
+        "18-39": 0.000
+        "40-59": 0.000
+        "60-99": 0.000
+      male:
+        "0-17": 0.002
+        "18-39": 0.080
+        "40-59": 0.180
+        "60-99": 0.340
+    onset_age: {min: 18, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: ed_urology_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "397803000", display: Erectile dysfunction}
+      - resource_type: MedicationRequest
+        spec_id: ed_sildenafil
+        when: today
+        link_to: ed_urology_visit
+        probability: 0.45
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "136411", display: Sildenafil}
+        reason: {system: http://snomed.info/sct, code: "397803000", display: Erectile dysfunction}

@@ -1,0 +1,34 @@
+module: frailty
+version: 0.1.0
+description: >
+  Frailty module for geriatrics, risk adjustment, and post-acute care planning.
+cites:
+  - source: National Institute on Aging frailty research overview
+    url: https://www.nia.nih.gov/research/blog/2023/02/frailty-research
+    summary: Frailty is a multidimensional geriatric syndrome associated with vulnerability and functional decline.
+conditions:
+  - id: frailty
+    code: {system: http://snomed.info/sct, code: "248279007", display: Frailty}
+    prevalence:
+      "0-17": 0.000
+      "18-39": 0.002
+      "40-59": 0.015
+      "60-99": 0.120
+    onset_age: {min: 60, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: frailty_care_management_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "248279007", display: Frailty}
+      - resource_type: Observation
+        spec_id: frailty_gait_speed
+        when: today
+        link_to: frailty_care_management_visit
+        probability: 0.55
+        category: vital-signs
+        code: {system: http://loinc.org, code: "92651-7", display: Gait speed}
+        value_range: {low: 0.3, high: 0.9, precision: 1}
+        unit: m/s
+        unit_code: m/s

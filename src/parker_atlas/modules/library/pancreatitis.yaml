@@ -1,0 +1,33 @@
+module: pancreatitis
+version: 0.1.0
+description: >
+  Pancreatitis module for acute abdominal-pain, ED, and GI follow-up workflows.
+cites:
+  - source: American College of Gastroenterology acute pancreatitis guideline
+    url: https://gi.org/guideline/acute-pancreatitis/
+    summary: Acute pancreatitis diagnosis and management includes abdominal pain assessment, enzymes, imaging, and supportive care.
+conditions:
+  - id: acute_pancreatitis
+    code: {system: http://snomed.info/sct, code: "75694006", display: Acute pancreatitis}
+    prevalence:
+      "0-17": 0.001
+      "18-39": 0.004
+      "40-59": 0.010
+      "60-99": 0.015
+    onset_age: {min: 12, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: pancreatitis_emergency_visit
+        when: onset
+        encounter_class: EMER
+        type: {system: http://snomed.info/sct, code: "50849002", display: Emergency room admission}
+        reason: {system: http://snomed.info/sct, code: "75694006", display: Acute pancreatitis}
+      - resource_type: Observation
+        spec_id: pancreatitis_lipase
+        when: onset
+        link_to: pancreatitis_emergency_visit
+        category: laboratory
+        code: {system: http://loinc.org, code: "3040-3", display: "Lipase [Enzymatic activity/volume] in Serum or Plasma"}
+        value_range: {low: 220, high: 1800, precision: 0}
+        unit: U/L
+        unit_code: U/L

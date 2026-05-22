@@ -1,0 +1,49 @@
+module: iron_deficiency_anemia
+version: 0.1.0
+source:
+  name: Merck Manual Professional iron deficiency anemia reference
+  provenance: sourced
+  url: https://www.merckmanuals.com/professional/hematology-and-oncology/anemias-caused-by-defective-dna-synthesis/iron-deficiency-anemia
+  note: >
+    Targets mirror the module's sex/age approximation and representative CBC,
+    ferritin, and iron treatment emits.
+  citations:
+    - source: Merck Manual Professional — Iron Deficiency Anemia
+      url: https://www.merckmanuals.com/professional/hematology-and-oncology/anemias-caused-by-defective-dna-synthesis/iron-deficiency-anemia
+      accessed: "2026-05-22"
+metrics:
+  - id: ida_prevalence_by_sex_and_age
+    kind: conditional_prevalence
+    condition_code: "87522002"
+    condition_system: http://snomed.info/sct
+    stratify_by: sex_and_age
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      female:
+        0-17: 0.040
+        18-39: 0.110
+        40-59: 0.080
+        60-99: 0.060
+      male:
+        0-17: 0.030
+        18-39: 0.020
+        40-59: 0.025
+        60-99: 0.045
+  - id: ida_hemoglobin_presence_rate
+    kind: emit_presence_rate
+    condition_code: "87522002"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: absolute, value: 0.001}
+    emit_resource_type: Observation
+    target: 1.0
+    emit_code: "718-7"
+    emit_code_system: http://loinc.org
+  - id: ida_iron_treatment_rate
+    kind: emit_presence_rate
+    condition_code: "87522002"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: MedicationRequest
+    target: 0.65
+    emit_code: "24947"
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm

@@ -1,0 +1,43 @@
+module: metabolic_syndrome
+version: 0.1.0
+source:
+  name: AHA/NHLBI metabolic syndrome scientific statement
+  provenance: sourced
+  url: https://www.ahajournals.org/doi/10.1161/CIRCULATIONAHA.105.169404
+  note: >
+    Targets mirror the module's cardiometabolic age-gradient approximation and
+    representative triglyceride and waist-circumference emits.
+  citations:
+    - source: AHA/NHLBI Scientific Statement on Metabolic Syndrome
+      url: https://www.ahajournals.org/doi/10.1161/CIRCULATIONAHA.105.169404
+      accessed: "2026-05-22"
+metrics:
+  - id: metabolic_syndrome_prevalence_by_age
+    kind: conditional_prevalence
+    condition_code: "237602007"
+    condition_system: http://snomed.info/sct
+    stratify_by: age_bracket
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      0-17: 0.020
+      18-39: 0.180
+      40-59: 0.340
+      60-99: 0.420
+  - id: metabolic_syndrome_triglyceride_presence_rate
+    kind: emit_presence_rate
+    condition_code: "237602007"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: absolute, value: 0.001}
+    emit_resource_type: Observation
+    target: 1.0
+    emit_code: "2571-8"
+    emit_code_system: http://loinc.org
+  - id: metabolic_syndrome_waist_presence_rate
+    kind: emit_presence_rate
+    condition_code: "237602007"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: absolute, value: 0.001}
+    emit_resource_type: Observation
+    target: 1.0
+    emit_code: "8280-0"
+    emit_code_system: http://loinc.org

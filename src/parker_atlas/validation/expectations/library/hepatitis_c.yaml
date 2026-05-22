@@ -1,0 +1,43 @@
+module: hepatitis_c
+version: 0.1.0
+source:
+  name: CDC Hepatitis C clinical overview
+  provenance: sourced
+  url: https://www.cdc.gov/hepatitis-c/
+  note: >
+    Targets mirror the module's chronic HCV approximation and representative
+    RNA testing and direct-acting antiviral treatment emits.
+  citations:
+    - source: CDC Hepatitis C
+      url: https://www.cdc.gov/hepatitis-c/
+      accessed: "2026-05-22"
+metrics:
+  - id: hepatitis_c_prevalence_by_age
+    kind: conditional_prevalence
+    condition_code: "128302006"
+    condition_system: http://snomed.info/sct
+    stratify_by: age_bracket
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      0-17: 0.001
+      18-39: 0.010
+      40-59: 0.018
+      60-99: 0.014
+  - id: hepatitis_c_rna_presence_rate
+    kind: emit_presence_rate
+    condition_code: "128302006"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: absolute, value: 0.001}
+    emit_resource_type: Observation
+    target: 1.0
+    emit_code: "11011-4"
+    emit_code_system: http://loinc.org
+  - id: hepatitis_c_daa_rate
+    kind: emit_presence_rate
+    condition_code: "128302006"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: MedicationRequest
+    target: 0.45
+    emit_code: "1799218"
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm

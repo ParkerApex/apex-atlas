@@ -41,29 +41,29 @@ Dates are indicative; actual delivery depends on team capacity and clinical revi
 
 ---
 
-## Milestone 2 — Module Library ✅ Complete (target: 10 modules; achieved: 75)
+## Milestone 2 — Module Library ✅ Complete (target: 10 modules; achieved: 100)
 
-**Goal:** Prove the module DSL and runtime by authoring high-prevalence clinical conditions across the full care spectrum. Original target was 10 modules; as of this milestone close we have 75 modules across 14 clinical domains.
+**Goal:** Prove the module DSL and runtime by authoring high-prevalence clinical conditions across the full care spectrum. Original target was 10 modules; as of this milestone close we have 100 modules across 14 clinical domains.
 
-### Module library (75 modules as of 2026-05-22)
+### Module library (100 modules as of 2026-05-22)
 
 | Domain | Modules |
 |---|---|
 | Cardiovascular | hypertension, heart_failure, ischemic_heart_disease, atrial_fibrillation, stroke, hypercholesterolemia, peripheral_artery_disease, venous_thromboembolism, valvular_heart_disease, cardiomyopathy |
-| Metabolic / Endocrine | diabetes (T2D), type1_diabetes, obesity, hypothyroidism, prediabetes, hyperthyroidism, osteoporosis, metabolic_syndrome |
-| Pulmonary | asthma, copd, sleep_apnea, pneumonia, pulmonary_embolism, pulmonary_hypertension |
-| Gastrointestinal | gerd, nafld, inflammatory_bowel_disease, chronic_liver_disease, gallbladder_disease |
-| Renal / Urology | ckd (+ ESRD progression), urinary_tract_infection, nephrolithiasis, benign_prostatic_hyperplasia, urinary_incontinence |
-| Musculoskeletal | osteoarthritis, rheumatoid_arthritis, low_back_pain, gout, fibromyalgia, lupus, osteoporosis_fracture |
-| Mental health | depression, anxiety, bipolar_disorder |
+| Metabolic / Endocrine | diabetes (T2D), type1_diabetes, obesity, hypothyroidism, prediabetes, hyperthyroidism, osteoporosis, metabolic_syndrome, pcos, thyroid_nodule |
+| Pulmonary | asthma, copd, sleep_apnea, pneumonia, pulmonary_embolism, pulmonary_hypertension, acute_bronchitis |
+| Gastrointestinal | gerd, nafld, inflammatory_bowel_disease, chronic_liver_disease, gallbladder_disease, constipation, diverticulitis, pancreatitis |
+| Renal / Urology | ckd (+ ESRD progression), urinary_tract_infection, nephrolithiasis, benign_prostatic_hyperplasia, urinary_incontinence, erectile_dysfunction |
+| Musculoskeletal | osteoarthritis, rheumatoid_arthritis, low_back_pain, gout, fibromyalgia, lupus, osteoporosis_fracture, chronic_pain |
+| Mental health | depression, anxiety, bipolar_disorder, adhd, insomnia, postpartum_depression |
 | Substance use | alcohol_use_disorder, opioid_use_disorder, tobacco_use_disorder |
-| Neurology / Cognition | alzheimers_dementia, migraine, epilepsy, parkinsons_disease, peripheral_neuropathy, traumatic_brain_injury |
+| Neurology / Cognition | alzheimers_dementia, migraine, epilepsy, parkinsons_disease, peripheral_neuropathy, traumatic_brain_injury, autism_spectrum_disorder |
 | Oncology | lung_cancer, colorectal_cancer, breast_cancer, prostate_cancer |
-| Infectious disease | hiv, influenza, covid19, hepatitis_c |
+| Infectious disease | hiv, influenza, covid19, hepatitis_c, cellulitis, sepsis_survivorship, sexual_health_sti |
 | Hematology | sickle_cell (+ vaso-occlusive crisis progression), iron_deficiency_anemia |
-| Pediatric / OB / Prevention | pediatric_wellness, maternal_health, wellness, complications, adult_immunizations (8 vaccine cohorts: flu, pneumo, shingles, Tdap, RSV, COVID-19, HPV) |
-| Dermatology / Allergy | allergic_rhinitis, atopic_dermatitis, psoriasis, melanoma |
-| ENT / Ophthalmology | cataract, otitis_media, sinusitis |
+| Pediatric / OB / Prevention | pediatric_wellness, maternal_health, wellness, complications, adult_immunizations (8 vaccine cohorts: flu, pneumo, shingles, Tdap, RSV, COVID-19, HPV), dental_caries, endometriosis, fall_risk, frailty, menopause, pressure_injury, uterine_fibroids |
+| Dermatology / Allergy | allergic_rhinitis, atopic_dermatitis, psoriasis, melanoma, acne |
+| ENT / Ophthalmology | cataract, otitis_media, sinusitis, conjunctivitis, hearing_loss |
 
 ### Cross-module progressions (active chains)
 
@@ -87,44 +87,48 @@ Dates are indicative; actual delivery depends on team capacity and clinical revi
 
 ## Milestone 3 — LLM-Assisted Authoring 🔄 In Progress
 
-**Goal:** Scale the module library from 75 to 100+ without letting provenance, test coverage, or clinical review quality degrade.
+**Goal:** Keep the 100-module launch library extensible without letting provenance, test coverage, or clinical review quality degrade.
 
 **Delivered:**
 
-- LLM-to-DSL authoring pipeline: ✅ Working (75 modules authored via Claude Code integration)
+- LLM-to-DSL authoring pipeline: ✅ Working (100 modules authored via Claude Code integration)
 - Epidemiology citation embedding: ✅ Every module carries `cites:` with source, URL, and summary
 - Automated validation loop: ✅ smoke-test + full test suite on every authoring batch
+- Launch-demo cohort preset: ✅ `atlas launch-demo`
+- GTM validation preset: ✅ `atlas validate --gtm` across 18 sourced launch expectations
 - Authoring workflow documentation: ⏳ Module authoring guide not yet written
 
 **Remaining:**
 
 - Formal clinician review UI (web-based) for sign-off workflow
 - Authoring documentation: `docs/authoring/module_dsl.md` spec
-- Automated prevalence validation for all 75 modules against sourced expectations (currently 19 modules have sourced fidelity expectations)
+- Automated prevalence validation for all 100 modules against sourced expectations (currently 28 modules have sourced fidelity expectations; 18 are included in the GTM validation preset)
 - LLM provider abstraction for non-Claude backends
 
 **Exit criteria (revised):** 100 total modules in the library, all with sourced citations; clinician review workflow established with at least one licensed clinician sign-off per module.
 
-### 100-module expansion plan
+Current status: module-count and citation requirements are complete; clinician sign-off workflow remains open.
 
-The v1.0 library target is 100 modules. The count matters for GTM only if the library remains useful and auditable, so each new module must ship with citations, deterministic smoke tests, and a documented validation tier. The current catalog lives in [`docs/module-catalog.md`](./module-catalog.md).
+### 100-module launch plan
 
-| Domain | Current | v1.0 target | Net new | Candidate additions |
-|---|---:|---:|---:|---|
-| Cardiovascular | 10 | 10 | 0 | Complete for v1.0 target |
-| Metabolic / Endocrine | 8 | 8 | 0 | Complete for v1.0 target |
-| Pulmonary | 6 | 7 | 1 | interstitial_lung_disease |
-| GI / Hepatology | 5 | 7 | 2 | peptic_ulcer_disease, pancreatitis |
-| Renal / Urology | 5 | 5 | 0 | Complete for v1.0 target |
-| Musculoskeletal / Rheumatology | 7 | 7 | 0 | Complete for v1.0 target |
-| Mental health / Behavioral | 3 | 8 | 5 | ptsd, schizophrenia, adhd, eating_disorder, insomnia |
-| Substance use | 3 | 5 | 2 | cannabis_use_disorder, stimulant_use_disorder |
-| Neurology / Cognition | 6 | 8 | 2 | multiple_sclerosis, dementia_unspecified |
-| Oncology / Hematology | 7 | 11 | 4 | lymphoma, leukemia, bladder_cancer, kidney_cancer |
-| Infectious disease | 4 | 7 | 3 | hepatitis_b, tuberculosis, cellulitis |
-| Pediatric / OB / Prevention | 5 | 9 | 4 | contraception, infertility, menopause, neonatal_jaundice |
-| Dermatology / Allergy | 4 | 4 | 0 | Complete for v1.0 target |
-| ENT / Ophthalmology | 3 | 4 | 1 | glaucoma |
+The v1.0 library target is now complete at 100 modules. The count matters for GTM only because the library remains useful and auditable: every module ships with citations, deterministic smoke tests, representative FHIR emits, and a documented validation tier. The current catalog lives in [`docs/module-catalog.md`](./module-catalog.md).
+
+| Domain | Current modules | Launch status |
+|---|---:|---|
+| Cardiovascular | 10 | Complete |
+| Metabolic / Endocrine | 10 | Complete |
+| Pulmonary | 7 | Complete |
+| GI / Hepatology | 8 | Complete |
+| Renal / Urology | 6 | Complete |
+| Musculoskeletal / Rheumatology | 8 | Complete |
+| Mental health / Behavioral | 6 | Complete |
+| Substance use | 3 | Complete |
+| Neurology / Cognition | 7 | Complete |
+| Oncology / Hematology | 7 | Complete |
+| Infectious disease | 7 | Complete |
+| Pediatric / OB / Prevention | 12 | Complete |
+| Dermatology / Allergy | 4 | Complete |
+| ENT / Ophthalmology | 5 | Complete |
 
 ### Module quality tiers
 
@@ -140,7 +144,7 @@ The v1.0 library target is 100 modules. The count matters for GTM only if the li
 |---|---:|---|
 | Batch A | 50 modules | Complete: primary-care, acute-care, allergy/derm, neuro, vascular, and ophthalmology gaps filled |
 | Batch B | 75 modules | Complete: specialty breadth added across cardiovascular, endocrine, pulmonary, GI, urology, MSK, neurology, oncology/heme, ID, and ENT |
-| Batch C | 100 modules | Complete launch library; smoke-test all modules; tier all modules |
+| Batch C | 100 modules | Complete: launch library, smoke tests, catalog tiering, demo preset, and GTM validation preset |
 | Batch D | 100+ modules | Convert remaining high-use modules to Tier 1 and publish sample cohorts |
 
 ---
@@ -170,7 +174,7 @@ The v1.0 library target is 100 modules. The count matters for GTM only if the li
 
 **Goal:** Ship v1.0 as a signed, validated release with broad clinical coverage and enterprise-grade documentation.
 
-- 100+ clinical modules (37 of 100+ today)
+- 100 clinical modules in the launch library
 - All modules with sourced prevalence expectations and passing cohort fidelity checks
 - Full US Core 6.1 and IPS 2.0 conformance validation on every release
 - SMART on FHIR / Bulk Data Access ($export) endpoint

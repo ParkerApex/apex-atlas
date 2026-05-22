@@ -1,0 +1,40 @@
+module: pcos
+version: 0.1.0
+description: >
+  Polycystic ovary syndrome module for reproductive endocrinology and metabolic-risk workflows.
+cites:
+  - source: Endocrine Society PCOS clinical practice guideline
+    url: https://academic.oup.com/jcem/article/98/12/4565/2833703
+    summary: PCOS care includes reproductive, hyperandrogenic, and metabolic risk assessment.
+conditions:
+  - id: polycystic_ovary_syndrome
+    code: {system: http://snomed.info/sct, code: "69878008", display: Polycystic ovary syndrome}
+    prevalence:
+      female:
+        "0-17": 0.015
+        "18-39": 0.080
+        "40-59": 0.035
+        "60-99": 0.002
+      male:
+        "0-17": 0.000
+        "18-39": 0.000
+        "40-59": 0.000
+        "60-99": 0.000
+    onset_age: {min: 13, max: 45}
+    emits:
+      - resource_type: Encounter
+        spec_id: pcos_endocrine_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "69878008", display: Polycystic ovary syndrome}
+      - resource_type: Observation
+        spec_id: pcos_testosterone
+        when: today
+        link_to: pcos_endocrine_visit
+        probability: 0.40
+        category: laboratory
+        code: {system: http://loinc.org, code: "2986-8", display: "Testosterone [Mass/volume] in Serum or Plasma"}
+        value_range: {low: 45, high: 110, precision: 0}
+        unit: ng/dL
+        unit_code: ng/dL

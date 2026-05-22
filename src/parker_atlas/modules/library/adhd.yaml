@@ -1,0 +1,31 @@
+module: adhd
+version: 0.1.0
+description: >
+  ADHD module for pediatric and adult behavioral-health medication management workflows.
+cites:
+  - source: CDC ADHD data and statistics
+    url: https://www.cdc.gov/adhd/data/index.html
+    summary: ADHD is commonly diagnosed in childhood and may persist into adulthood.
+conditions:
+  - id: attention_deficit_hyperactivity_disorder
+    code: {system: http://snomed.info/sct, code: "406506008", display: Attention deficit hyperactivity disorder}
+    prevalence:
+      "0-17": 0.090
+      "18-39": 0.045
+      "40-59": 0.025
+      "60-99": 0.008
+    onset_age: {min: 5, max: 30}
+    emits:
+      - resource_type: Encounter
+        spec_id: adhd_medication_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "406506008", display: Attention deficit hyperactivity disorder}
+      - resource_type: MedicationRequest
+        spec_id: adhd_methylphenidate
+        when: today
+        link_to: adhd_medication_visit
+        probability: 0.42
+        medication: {system: http://www.nlm.nih.gov/research/umls/rxnorm, code: "6901", display: Methylphenidate}
+        reason: {system: http://snomed.info/sct, code: "406506008", display: Attention deficit hyperactivity disorder}

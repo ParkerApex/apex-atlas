@@ -1,0 +1,31 @@
+module: pressure_injury
+version: 0.1.0
+description: >
+  Pressure injury module for post-acute care, wound care, home health, and quality workflows.
+cites:
+  - source: Agency for Healthcare Research and Quality pressure injury prevention resources
+    url: https://www.ahrq.gov/patient-safety/settings/hospital/resource/pressure-injury/index.html
+    summary: Pressure injury prevention and care include risk assessment, wound staging, and skin care.
+conditions:
+  - id: pressure_injury
+    code: {system: http://snomed.info/sct, code: "399912005", display: Pressure injury}
+    prevalence:
+      "0-17": 0.001
+      "18-39": 0.004
+      "40-59": 0.012
+      "60-99": 0.050
+    onset_age: {min: 18, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: pressure_injury_wound_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "399912005", display: Pressure injury}
+      - resource_type: Procedure
+        spec_id: pressure_injury_wound_care
+        when: today
+        link_to: pressure_injury_wound_visit
+        probability: 0.75
+        code: {system: http://snomed.info/sct, code: "225358003", display: Wound care}
+        reason: {system: http://snomed.info/sct, code: "399912005", display: Pressure injury}

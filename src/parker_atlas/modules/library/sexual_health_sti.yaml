@@ -1,0 +1,33 @@
+module: sexual_health_sti
+version: 0.1.0
+description: >
+  STI screening module for sexual health, prevention, and primary-care quality workflows.
+cites:
+  - source: CDC sexually transmitted infections treatment guidelines
+    url: https://www.cdc.gov/std/treatment-guidelines/default.htm
+    summary: STI care includes risk-based screening, testing, and treatment.
+conditions:
+  - id: chlamydial_infection
+    code: {system: http://snomed.info/sct, code: "105629000", display: Chlamydial infection}
+    prevalence:
+      "0-17": 0.010
+      "18-39": 0.045
+      "40-59": 0.012
+      "60-99": 0.003
+    onset_age: {min: 14, max: 70}
+    emits:
+      - resource_type: Encounter
+        spec_id: sti_visit
+        when: onset
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "185345009", display: Encounter for symptom}
+        reason: {system: http://snomed.info/sct, code: "105629000", display: Chlamydial infection}
+      - resource_type: Observation
+        spec_id: sti_chlamydia_naat
+        when: onset
+        link_to: sti_visit
+        category: laboratory
+        code: {system: http://loinc.org, code: "21613-5", display: "Chlamydia trachomatis DNA [Presence] in Specimen by NAA with probe detection"}
+        value_range: {low: 1, high: 1, precision: 0}
+        unit: positive
+        unit_code: "{positive}"

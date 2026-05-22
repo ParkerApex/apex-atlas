@@ -1,0 +1,31 @@
+module: hearing_loss
+version: 0.1.0
+description: >
+  Hearing loss module for ENT, geriatrics, audiology, and access-to-care workflows.
+cites:
+  - source: National Institute on Deafness and Other Communication Disorders age-related hearing loss
+    url: https://www.nidcd.nih.gov/health/age-related-hearing-loss
+    summary: Age-related hearing loss is common in older adults and may require audiologic evaluation.
+conditions:
+  - id: hearing_loss
+    code: {system: http://snomed.info/sct, code: "15188001", display: Hearing loss}
+    prevalence:
+      "0-17": 0.015
+      "18-39": 0.030
+      "40-59": 0.090
+      "60-99": 0.280
+    onset_age: {min: 1, max: 95}
+    emits:
+      - resource_type: Encounter
+        spec_id: hearing_loss_ent_visit
+        when: today
+        encounter_class: AMB
+        type: {system: http://snomed.info/sct, code: "390906007", display: Follow-up encounter}
+        reason: {system: http://snomed.info/sct, code: "15188001", display: Hearing loss}
+      - resource_type: Procedure
+        spec_id: hearing_loss_audiometry
+        when: today
+        link_to: hearing_loss_ent_visit
+        probability: 0.60
+        code: {system: http://snomed.info/sct, code: "25247002", display: Audiometry}
+        reason: {system: http://snomed.info/sct, code: "15188001", display: Hearing loss}

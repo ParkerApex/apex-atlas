@@ -1,0 +1,49 @@
+module: osteoporosis
+version: 0.1.0
+source:
+  name: Bone Health and Osteoporosis Foundation clinician resources
+  provenance: sourced
+  url: https://www.bonehealthandosteoporosis.org/
+  note: >
+    Targets mirror the module's older-adult and female-skewed osteoporosis
+    approximation and representative DXA and bisphosphonate emits.
+  citations:
+    - source: Bone Health and Osteoporosis Foundation
+      url: https://www.bonehealthandosteoporosis.org/
+      accessed: "2026-05-22"
+metrics:
+  - id: osteoporosis_prevalence_by_sex_and_age
+    kind: conditional_prevalence
+    condition_code: "64859006"
+    condition_system: http://snomed.info/sct
+    stratify_by: sex_and_age
+    tolerance: {kind: wilson, confidence: 99}
+    targets:
+      female:
+        0-17: 0.0
+        18-39: 0.005
+        40-59: 0.060
+        60-99: 0.280
+      male:
+        0-17: 0.0
+        18-39: 0.002
+        40-59: 0.020
+        60-99: 0.100
+  - id: osteoporosis_dxa_rate
+    kind: emit_presence_rate
+    condition_code: "64859006"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: Procedure
+    target: 0.75
+    emit_code: "312681000"
+    emit_code_system: http://snomed.info/sct
+  - id: osteoporosis_alendronate_rate
+    kind: emit_presence_rate
+    condition_code: "64859006"
+    condition_system: http://snomed.info/sct
+    tolerance: {kind: wilson, confidence: 99}
+    emit_resource_type: MedicationRequest
+    target: 0.40
+    emit_code: "46041"
+    emit_code_system: http://www.nlm.nih.gov/research/umls/rxnorm
