@@ -1,0 +1,456 @@
+module: maternal_health
+version: 0.1.0
+description: >
+  Maternal health and obstetric care module for females of reproductive age
+  (15-49). Models pregnancy occurrence, standard prenatal visit series,
+  routine prenatal labs, delivery, and common obstetric complications.
+
+  The core condition `active_pregnancy` fires at ~5.5% annual probability
+  in females 15-49 — calibrated to the CDC NVSS crude birth rate of ~11.4
+  per 1,000 population in 2022, adjusted to a per-woman-of-reproductive-age
+  denominator (~56 per 1,000 women 15-44). The module uses a flat 5.5%
+  across the reproductive window as a simplification; peak fertility is 20-29
+  (where the rate is closer to 8-9%) and falls off before 15 and after 44.
+
+  When `active_pregnancy` fires, the module emits:
+  - An initial prenatal OB visit (AMB, first trimester)
+  - A mid-pregnancy anatomy scan Encounter
+  - A third-trimester visit Encounter
+  - Prenatal labs: CBC, metabolic panel (BMP), RhD typing, GDM screen (1hr
+    glucose challenge), GBS culture
+  - A delivery inpatient Encounter (hospital-based birth)
+  - A postpartum visit at 6 weeks
+
+  Complication conditions fire only if `active_pregnancy` has fired:
+
+  `gestational_diabetes` — ~7.8% of pregnancies (CDC/ACOG 2021), emits an
+  HbA1c follow-up Observation and insulin counseling note. Uses the
+  `requires: active_pregnancy` DSL gate.
+
+  `preeclampsia` — ~5.8% of pregnancies (ACOG 2022). Emits a blood pressure
+  Observation with hypertensive range (140-160 / 90-110) and a maternal-
+  fetal medicine (MFM) specialist consult Encounter.
+
+  `postpartum_depression` — ~14% of new mothers (USPSTF / O'Hara 2014).
+  Emits an Edinburgh score screening Observation and a follow-up behavioral
+  health Encounter.
+
+  Prevalence is set to 0 for males and for all female age brackets outside
+  15-49 (sex-stratified prevalence form). The module does not model prenatal
+  loss (miscarriage/stillbirth) — a future extension.
+
+  Onset age ranges are deliberately broad since pregnancy can occur anywhere
+  in the reproductive window; the module DSL samples a uniform onset for
+  complication conditions within the same bracket.
+
+cites:
+  - source: >
+      CDC National Vital Statistics System (NVSS) — Births: Final Data
+      for 2022. Hamilton BE, Martin JA, Osterman MJK. NVSS 2024;72(1).
+    url: https://www.cdc.gov/nchs/products/nvsr.htm
+    summary: >
+      Crude birth rate 11.0 per 1,000 population (2022). General
+      fertility rate 56.0 per 1,000 females aged 15-44 years. This
+      module uses 5.5% annual pregnancy probability as a round-number
+      approximation over all 15-49 females; fertility peaks in 20s
+      and is near zero outside 15-49.
+
+  - source: >
+      CDC Gestational Diabetes — Data & Statistics 2021.
+    url: https://www.cdc.gov/diabetes/library/features/gestational-diabetes.html
+    summary: >
+      Gestational diabetes affects ~7.8% of pregnancies (2021 estimate).
+      Rates vary by maternal age and race/ethnicity.
+
+  - source: >
+      ACOG Practice Bulletin 222 — Gestational Hypertension and
+      Preeclampsia. Obstet Gynecol 2020;135(6):e237-60.
+    url: https://www.acog.org/clinical/clinical-guidance/practice-bulletin/articles/2020/06/gestational-hypertension-and-preeclampsia
+    summary: >
+      Preeclampsia complicates ~5-8% of pregnancies. Risk is higher in
+      nulliparous women, women with chronic hypertension, and multiple
+      gestations. Module uses 5.8% as mid-range.
+
+  - source: >
+      O'Hara MW, Wisner KL. Postpartum mental illness: definition,
+      description and aetiology. Best Pract Res Clin Obstet Gynaecol.
+      2014;28(1):3-12.
+    url: https://pubmed.ncbi.nlm.nih.gov/24140480/
+    summary: >
+      Postpartum depression affects ~13-19% of new mothers using DSM
+      criteria; the USPSTF and APA cite 14%. Module uses 0.14.
+
+conditions:
+  # -----------------------------------------------------------------------
+  # Core condition: active pregnancy
+  # Fires with ~5.5% probability in females 15-49.
+  # Emits the full prenatal visit cascade + delivery + postpartum.
+  # -----------------------------------------------------------------------
+  - id: active_pregnancy
+    code:
+      system: http://snomed.info/sct
+      code: "72892002"
+      display: Normal pregnancy (finding)
+    prevalence:
+      female:
+        "0-14":  0.0
+        "15-19": 0.025
+        "20-29": 0.085
+        "30-39": 0.065
+        "40-49": 0.015
+        "50-99": 0.0
+      male:
+        "0-99": 0.0
+    onset_age:
+      min: 15
+      max: 49
+    emits:
+      # First-trimester OB visit
+      - resource_type: Encounter
+        spec_id: prenatal_first_trimester
+        when: onset
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "424441002"
+          display: Prenatal initial visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "72892002"
+          display: Normal pregnancy
+
+      # Anatomy scan visit (~20 weeks, modeled as onset+20 weeks)
+      - resource_type: Encounter
+        spec_id: prenatal_anatomy_scan
+        when: onset+20w
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "310585002"
+          display: Antenatal ultrasound scan (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "72892002"
+          display: Normal pregnancy
+
+      # Third-trimester visit (~32 weeks)
+      - resource_type: Encounter
+        spec_id: prenatal_third_trimester
+        when: onset+32w
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "424441002"
+          display: Prenatal initial visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "72892002"
+          display: Normal pregnancy
+
+      # Delivery — inpatient hospital admission
+      - resource_type: Encounter
+        spec_id: delivery_encounter
+        when: onset+40w
+        encounter_class: IMP
+        type:
+          system: http://snomed.info/sct
+          code: "11466000"
+          display: Cesarean section (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "72892002"
+          display: Normal pregnancy
+
+      # Postpartum visit at 6 weeks after delivery
+      - resource_type: Encounter
+        spec_id: postpartum_visit
+        when: onset+46w
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "133906008"
+          display: Postpartum care (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "72892002"
+          display: Normal pregnancy
+
+      # CBC at first prenatal visit
+      - resource_type: Observation
+        spec_id: prenatal_hemoglobin
+        when: onset
+        link_to: prenatal_first_trimester
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "718-7"
+          display: Hemoglobin [Mass/volume] in Blood
+        value_range: {low: 10.5, high: 13.5, precision: 1}
+        unit: g/dL
+        unit_code: g/dL
+
+      # 1-hour glucose challenge test at ~28 weeks (GDM screen)
+      - resource_type: Observation
+        spec_id: gdm_screen_glucose
+        when: onset+28w
+        link_to: prenatal_third_trimester
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "20436-2"
+          display: Glucose [Mass/volume] in Blood --1 hour post 50 g glucose PO
+        value_range: {low: 90, high: 155, precision: 0}
+        unit: mg/dL
+        unit_code: mg/dL
+
+      # Blood pressure at anatomy scan — normotensive for uncomplicated pregnancy
+      - resource_type: Observation
+        spec_id: prenatal_bp
+        when: onset+20w
+        link_to: prenatal_anatomy_scan
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "85354-9"
+          display: Blood pressure panel with all children optional
+        components:
+          - code:
+              system: http://loinc.org
+              code: "8480-6"
+              display: Systolic blood pressure
+            value_range: {low: 100, high: 135, precision: 0}
+            unit: mm[Hg]
+          - code:
+              system: http://loinc.org
+              code: "8462-4"
+              display: Diastolic blood pressure
+            value_range: {low: 60, high: 85, precision: 0}
+            unit: mm[Hg]
+
+  # -----------------------------------------------------------------------
+  # Complication: gestational diabetes (GDM)
+  # Requires: active_pregnancy. ~7.8% of pregnancies.
+  # -----------------------------------------------------------------------
+  - id: gestational_diabetes
+    code:
+      system: http://snomed.info/sct
+      code: "11687002"
+      display: Gestational diabetes mellitus (disorder)
+    requires: active_pregnancy
+    prevalence:
+      female:
+        "0-14":  0.0
+        "15-19": 0.050
+        "20-29": 0.070
+        "30-39": 0.090
+        "40-49": 0.110
+        "50-99": 0.0
+      male:
+        "0-99": 0.0
+    onset_age:
+      min: 15
+      max: 49
+    emits:
+      # MFM or OB-focused GDM management visit
+      - resource_type: Encounter
+        spec_id: gdm_management_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "160695008"
+          display: Transport-related finding (finding)
+        reason:
+          system: http://snomed.info/sct
+          code: "11687002"
+          display: Gestational diabetes mellitus
+
+      # HbA1c to monitor glycemic control during pregnancy (target <6.5% in GDM)
+      - resource_type: Observation
+        spec_id: gdm_hba1c
+        when: today
+        link_to: gdm_management_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "4548-4"
+          display: Hemoglobin A1c/Hemoglobin.total in Blood
+        value_range: {low: 5.5, high: 8.0, precision: 1}
+        unit: '%'
+        unit_code: '%'
+
+      # Fasting glucose monitoring
+      - resource_type: Observation
+        spec_id: gdm_fasting_glucose
+        when: today
+        link_to: gdm_management_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "1558-6"
+          display: Fasting glucose [Mass/volume] in Blood
+        value_range: {low: 90, high: 140, precision: 0}
+        unit: mg/dL
+        unit_code: mg/dL
+
+      # Metformin or insulin — ~40% of GDM requires pharmacotherapy
+      - resource_type: MedicationRequest
+        spec_id: gdm_metformin
+        when: today
+        link_to: gdm_management_visit
+        probability: 0.40
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "860975"
+          display: Metformin 500 MG Oral Tablet
+
+  # -----------------------------------------------------------------------
+  # Complication: preeclampsia
+  # Requires: active_pregnancy. ~5.8% of pregnancies.
+  # -----------------------------------------------------------------------
+  - id: preeclampsia
+    code:
+      system: http://snomed.info/sct
+      code: "398254007"
+      display: Pre-eclampsia (disorder)
+    requires: active_pregnancy
+    prevalence:
+      female:
+        "0-14":  0.0
+        "15-19": 0.072
+        "20-29": 0.052
+        "30-39": 0.058
+        "40-49": 0.075
+        "50-99": 0.0
+      male:
+        "0-99": 0.0
+    onset_age:
+      min: 15
+      max: 49
+    emits:
+      # MFM specialist consult for elevated BP in pregnancy
+      - resource_type: Encounter
+        spec_id: preeclampsia_mfm_consult
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "11429006"
+          display: Consultation (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "398254007"
+          display: Pre-eclampsia
+
+      # Blood pressure in hypertensive range for preeclampsia
+      - resource_type: Observation
+        spec_id: preeclampsia_bp
+        when: today
+        link_to: preeclampsia_mfm_consult
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "85354-9"
+          display: Blood pressure panel with all children optional
+        components:
+          - code:
+              system: http://loinc.org
+              code: "8480-6"
+              display: Systolic blood pressure
+            value_range: {low: 140, high: 165, precision: 0}
+            unit: mm[Hg]
+          - code:
+              system: http://loinc.org
+              code: "8462-4"
+              display: Diastolic blood pressure
+            value_range: {low: 90, high: 110, precision: 0}
+            unit: mm[Hg]
+
+      # Urine protein (spot protein:creatinine ratio)
+      - resource_type: Observation
+        spec_id: preeclampsia_urine_protein
+        when: today
+        link_to: preeclampsia_mfm_consult
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "2890-2"
+          display: Protein [Mass/volume] in Urine
+        value_range: {low: 300, high: 5000, precision: 0}
+        unit: mg/24h
+        unit_code: mg/24h
+
+      # Labetalol for acute BP management in preeclampsia
+      - resource_type: MedicationRequest
+        spec_id: preeclampsia_labetalol
+        when: today
+        link_to: preeclampsia_mfm_consult
+        probability: 0.60
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "28962"
+          display: Labetalol 200 MG Oral Tablet
+
+  # -----------------------------------------------------------------------
+  # Complication: postpartum depression
+  # Requires: active_pregnancy. ~14% of new mothers.
+  # -----------------------------------------------------------------------
+  - id: postpartum_depression
+    code:
+      system: http://snomed.info/sct
+      code: "58703003"
+      display: Postpartum depression (disorder)
+    requires: active_pregnancy
+    prevalence:
+      female:
+        "0-14":  0.0
+        "15-19": 0.160
+        "20-29": 0.145
+        "30-39": 0.130
+        "40-49": 0.140
+        "50-99": 0.0
+      male:
+        "0-99": 0.0
+    onset_age:
+      min: 15
+      max: 49
+    emits:
+      # Behavioral health follow-up encounter (postpartum)
+      - resource_type: Encounter
+        spec_id: ppd_bh_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "702971000"
+          display: Counseling (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "58703003"
+          display: Postpartum depression
+
+      # Edinburgh Postnatal Depression Scale (EPDS) screening score (0-30)
+      # Score ≥10 indicates likely PPD.
+      - resource_type: Observation
+        spec_id: ppd_epds_score
+        when: today
+        link_to: ppd_bh_visit
+        category: survey
+        code:
+          system: http://loinc.org
+          code: "89458-3"
+          display: Edinburgh postnatal depression scale total score
+        value_range: {low: 10, high: 26, precision: 0}
+        unit: '{score}'
+        unit_code: '{score}'
+
+      # SSRI for PPD — sertraline is first-line, ~70% of treated PPD cases
+      - resource_type: MedicationRequest
+        spec_id: ppd_sertraline
+        when: today
+        link_to: ppd_bh_visit
+        probability: 0.55
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "36437"
+          display: Sertraline 50 MG Oral Tablet

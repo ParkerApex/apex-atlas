@@ -1,0 +1,569 @@
+module: pediatric_wellness
+version: 0.1.0
+description: >
+  Pediatric well-child visit module covering birth through age 17.
+  Models the ACIP childhood immunization schedule and age-appropriate
+  preventive care visits, stratified into four developmental cohorts:
+  infant (0-2), toddler (2-5), school-age (6-11), and adolescent (12-17).
+
+  Each cohort condition has a prevalence of ~0 in all age brackets except
+  its target range, so they fire mutually exclusively based on patient age.
+  This works around the module DSL limitation of no within-condition age-
+  gated emit selection: each developmental stage is a separate condition
+  with its own emit set tailored to that age group.
+
+  Prevalence is anchored to CDC NHIS 2022 "well-child visit in past 12
+  months" rates by age group: ~94% ages 0-2, ~88% ages 3-5, ~79% ages
+  6-11, ~59% ages 12-17.
+
+  Immunizations emitted per cohort reflect the ACIP 2024 recommended
+  childhood immunization schedule:
+  - Infant (0-2): HepB, DTaP, Hib, PCV15, IPV, Rotavirus, HepA
+  - Toddler (2-5): MMR, Varicella, final DTaP, flu
+  - School-age (6-11): Annual flu, Tdap booster catch-up
+  - Adolescent (12-17): HPV (2-dose series), MenACWY, Tdap, flu
+
+  Immunization probabilities are modeled as coverage rates, not adherence
+  to individual dose schedules, since the module fires once per patient.
+  Rates approximate the CDC Immunization Coverage among Children survey
+  (NIS-Child, NIS-Teen 2022-23).
+
+  No bundled fidelity expectation for this first version — process-measure
+  expectations (visit rates, vaccination coverage) require a different
+  harness shape than the current conditional_prevalence flavor.
+
+cites:
+  - source: >
+      CDC National Health Interview Survey (NHIS) 2022 — Well-child
+      Visits Among Children Under Age 18 by Age Group.
+    url: https://www.cdc.gov/nchs/nhis/index.htm
+    summary: >
+      Well-child visit prevalence (past 12 months): ~94% ages 0-2,
+      ~88% ages 3-5, ~79% ages 6-11, ~59% ages 12-17. Rates decrease
+      substantially in adolescence.
+
+  - source: >
+      CDC National Immunization Survey — Child (NIS-Child) 2022-23.
+    url: https://www.cdc.gov/vaccines/imz-managers/coverage/childvaxview/index.html
+    summary: >
+      Series completion rates: 4:3:1:3:3:1:4 (≥19 months) ~70%;
+      MMR 1-dose 92%, Varicella 1-dose 91%, HepA 2-dose 74%.
+
+  - source: >
+      CDC National Immunization Survey — Teen (NIS-Teen) 2022-23.
+    url: https://www.cdc.gov/vaccines/imz-managers/coverage/teenvaxview/index.html
+    summary: >
+      Adolescent coverage: HPV completion (~60% girls, ~57% boys);
+      MenACWY dose 1 ~87%; Tdap 90%; flu (2022-23 season) ~50%.
+
+  - source: >
+      CDC ACIP Recommended Child and Adolescent Immunization Schedule
+      for ages 18 years or younger — United States, 2024.
+    url: https://www.cdc.gov/vaccines/schedules/hcp/imz/child-adolescent.html
+    summary: >
+      Authoritative ACIP 2024 schedule used to select vaccines and
+      timing for each developmental cohort in this module.
+
+conditions:
+  # -----------------------------------------------------------------------
+  # Infant well-child (0-2)
+  # Primary series immunizations: HepB, DTaP×3, Hib×3, PCV15×3, IPV×3,
+  # Rotavirus×2-3, HepA×1.
+  # Growth measures: weight, length/height, head circumference.
+  # -----------------------------------------------------------------------
+  - id: infant_wellness
+    code:
+      system: http://snomed.info/sct
+      code: "170149006"
+      display: Child examination (procedure)
+    prevalence:
+      "0-2": 0.94
+      "3-99": 0.0
+    onset_age:
+      min: 0
+      max: 2
+    emits:
+      - resource_type: Encounter
+        spec_id: infant_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "410620009"
+          display: Well child visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "170149006"
+          display: Child examination
+
+      # Weight — newborn-to-toddler range (2.5-14 kg)
+      - resource_type: Observation
+        spec_id: infant_weight
+        when: today
+        link_to: infant_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "29463-7"
+          display: Body weight
+        value_range: {low: 2.5, high: 14.0, precision: 1}
+        unit: kg
+        unit_code: kg
+
+      # Length/height — 45-90 cm typical for 0-2 years
+      - resource_type: Observation
+        spec_id: infant_height
+        when: today
+        link_to: infant_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "8302-2"
+          display: Body height
+        value_range: {low: 45, high: 90, precision: 1}
+        unit: cm
+        unit_code: cm
+
+      # Head circumference — 32-50 cm at 0-2 years
+      - resource_type: Observation
+        spec_id: infant_head_circ
+        when: today
+        link_to: infant_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "9843-4"
+          display: Head Occipital-frontal circumference
+        value_range: {low: 32, high: 50, precision: 1}
+        unit: cm
+        unit_code: cm
+
+      # HepB — birth dose + series completion ~90%
+      - resource_type: Immunization
+        spec_id: infant_hepb
+        when: today
+        link_to: infant_visit
+        probability: 0.90
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "08"
+          display: Hep B, adolescent or pediatric
+
+      # DTaP — 3-dose series ~95% (NIS-Child 4:3:1:3:3:1:4 series)
+      - resource_type: Immunization
+        spec_id: infant_dtap
+        when: today
+        link_to: infant_visit
+        probability: 0.95
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "20"
+          display: DTaP (diphtheria, tetanus, acellular pertussis)
+
+      # Hib — 3-dose series ~93%
+      - resource_type: Immunization
+        spec_id: infant_hib
+        when: today
+        link_to: infant_visit
+        probability: 0.93
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "17"
+          display: Hib, PRP-OMP (PedvaxHIB, COMVAX)
+
+      # PCV15 (pneumococcal) — 3-dose series ~91%
+      - resource_type: Immunization
+        spec_id: infant_pcv
+        when: today
+        link_to: infant_visit
+        probability: 0.91
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "216"
+          display: Pneumococcal conjugate vaccine, 15 valent
+
+      # IPV — 3-dose series ~93%
+      - resource_type: Immunization
+        spec_id: infant_ipv
+        when: today
+        link_to: infant_visit
+        probability: 0.93
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "10"
+          display: IPV (inactivated poliovirus vaccine)
+
+      # Rotavirus — 2-dose series ~74%
+      - resource_type: Immunization
+        spec_id: infant_rotavirus
+        when: today
+        link_to: infant_visit
+        probability: 0.74
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "119"
+          display: Rotavirus, monovalent
+
+  # -----------------------------------------------------------------------
+  # Toddler well-child (3-5)
+  # Catch-up + booster doses: MMR, Varicella, DTaP 4th/5th, IPV 4th,
+  # HepA 2nd dose, PCV booster, annual flu.
+  # -----------------------------------------------------------------------
+  - id: toddler_wellness
+    code:
+      system: http://snomed.info/sct
+      code: "170149006"
+      display: Child examination (procedure)
+    prevalence:
+      "0-2": 0.0
+      "3-5": 0.88
+      "6-99": 0.0
+    onset_age:
+      min: 3
+      max: 5
+    emits:
+      - resource_type: Encounter
+        spec_id: toddler_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "410620009"
+          display: Well child visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "170149006"
+          display: Child examination
+
+      # Weight — 12-22 kg at 3-5 years
+      - resource_type: Observation
+        spec_id: toddler_weight
+        when: today
+        link_to: toddler_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "29463-7"
+          display: Body weight
+        value_range: {low: 12, high: 22, precision: 1}
+        unit: kg
+        unit_code: kg
+
+      # Height — 90-120 cm at 3-5 years
+      - resource_type: Observation
+        spec_id: toddler_height
+        when: today
+        link_to: toddler_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "8302-2"
+          display: Body height
+        value_range: {low: 90, high: 120, precision: 1}
+        unit: cm
+        unit_code: cm
+
+      # BMI — standard range for 3-5-year-olds (14-17 is typical)
+      - resource_type: Observation
+        spec_id: toddler_bmi
+        when: today
+        link_to: toddler_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "39156-5"
+          display: Body mass index (BMI) [Ratio]
+        value_range: {low: 13.5, high: 17.5, precision: 1}
+        unit: kg/m2
+        unit_code: kg/m2
+
+      # MMR — 1-dose ≥12 months ~92% (NIS-Child 2022)
+      - resource_type: Immunization
+        spec_id: toddler_mmr
+        when: today
+        link_to: toddler_visit
+        probability: 0.92
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "03"
+          display: MMR (measles, mumps, rubella)
+
+      # Varicella — 1-dose ~91%
+      - resource_type: Immunization
+        spec_id: toddler_varicella
+        when: today
+        link_to: toddler_visit
+        probability: 0.91
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "21"
+          display: Varicella (chickenpox) vaccine
+
+      # HepA — 2-dose series ~74%
+      - resource_type: Immunization
+        spec_id: toddler_hepa
+        when: today
+        link_to: toddler_visit
+        probability: 0.74
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "83"
+          display: Hep A, pediatric or unspecified formulation
+
+      # Annual flu — toddler coverage ~60%
+      - resource_type: Immunization
+        spec_id: toddler_flu
+        when: today
+        link_to: toddler_visit
+        probability: 0.60
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "140"
+          display: Influenza, seasonal, injectable, preservative free
+
+  # -----------------------------------------------------------------------
+  # School-age well-child (6-11)
+  # Annual preventive visit, growth measurements, flu vaccine, vision
+  # screening, developmental check.
+  # -----------------------------------------------------------------------
+  - id: school_age_wellness
+    code:
+      system: http://snomed.info/sct
+      code: "170149006"
+      display: Child examination (procedure)
+    prevalence:
+      "0-5": 0.0
+      "6-11": 0.79
+      "12-99": 0.0
+    onset_age:
+      min: 6
+      max: 11
+    emits:
+      - resource_type: Encounter
+        spec_id: school_age_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "410620009"
+          display: Well child visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "170149006"
+          display: Child examination
+
+      # Weight — 18-45 kg at 6-11 years
+      - resource_type: Observation
+        spec_id: school_age_weight
+        when: today
+        link_to: school_age_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "29463-7"
+          display: Body weight
+        value_range: {low: 18, high: 45, precision: 1}
+        unit: kg
+        unit_code: kg
+
+      # Height — 112-150 cm at 6-11 years
+      - resource_type: Observation
+        spec_id: school_age_height
+        when: today
+        link_to: school_age_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "8302-2"
+          display: Body height
+        value_range: {low: 112, high: 150, precision: 1}
+        unit: cm
+        unit_code: cm
+
+      # BMI — 14-22 typical for 6-11-year-olds
+      - resource_type: Observation
+        spec_id: school_age_bmi
+        when: today
+        link_to: school_age_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "39156-5"
+          display: Body mass index (BMI) [Ratio]
+        value_range: {low: 14.0, high: 22.0, precision: 1}
+        unit: kg/m2
+        unit_code: kg/m2
+
+      # Blood pressure — normotensive range for 6-11 year-olds
+      - resource_type: Observation
+        spec_id: school_age_bp
+        when: today
+        link_to: school_age_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "85354-9"
+          display: Blood pressure panel with all children optional
+        components:
+          - code:
+              system: http://loinc.org
+              code: "8480-6"
+              display: Systolic blood pressure
+            value_range: {low: 90, high: 115, precision: 0}
+            unit: mm[Hg]
+          - code:
+              system: http://loinc.org
+              code: "8462-4"
+              display: Diastolic blood pressure
+            value_range: {low: 55, high: 76, precision: 0}
+            unit: mm[Hg]
+
+      # Annual flu — school-age coverage ~55%
+      - resource_type: Immunization
+        spec_id: school_age_flu
+        when: today
+        link_to: school_age_visit
+        probability: 0.55
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "140"
+          display: Influenza, seasonal, injectable, preservative free
+
+  # -----------------------------------------------------------------------
+  # Adolescent well-child (12-17)
+  # HPV series, MenACWY, Tdap booster, flu, mental health screening.
+  # -----------------------------------------------------------------------
+  - id: adolescent_wellness
+    code:
+      system: http://snomed.info/sct
+      code: "170149006"
+      display: Child examination (procedure)
+    prevalence:
+      "0-11": 0.0
+      "12-17": 0.59
+    onset_age:
+      min: 12
+      max: 17
+    emits:
+      - resource_type: Encounter
+        spec_id: adolescent_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "410620009"
+          display: Well child visit (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "170149006"
+          display: Child examination
+
+      # Weight — 40-80 kg at 12-17 years
+      - resource_type: Observation
+        spec_id: adolescent_weight
+        when: today
+        link_to: adolescent_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "29463-7"
+          display: Body weight
+        value_range: {low: 40, high: 80, precision: 1}
+        unit: kg
+        unit_code: kg
+
+      # Height — 148-180 cm at 12-17 years
+      - resource_type: Observation
+        spec_id: adolescent_height
+        when: today
+        link_to: adolescent_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "8302-2"
+          display: Body height
+        value_range: {low: 148, high: 180, precision: 1}
+        unit: cm
+        unit_code: cm
+
+      # BMI — 16-28 typical for adolescents
+      - resource_type: Observation
+        spec_id: adolescent_bmi
+        when: today
+        link_to: adolescent_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "39156-5"
+          display: Body mass index (BMI) [Ratio]
+        value_range: {low: 16.0, high: 28.0, precision: 1}
+        unit: kg/m2
+        unit_code: kg/m2
+
+      # Blood pressure — normotensive range for adolescents
+      - resource_type: Observation
+        spec_id: adolescent_bp
+        when: today
+        link_to: adolescent_visit
+        category: vital-signs
+        code:
+          system: http://loinc.org
+          code: "85354-9"
+          display: Blood pressure panel with all children optional
+        components:
+          - code:
+              system: http://loinc.org
+              code: "8480-6"
+              display: Systolic blood pressure
+            value_range: {low: 100, high: 125, precision: 0}
+            unit: mm[Hg]
+          - code:
+              system: http://loinc.org
+              code: "8462-4"
+              display: Diastolic blood pressure
+            value_range: {low: 60, high: 80, precision: 0}
+            unit: mm[Hg]
+
+      # HPV vaccine — NIS-Teen 2022 completion rate ~59% (females), ~57% (males)
+      - resource_type: Immunization
+        spec_id: adolescent_hpv
+        when: today
+        link_to: adolescent_visit
+        probability: 0.58
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "165"
+          display: Human papillomavirus vaccine, 9-valent (Gardasil 9)
+
+      # MenACWY — NIS-Teen dose 1 ~87%
+      - resource_type: Immunization
+        spec_id: adolescent_menacwy
+        when: today
+        link_to: adolescent_visit
+        probability: 0.87
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "114"
+          display: Meningococcal MCV4, unspecified formulation
+
+      # Tdap booster — ~90% NIS-Teen
+      - resource_type: Immunization
+        spec_id: adolescent_tdap
+        when: today
+        link_to: adolescent_visit
+        probability: 0.90
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "115"
+          display: Tdap (tetanus, diphtheria, acellular pertussis)
+
+      # Annual flu — teen coverage ~50%
+      - resource_type: Immunization
+        spec_id: adolescent_flu
+        when: today
+        link_to: adolescent_visit
+        probability: 0.50
+        vaccine:
+          system: http://hl7.org/fhir/sid/cvx
+          code: "140"
+          display: Influenza, seasonal, injectable, preservative free
