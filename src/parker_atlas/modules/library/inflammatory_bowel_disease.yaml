@@ -1,0 +1,178 @@
+module: inflammatory_bowel_disease
+version: 0.1.0
+description: >
+  Inflammatory bowel disease (IBD) module covering Crohn's disease and
+  ulcerative colitis (UC) — the two principal forms of chronic intestinal
+  inflammation. CDC estimates approximately 3 million US adults (~1.3%) have
+  been diagnosed with IBD (Dahlhamer et al. MMWR 2016). IBD is driven by
+  dysregulated intestinal immune response in genetically susceptible
+  individuals; both conditions are associated with substantially elevated
+  risk of colorectal cancer (particularly extensive UC).
+
+  Crohn's disease affects any segment of the GI tract (most commonly the
+  terminal ileum) and is characterized by transmural, skip-lesion inflammation.
+  Ulcerative colitis is confined to the colon/rectum and involves continuous
+  mucosal inflammation. Both are treated with a step-up approach from
+  aminosalicylates (UC) → corticosteroids → immunomodulators → biologics.
+
+  This module uses a combined IBD condition for DSL simplicity; the
+  medication emits reflect the combined treatment landscape.
+
+  When a patient is positive, the module emits:
+  - A GI Encounter
+  - A colonoscopy Procedure in 70% of cases — diagnostic and surveillance
+    standard; Crohn's and UC are both confirmed by colonoscopic biopsy
+  - A CRP Observation (LOINC 1988-5) in the elevated inflammatory range
+  - A fecal calprotectin Observation (LOINC 27829-1) — increasingly used
+    non-invasively to distinguish IBD from IBS and monitor disease activity;
+    elevated >250 mcg/g in active IBD
+  - Mesalamine in 40% of cases — first-line for mild-to-moderate UC
+    (5-ASA; ECCO guidelines); less effective for Crohn's
+  - Infliximab (TNF inhibitor) in 25% of cases — most prescribed biologic
+    for moderate-to-severe IBD; FDA-approved for Crohn's and UC (ACG 2019)
+  - Azathioprine in 20% of cases — thiopurine immunomodulator; used for
+    steroid-sparing maintenance; often combined with anti-TNF (combo therapy)
+
+cites:
+  - source: >
+      Dahlhamer JM, Zammitti EP, Ward BW, et al. Prevalence of
+      inflammatory bowel disease among adults aged ≥18 years — United
+      States, 2015. MMWR Morb Mortal Wkly Rep. 2016;65(42):1166-1169.
+    url: https://www.cdc.gov/mmwr/volumes/65/wr/mm6542a3.htm
+    summary: >
+      3.1 million US adults (1.3%) diagnosed with IBD in 2015. Prevalence
+      higher in adults aged 45+ and those with higher education. Crohn's
+      and UC roughly equal in prevalence (~0.5-0.7% each).
+
+  - source: >
+      Feuerstein JD, Ho EY, Shmidt E, et al. AGA Clinical Practice
+      Guidelines on the Medical Management of Moderate to Severe Luminal
+      and Perianal Fistulizing Crohn's Disease. Gastroenterology.
+      2021;160(7):2496-2508.
+    url: https://www.gastrojournal.org/article/S0016-5085(21)00618-0/fulltext
+    summary: >
+      Anti-TNF biologics (infliximab, adalimumab) are recommended for
+      moderate-to-severe Crohn's disease (strong recommendation, high quality
+      evidence). Ustekinumab and vedolizumab are alternatives. Early biologic
+      therapy superior to step-up approach in higher-risk disease.
+
+  - source: >
+      Lamb CA, Kennedy NA, Raine T, et al. British Society of
+      Gastroenterology consensus guidelines on the management of
+      inflammatory bowel disease in adults. Gut. 2019;68(Suppl 3):s1-s106.
+    url: https://gut.bmj.com/content/68/Suppl_3/s1
+    summary: >
+      Fecal calprotectin >250 mcg/g distinguishes active IBD from IBS
+      with good sensitivity (93%) and specificity (96%). Used to guide
+      colonoscopy decisions and monitor mucosal healing. Mesalamine
+      first-line for UC; thiopurines for steroid-sparing maintenance.
+
+conditions:
+  - id: inflammatory_bowel_disease
+    code:
+      system: http://snomed.info/sct
+      code: "24526004"
+      display: Inflammatory bowel disease (disorder)
+    prevalence:
+      female:
+        "0-17":  0.001
+        "18-39": 0.012
+        "40-59": 0.015
+        "60-99": 0.013
+      male:
+        "0-17":  0.001
+        "18-39": 0.012
+        "40-59": 0.014
+        "60-99": 0.011
+    onset_age:
+      min: 15
+      max: 70
+    emits:
+      - resource_type: Encounter
+        spec_id: ibd_gi_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "24526004"
+          display: Inflammatory bowel disease
+
+      # Colonoscopy — diagnostic and surveillance standard for IBD
+      - resource_type: Procedure
+        spec_id: ibd_colonoscopy
+        when: onset
+        link_to: ibd_gi_visit
+        probability: 0.70
+        code:
+          system: http://snomed.info/sct
+          code: "73761001"
+          display: Colonoscopy (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "24526004"
+          display: Inflammatory bowel disease
+
+      # CRP — elevated in active IBD (normal <10 mg/L; active IBD 15-80+ mg/L)
+      - resource_type: Observation
+        spec_id: ibd_crp
+        when: today
+        link_to: ibd_gi_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "1988-5"
+          display: C reactive protein [Mass/volume] in Serum or Plasma
+        value_range: {low: 15, high: 80, precision: 1}
+        unit: mg/L
+        unit_code: mg/L
+
+      # Fecal calprotectin — non-invasive IBD activity marker (>250 mcg/g = active)
+      - resource_type: Observation
+        spec_id: ibd_calprotectin
+        when: today
+        link_to: ibd_gi_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "27829-1"
+          display: Calprotectin [Mass/mass] in Stool
+        value_range: {low: 250, high: 2000, precision: 0}
+        unit: ug/g
+        unit_code: ug/g
+
+      # Mesalamine — first-line for mild-to-moderate UC; 5-aminosalicylate
+      - resource_type: MedicationRequest
+        spec_id: ibd_mesalamine
+        when: today
+        link_to: ibd_gi_visit
+        probability: 0.40
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "196466"
+          display: Mesalamine 400 MG Delayed Release Oral Tablet
+
+      # Infliximab — anti-TNF biologic; first-line biologic for moderate-severe IBD
+      - resource_type: MedicationRequest
+        spec_id: ibd_infliximab
+        when: today
+        link_to: ibd_gi_visit
+        probability: 0.25
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "1657411"
+          display: Infliximab 100 MG Injection
+
+      # Azathioprine — thiopurine immunomodulator; steroid-sparing maintenance
+      - resource_type: MedicationRequest
+        spec_id: ibd_azathioprine
+        when: today
+        link_to: ibd_gi_visit
+        probability: 0.20
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "105691"
+          display: Azathioprine 50 MG Oral Tablet

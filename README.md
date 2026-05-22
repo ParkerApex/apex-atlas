@@ -27,7 +27,7 @@ Existing synthetic patient generators share a common set of limitations: disease
 
 - **SDoH as a causal simulation variable** — food insecurity, housing instability, transportation barriers, financial strain, and social isolation are sampled from BRFSS-grounded distributions and causally reduce outpatient encounter completion and medication adherence rates. Patients with barriers miss appointments and don't fill prescriptions — not as a tag, but as a change in what resources get generated.
 - **Quality MeasureReport output** — Apex Atlas is the only open generator that emits DEQM-profiled MeasureReport resources alongside patient records. Five HEDIS-analog measures (HbA1c testing in diabetics, BP control in hypertensives, preventive care, flu immunization, pediatric well-child) are evaluated per patient and summarized for the cohort.
-- **Full lifecycle coverage** — pediatric well-child visits with the ACIP 2024 immunization schedule, maternal health and obstetric complications, and 16 chronic disease modules covering the highest-prevalence adult conditions.
+- **Full lifecycle coverage** — pediatric well-child visits with the ACIP 2024 immunization schedule, maternal health and obstetric complications, and 37 clinical modules spanning 14 domains (cardiovascular, metabolic, pulmonary, GI, renal, musculoskeletal, mental health, substance use, neurology, oncology, infectious disease, hematology, pediatric/OB, and adult immunizations).
 - **Grounded clinical notes** — progress notes, H&Ps, and discharge summaries generated with structured-data grounding. LLM-authored notes (Claude, configurable) are available today via `--notes-strategy llm`.
 - **Statistical validation against public norms** — every module declares its prevalence sources (NHANES, CDC, SEER, AHA) and the cohort fidelity harness checks aggregate distributions against those targets.
 - **FHIR-first, always** — R4 and R5 output, US Core 6.1 conformance, FHIR Bulk Data Access-compatible NDJSON, Gravity Project SDOHCC Observations, and DEQM MeasureReport profiles.
@@ -63,10 +63,10 @@ Apex Atlas is not trained on, derived from, or in any way informed by restricted
 | `atlas report`               | ✅ Implemented        | Self-contained HTML cohort report (demographics + fidelity) |
 | `atlas modules`              | ✅ Implemented        | List and inspect bundled modules |
 | Module runtime               | ✅ Implemented        | Time-aware emits, onset dating, cross-module `requires`, progressions |
-| Module library               | ✅ 16 modules         | HTN / DM / HF / IHD / AFib / stroke / COPD / asthma / depression / hypercholesterolemia / obesity / lung cancer / wellness / pediatric wellness / maternal health / complications |
+| Module library               | ✅ 37 modules         | CV (HTN/HF/IHD/AFib/stroke/cholesterol) · Metabolic (DM/T1D/obesity/hypothyroid) · Pulmonary (asthma/COPD/sleep apnea/lung cancer) · GI (GERD/NAFLD/IBD) · Renal (CKD+ESRD) · MSK (OA/RA) · Mental health (depression/anxiety/bipolar) · SUD (AUD/OUD/tobacco) · Neuro (Alzheimer's) · Oncology (CRC/breast/prostate) · ID (HIV) · Heme (SCD) · Pediatric/OB · Adult immunizations |
 | Fidelity expectations        | ✅ 14 modules         | Sourced from NHANES, SEER, AHA, CDC |
 | Cross-module dependencies    | ✅ Implemented        | `requires: module:cond_id` gates cross-module comorbidity chains |
-| State-machine progressions   | ✅ One-hop            | Same-module + cross-module; 9+ chains live (CKD, retinopathy, MI, cardiorenal, HTN→HF, HTN→stroke, AFib→stroke, pregnancy complications) |
+| State-machine progressions   | ✅ One-hop            | 13+ chains live: HTN→CKD/HF/stroke, DM→CKD/retinopathy, AFib→stroke, CKD→ESRD, NAFLD→cirrhosis, pregnancy→GDM/preeclampsia/PPD, SCD→VOC, T1D→DKA |
 | SDoH causal overlay          | ✅ Implemented        | `--with-sdoh`: BRFSS-grounded sampling; encounter + medication adherence modifiers; Gravity Project SDOHCC Observations |
 | Payer & coverage             | ✅ Implemented        | `--with-coverage`: age-stratified payer mix → Coverage + Organization + InsurancePlan |
 | Providers & locations        | ✅ Implemented        | `--with-providers`: NPI-keyed Practitioner + PractitionerRole + Location + facility Organization |

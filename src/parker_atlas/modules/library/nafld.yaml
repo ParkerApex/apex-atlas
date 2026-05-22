@@ -1,0 +1,203 @@
+module: nafld
+version: 0.1.0
+description: >
+  Non-alcoholic fatty liver disease (NAFLD) and non-alcoholic steatohepatitis
+  (NASH) module. NAFLD is the most common liver condition in the United States
+  and globally, affecting an estimated 80-100 million Americans (~30-40% of
+  adults). NAFLD spans a spectrum from simple steatosis (benign) through NASH
+  (steatosis + inflammation + ballooning) to cirrhosis and hepatocellular
+  carcinoma. This module models the clinically diagnosed NAFLD/NASH population
+  — the subset with liver enzyme elevation, imaging findings, or biopsy-
+  confirmed disease (~10-20% of the broader NAFLD pool have NASH).
+
+  NAFLD is the hepatic manifestation of metabolic syndrome: ~70-90% of
+  patients with T2D have NAFLD, and NAFLD is strongly associated with
+  obesity, hypertension, dyslipidemia, and insulin resistance. This
+  bidirectional metabolic overlap makes NAFLD a critical bridge between the
+  endocrine, cardiovascular, and gastrointestinal module clusters.
+
+  When a patient is positive, the module emits:
+  - A GI or hepatology Encounter
+  - ALT and AST Observations in the elevated range — hallmark of hepatic
+    inflammation; in NASH ALT typically 1.5-5x ULN (ULN ~35 U/L women,
+    ~45 U/L men); mild elevation in steatosis
+  - A liver ultrasound Procedure in 70% of cases — first-line imaging for
+    NAFLD diagnosis and staging (hyperechoic liver pattern)
+  - A liver stiffness Observation (FIB-4 index, calculated from age/AST/
+    ALT/platelets) in the intermediate-to-high risk range — used to triage
+    to fibroscan or biopsy; modeled as a direct observation here (LOINC 89226-3)
+  - Vitamin E in 15% of cases — recommended by AASLD for non-diabetic NASH
+    (PIVENS trial); only non-surgical treatment with strong evidence
+  - Metformin is NOT recommended for NASH per AASLD (no hepatic benefit)
+
+  A cirrhosis progression fires at 5-year probability ~5%, reflecting
+  ~5-10% of NASH patients progressing to cirrhosis over 5 years (Angulo 2002).
+
+cites:
+  - source: >
+      Younossi ZM, Koenig AB, Abdelatif D, et al. Global epidemiology of
+      nonalcoholic fatty liver disease — meta-analytic assessment of
+      prevalence, incidence, and outcomes. Hepatology. 2016;64(1):73-84.
+    url: https://aasldpubs.onlinelibrary.wiley.com/doi/10.1002/hep.28431
+    summary: >
+      Global NAFLD prevalence 25.2% (95% CI 22.1-28.7%). US prevalence
+      ~24-30%. NASH prevalence among NAFLD patients ~59.1%; cirrhosis in
+      NASH ~20%; hepatocellular carcinoma in NASH cirrhosis ~6.6%.
+
+  - source: >
+      Chalasani N, Younossi Z, Lavine JE, et al. The diagnosis and
+      management of nonalcoholic fatty liver disease: Practice guidance
+      from the American Association for the Study of Liver Diseases.
+      Hepatology. 2018;67(1):328-357.
+    url: https://aasldpubs.onlinelibrary.wiley.com/doi/10.1002/hep.29367
+    summary: >
+      AASLD 2018: Liver ultrasound first-line for NAFLD diagnosis.
+      FIB-4 score <1.30 rules out advanced fibrosis; >2.67 predicts
+      advanced fibrosis (F3-F4). Vitamin E 800 IU/day recommended for
+      non-diabetic adults with biopsy-confirmed NASH (PIVENS trial, Grade B).
+      No pharmacotherapy approved at publication time (resmetirom approved 2024).
+
+  - source: >
+      Angulo P, Hui JM, Marchesini G, et al. The NAFLD fibrosis score:
+      a noninvasive system that identifies liver fibrosis in patients with
+      NAFLD. Hepatology. 2007;45(4):846-854.
+    url: https://aasldpubs.onlinelibrary.wiley.com/doi/10.1002/hep.21496
+    summary: >
+      FIB-4 index (age × AST / [platelet × √ALT]) validated for NAFLD
+      fibrosis staging: FIB-4 <1.30 = F0-F1 (NPV 90%); >2.67 = F3-F4
+      (PPV 80%). Replaced NAFLD fibrosis score as preferred non-invasive
+      fibrosis marker at most centers.
+
+conditions:
+  - id: nafld_nash
+    code:
+      system: http://snomed.info/sct
+      code: "197321007"
+      display: Non-alcoholic fatty liver (disorder)
+    prevalence:
+      female:
+        "0-17":  0.010
+        "18-39": 0.180
+        "40-59": 0.270
+        "60-99": 0.300
+      male:
+        "0-17":  0.012
+        "18-39": 0.230
+        "40-59": 0.330
+        "60-99": 0.320
+    onset_age:
+      min: 15
+      max: 85
+    progressions:
+      - to: liver_cirrhosis
+        after_years: 5
+        probability: 0.05
+    emits:
+      - resource_type: Encounter
+        spec_id: nafld_gi_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "197321007"
+          display: Non-alcoholic fatty liver
+
+      # ALT — elevated in NASH (normal women <35, men <45 U/L; NASH 1.5-5x ULN)
+      - resource_type: Observation
+        spec_id: nafld_alt
+        when: today
+        link_to: nafld_gi_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "1742-6"
+          display: Alanine aminotransferase [Enzymatic activity/volume] in Serum or Plasma
+        value_range: {low: 45, high: 180, precision: 0}
+        unit: U/L
+        unit_code: U/L
+
+      # AST — moderately elevated; AST:ALT <1 typical in NAFLD (vs >2 in ALD)
+      - resource_type: Observation
+        spec_id: nafld_ast
+        when: today
+        link_to: nafld_gi_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "1920-8"
+          display: Aspartate aminotransferase [Enzymatic activity/volume] in Serum or Plasma
+        value_range: {low: 35, high: 140, precision: 0}
+        unit: U/L
+        unit_code: U/L
+
+      # Liver ultrasound — first-line imaging; echogenic liver pattern in steatosis
+      - resource_type: Procedure
+        spec_id: nafld_liver_ultrasound
+        when: onset
+        link_to: nafld_gi_visit
+        probability: 0.70
+        code:
+          system: http://snomed.info/sct
+          code: "45036003"
+          display: Ultrasonography of abdomen (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "197321007"
+          display: Non-alcoholic fatty liver
+
+      # Vitamin E — AASLD Grade B for non-diabetic NASH; PIVENS trial 43% vs 19%
+      - resource_type: MedicationRequest
+        spec_id: nafld_vitamin_e
+        when: today
+        link_to: nafld_gi_visit
+        probability: 0.15
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "327286"
+          display: Tocopherol 400 UNT Oral Capsule
+
+  # -----------------------------------------------------------------------
+  # Progression target: Liver cirrhosis from NASH
+  # -----------------------------------------------------------------------
+  - id: liver_cirrhosis
+    code:
+      system: http://snomed.info/sct
+      code: "19943007"
+      display: Liver cirrhosis (disorder)
+    requires: nafld_nash
+    prevalence:
+      "0-99": 0.0
+    onset_age:
+      min: 40
+      max: 90
+    emits:
+      - resource_type: Encounter
+        spec_id: cirrhosis_hepatology_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "11429006"
+          display: Consultation (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "19943007"
+          display: Liver cirrhosis
+
+      # MELD score proxy: bilirubin elevated in decompensated cirrhosis
+      - resource_type: Observation
+        spec_id: cirrhosis_bilirubin
+        when: today
+        link_to: cirrhosis_hepatology_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "1975-2"
+          display: Bilirubin.total [Mass/volume] in Serum or Plasma
+        value_range: {low: 2.0, high: 15.0, precision: 1}
+        unit: mg/dL
+        unit_code: mg/dL

@@ -40,45 +40,60 @@ APEX Atlas is a modular synthetic patient generator organized around four layers
 ## Package layout
 
 ```
-apex-atlas/
+parker-atlas/
 ├── src/parker_atlas/
-│   ├── core/            # Simulation engine
-│   │   ├── patient.py      # Patient lifecycle object
-│   │   ├── scheduler.py    # Discrete-event scheduler
-│   │   ├── demographics.py # Age, sex, race, SDoH sampling
-│   │   └── population.py   # Population-level generation orchestration
-│   ├── modules/         # Clinical pathway modules
-│   │   ├── runtime.py      # Module state machine executor
-│   │   ├── dsl.py          # Module DSL parser and validator
-│   │   └── library/        # Bundled module definitions (YAML)
-│   ├── fhir/            # FHIR resource construction
-│   │   ├── patient.py      # Patient resource builder
-│   │   ├── encounter.py    # Encounter, Condition, Observation
-│   │   ├── medication.py   # Medication, MedicationRequest
-│   │   ├── profiles.py     # US Core 6.1 and IPS conformance
-│   │   └── bundle.py       # Bundle assembly and Bulk Data export
-│   ├── gpx.py           # Parker GPX identifier (spec v1.0)
-│   ├── notes/           # Clinical note generation
-│   │   ├── grounding.py    # Structured-data grounding layer
-│   │   ├── styles.py       # Clinical voice matching
-│   │   └── generators/     # Note-type-specific generators
-│   ├── validation/      # Statistical validation harness
-│   │   ├── references.py   # Public norm datasets (CDC, NHANES, SEER)
-│   │   ├── fidelity.py     # Distribution comparison methods
-│   │   └── reports.py      # Fidelity scorecards
-│   ├── authoring/       # LLM-assisted module authoring
-│   │   ├── scaffold.py     # Natural language to module DSL
-│   │   ├── review.py       # Clinician review interface
-│   │   └── providers/      # LLM provider abstractions
-│   ├── cli.py           # Typer-based CLI
-│   └── config.py        # Configuration loading
+│   ├── core/               # Simulation support
+│   │   ├── demographics.py     # Age/sex/race/ethnicity sampling from ACS 2024
+│   │   ├── sdoh.py             # SDoH profile sampling + causal modifiers (BRFSS)
+│   │   ├── payer.py            # Age-stratified payer mix sampling
+│   │   └── provider.py         # NPI-keyed provider/location assignment
+│   ├── modules/            # Clinical pathway modules
+│   │   ├── runtime.py          # Module DSL parser + probability runtime
+│   │   └── library/            # 37 bundled module YAMLs (growing toward 100+)
+│   ├── fhir/               # FHIR R4 resource construction
+│   │   ├── patient.py          # US Core 6.1 Patient
+│   │   ├── condition.py        # US Core Condition
+│   │   ├── observation.py      # Vital signs, labs, multi-component (BP)
+│   │   ├── sdoh_observation.py # Gravity Project SDOHCC Screening Response
+│   │   ├── encounter.py        # US Core Encounter (AMB/EMER/IMP/HH/VR)
+│   │   ├── medication_request.py  # US Core MedicationRequest
+│   │   ├── procedure.py        # US Core Procedure
+│   │   ├── allergy_intolerance.py # US Core AllergyIntolerance
+│   │   ├── immunization.py     # US Core Immunization (CVX codes)
+│   │   ├── diagnostic_report.py   # US Core DiagnosticReport (lab panels)
+│   │   ├── document_reference.py  # Clinical notes (template + LLM)
+│   │   ├── measure_report.py   # DEQM Individual + Summary MeasureReport
+│   │   ├── coverage.py         # US Core Coverage + InsurancePlan + Org
+│   │   ├── claim.py            # Claim + ExplanationOfBenefit
+│   │   ├── practitioner.py     # US Core Practitioner + PractitionerRole
+│   │   ├── location.py         # US Core Location
+│   │   ├── organization.py     # US Core Organization (payer + facility)
+│   │   ├── mortality.py        # Deceased flag + cause-of-death linking
+│   │   └── bundle.py           # Transaction Bundle + NDJSON assembly
+│   ├── measures/           # Quality measure evaluation
+│   │   └── __init__.py         # 5 HEDIS-analog measures; MeasureTally; evaluate_measures()
+│   ├── ingest/             # Data ingestion pipeline
+│   │   ├── prevalence.py       # CSV + metadata → sourced fidelity expectation YAML
+│   │   ├── demographics.py     # CSV + metadata → references/tables/ + provenance sidecar
+│   │   └── progression.py      # CSV + metadata → <module>.progressions.yaml overlay
+│   ├── notes/              # Clinical note generation
+│   │   ├── progress.py         # Template-based markdown progress note
+│   │   └── llm.py              # LLM-authored Subjective + A&P (Claude API)
+│   ├── validation/         # Statistical validation harness
+│   │   ├── cohort.py           # Aggregate metric comparison vs. sourced expectations
+│   │   ├── structural.py       # Schema + US Core Patient/Condition minimums
+│   │   ├── report.py           # Fidelity scorecard (Markdown + JSON)
+│   │   └── expectations/library/  # Sourced fidelity expectation YAMLs (14 modules)
+│   ├── references/tables/  # Demographic reference CSVs (ACS age/sex/race/ethnicity)
+│   ├── gpx.py              # Parker GPX identifier (deterministic UUID5 namespace)
+│   └── cli.py              # Typer CLI: generate / validate / report / modules / status / ingest
 ├── tests/
 ├── docs/
 │   ├── architecture.md     # This file
-│   ├── authoring/          # Module authoring guide
-│   └── gpx-spec.md         # Mirror of Parker GPX Spec v1.0
-└── data/
-    └── references/         # Public statistical reference data
+│   ├── roadmap.md          # Milestone plan (updated 2026-05-22)
+│   ├── why-atlas.md        # Strategic rationale (V.J. Lopez)
+│   └── ingestion.md        # atlas ingest usage guide
+└── pyproject.toml
 ```
 
 ## Design principles
@@ -103,31 +118,79 @@ The core is a discrete-event simulator. Each patient has a timeline of events (b
 
 ## Module Library
 
-Modules are authored in a YAML-based DSL. See [`docs/authoring/module_dsl.md`](authoring/module_dsl.md) for the full specification. A minimal module:
+Modules are authored in a YAML-based DSL. A minimal module illustrating the key structural elements:
 
 ```yaml
-module: type-2-diabetes
-version: 1.0.0
+module: hypothyroidism
+version: 0.1.0
+description: >
+  Primary hypothyroidism module. Prevalence ~4.6% overall (Hollowell NHANES III);
+  female-dominant with marked age gradient. Levothyroxine in 90% of diagnosed patients.
 cites:
-  - source: cdc.gov/diabetes/data/statistics-report
-    url: https://www.cdc.gov/diabetes/data/statistics-report/
-states:
-  initial:
-    type: branch
-    next:
-      - probability: 0.115   # US adult T2D prevalence
-        to: diagnosed
-      - probability: 0.885
-        to: not_diagnosed
-  diagnosed:
-    type: condition
-    code: { system: snomed, code: "44054006", display: "Type 2 diabetes mellitus" }
-    next: first_line_therapy
-  first_line_therapy:
-    type: medication
-    code: { system: rxnorm, code: "860975", display: "Metformin 500 MG" }
-    duration: { distribution: exponential, mean_years: 5.2 }
+  - source: >
+      Hollowell JG et al. Serum TSH, T4, and thyroid antibodies in the US
+      population (NHANES III). J Clin Endocrinol Metab. 2002;87(2):489-499.
+    url: https://academic.oup.com/jcem/article/87/2/489/2846790
+    summary: >
+      Overall prevalence 4.6% (TSH >4.5 mIU/L or thyroid medication).
+      Female ~7-8%, male ~2-3%. Rises with age.
+conditions:
+  - id: hypothyroidism
+    code:
+      system: http://snomed.info/sct
+      code: "40930008"
+      display: Hypothyroidism (disorder)
+    prevalence:
+      female:
+        "0-17":  0.005
+        "18-39": 0.030
+        "40-59": 0.075
+        "60-99": 0.130
+      male:
+        "0-17":  0.002
+        "18-39": 0.012
+        "40-59": 0.025
+        "60-99": 0.055
+    onset_age:
+      min: 18
+      max: 85
+    emits:
+      - resource_type: Encounter
+        spec_id: thyroid_followup_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "40930008"
+          display: Hypothyroidism
+      - resource_type: Observation
+        spec_id: thyroid_tsh
+        when: today
+        link_to: thyroid_followup_visit
+        category: laboratory
+        code:
+          system: http://loinc.org
+          code: "3016-3"
+          display: Thyrotropin [Units/volume] in Serum or Plasma
+        value_range: {low: 4.6, high: 50.0, precision: 1}
+        unit: mIU/L
+        unit_code: m[IU]/L
+      - resource_type: MedicationRequest
+        spec_id: thyroid_levothyroxine
+        when: today
+        link_to: thyroid_followup_visit
+        probability: 0.90
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "892245"
+          display: Levothyroxine Sodium 50 MCG Oral Tablet
 ```
+
+Each `conditions` entry maps to one `Condition` FHIR resource. `emits` entries are sampled at generation time: all emits without `probability` are unconditional; those with `probability` fire as Bernoulli trials. `link_to` references another emit's `spec_id` to set the `encounter` reference on the emitted resource. `when: onset` back-dates the resource to the patient's condition onset date; `when: today` uses the simulated current date.
 
 ## FHIR output
 
