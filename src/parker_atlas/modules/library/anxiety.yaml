@@ -1,0 +1,168 @@
+module: anxiety
+version: 0.1.0
+description: >
+  Anxiety disorders module covering generalized anxiety disorder (GAD) and
+  related anxiety presentations in adults. Anxiety is the most prevalent
+  mental health condition in the United States, affecting approximately
+  19.1% of adults in any given year (NIMH 2021 NSDUH).
+
+  Sex stratification reflects the well-documented 2:1 female-to-male ratio
+  in anxiety disorders across all age groups. Prevalence peaks in young
+  adulthood (18-34) and declines modestly with age, though older adults
+  remain significantly affected.
+
+  When a patient is positive, the module emits:
+  - An ambulatory behavioral health Encounter
+  - A GAD-7 screening score (LOINC 70274-6) in the moderate-to-severe range
+    (score ≥10 indicates probable GAD; range here 8-21 reflects the diagnosed
+    population rather than the screening-positive threshold)
+  - A PHQ-9 co-screen (LOINC 44261-6) in 80% of cases — anxiety and depression
+    co-occur in >50% of cases; the PHQ-9 is routinely administered alongside GAD-7
+  - A first-line SSRI or SNRI MedicationRequest in ~65% of cases
+    (sertraline or escitalopram, reflecting NICE/APA first-line guidance)
+  - A benzodiazepine in 18% of cases — reflecting real-world prescribing
+    patterns despite guideline caution (Olfson et al. JAMA Psychiatry 2015)
+
+  Cross-module note: anxiety frequently co-occurs with depression (50-60%
+  comorbidity). A cross-module progression from anxiety → depression (or
+  vice versa) can be activated when both modules are loaded. This module
+  does not declare that progression inline to avoid double-counting when
+  the depression module is also active.
+
+cites:
+  - source: >
+      NIMH — Any Anxiety Disorder, United States. National Survey on Drug
+      Use and Health (NSDUH) 2021.
+    url: https://www.nimh.nih.gov/health/statistics/any-anxiety-disorder
+    summary: >
+      12-month prevalence: 19.1% of US adults (any anxiety disorder).
+      Female: 23.4%; Male: 14.3%. Highest in 18-29 (30.4%) and 30-44
+      (22.7%); declines to ~15% in 45-59 and ~11% in 60+.
+
+  - source: >
+      Bandelow B, Michaelis S. Epidemiology of anxiety disorders in the
+      21st century. Dialogues Clin Neurosci. 2015;17(3):327-335.
+    url: https://www.ncbi.nlm.nih.gov/pmc/articles/PMC4610617/
+    summary: >
+      Comprehensive review confirming ~2:1 female-to-male ratio across
+      anxiety disorder subtypes. GAD lifetime prevalence ~6%, 12-month
+      ~3.1%; broader anxiety spectrum (GAD + social anxiety + panic +
+      specific phobia) reaches 18-29% depending on criteria.
+
+  - source: >
+      Olfson M, King M, Schoenbaum M. Benzodiazepine use in the United
+      States. JAMA Psychiatry. 2015;72(2):136-142.
+    url: https://jamanetwork.com/journals/jamapsychiatry/fullarticle/2091453
+    summary: >
+      ~12.6% of US adults used benzodiazepines; highest in adults 65-80.
+      Anxiety disorders account for the majority of indications. The 18%
+      benzodiazepine emit probability here is calibrated to the anxious
+      adult population subset, not the general population rate.
+
+  - source: >
+      Spitzer RL, Kroenke K, Williams JBW, Löwe B. A brief measure for
+      assessing generalized anxiety disorder: the GAD-7. Arch Intern Med.
+      2006;166(10):1092-1097.
+    url: https://jamanetwork.com/journals/jamainternalmedicine/fullarticle/410326
+    summary: >
+      GAD-7 validation study. Score ≥10 = moderate anxiety (sensitivity
+      89%, specificity 82% for GAD). Score range 0-21. This module
+      samples 8-21 for the clinically diagnosed anxious population.
+
+conditions:
+  - id: anxiety_disorder
+    code:
+      system: http://snomed.info/sct
+      code: "197480006"
+      display: Anxiety disorder (disorder)
+    prevalence:
+      female:
+        "0-17":  0.0
+        "18-29": 0.304
+        "30-44": 0.240
+        "45-59": 0.170
+        "60-99": 0.120
+      male:
+        "0-17":  0.0
+        "18-29": 0.185
+        "30-44": 0.145
+        "45-59": 0.105
+        "60-99": 0.075
+    onset_age:
+      min: 18
+      max: 65
+    emits:
+      - resource_type: Encounter
+        spec_id: anxiety_bh_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "197480006"
+          display: Anxiety disorder
+
+      # GAD-7 total score (0-21; ≥10 = moderate, ≥15 = severe)
+      - resource_type: Observation
+        spec_id: anxiety_gad7
+        when: today
+        link_to: anxiety_bh_visit
+        category: survey
+        code:
+          system: http://loinc.org
+          code: "70274-6"
+          display: Generalized anxiety disorder 7 item (GAD-7) total score
+        value_range: {low: 8, high: 21, precision: 0}
+        unit: '{score}'
+        unit_code: '{score}'
+
+      # PHQ-9 co-screen — anxiety + depression co-occur >50% of the time
+      - resource_type: Observation
+        spec_id: anxiety_phq9
+        when: today
+        link_to: anxiety_bh_visit
+        probability: 0.80
+        category: survey
+        code:
+          system: http://loinc.org
+          code: "44261-6"
+          display: Patient Health Questionnaire 9 item (PHQ-9) total score
+        value_range: {low: 5, high: 18, precision: 0}
+        unit: '{score}'
+        unit_code: '{score}'
+
+      # First-line SSRI — sertraline (APA/NICE first-line for GAD)
+      - resource_type: MedicationRequest
+        spec_id: anxiety_sertraline
+        when: today
+        link_to: anxiety_bh_visit
+        probability: 0.45
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "36437"
+          display: Sertraline 50 MG Oral Tablet
+
+      # Alternative SSRI — escitalopram (FDA-approved for GAD)
+      - resource_type: MedicationRequest
+        spec_id: anxiety_escitalopram
+        when: today
+        link_to: anxiety_bh_visit
+        probability: 0.20
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "596926"
+          display: Escitalopram 10 MG Oral Tablet
+
+      # Benzodiazepine — lorazepam (real-world prescribing despite guidelines)
+      - resource_type: MedicationRequest
+        spec_id: anxiety_lorazepam
+        when: today
+        link_to: anxiety_bh_visit
+        probability: 0.18
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "855773"
+          display: Lorazepam 1 MG Oral Tablet

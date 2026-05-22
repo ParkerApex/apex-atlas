@@ -1,0 +1,130 @@
+module: gerd
+version: 0.1.0
+description: >
+  Gastroesophageal reflux disease (GERD) module. GERD is among the most
+  prevalent GI conditions in the United States, affecting an estimated 18-28%
+  of the North American adult population (El-Serag et al. Gut 2014). It is
+  the top driver of proton pump inhibitor (PPI) prescriptions — PPIs are
+  consistently among the five highest-volume drug classes by prescription
+  count in the US.
+
+  Prevalence is modestly higher in males and rises with age, partly due to
+  increased obesity prevalence, hiatal hernia, and gastroparesis in older
+  adults. The module uses a conservative 20% overall adult rate (lower bound
+  of the systematic review range) to avoid overcounting, as many GERD
+  sufferers self-treat with OTC antacids without a formal diagnosis.
+
+  When a patient is positive, the module emits:
+  - A GI or primary care Encounter
+  - A PPI MedicationRequest (omeprazole or pantoprazole) in 80% of cases —
+    PPIs are first-line and prescribed in the large majority of diagnosed GERD
+  - An H2 blocker (famotidine) in 15% of cases — alternative or step-down
+    therapy, especially post-PPI deprescribing efforts
+  - An upper GI endoscopy (EGD) Procedure in 25% of cases — performed for
+    alarm symptoms, refractory GERD, or Barrett's esophagus surveillance.
+    ASGE guidelines recommend EGD for GERD with alarm features or age >50
+    with chronic symptoms.
+
+cites:
+  - source: >
+      El-Serag HB, Sweet S, Winchester CC, Dent J. Update on the
+      epidemiology of gastro-oesophageal reflux disease: a systematic
+      review. Gut. 2014;63(6):871-880.
+    url: https://gut.bmj.com/content/63/6/871
+    summary: >
+      Systematic review of 102 studies: GERD prevalence 18.1-27.8% in
+      North America (heartburn or regurgitation ≥weekly). Higher in males
+      for erosive esophagitis and Barrett's; overall GERD symptom prevalence
+      similar across sexes. Rises with age and BMI.
+
+  - source: >
+      American College of Gastroenterology Clinical Guideline: Diagnosis
+      and Management of Gastroesophageal Reflux Disease. Am J Gastroenterol.
+      2022;117(1):27-56.
+    url: https://journals.lww.com/ajg/fulltext/2022/01000/acg_clinical_guideline__diagnosis_and_management.14.aspx
+    summary: >
+      PPI therapy is first-line for erosive esophagitis and symptomatic GERD.
+      EGD recommended for patients with alarm features (dysphagia, weight
+      loss, GI bleeding) or age ≥60 with chronic GERD for Barrett's screening.
+
+conditions:
+  - id: gerd
+    code:
+      system: http://snomed.info/sct
+      code: "235595009"
+      display: Gastroesophageal reflux disease (disorder)
+    prevalence:
+      female:
+        "0-17":  0.0
+        "18-39": 0.145
+        "40-59": 0.210
+        "60-99": 0.240
+      male:
+        "0-17":  0.0
+        "18-39": 0.165
+        "40-59": 0.225
+        "60-99": 0.260
+    onset_age:
+      min: 18
+      max: 85
+    emits:
+      - resource_type: Encounter
+        spec_id: gerd_gi_visit
+        when: today
+        encounter_class: AMB
+        type:
+          system: http://snomed.info/sct
+          code: "390906005"
+          display: Follow-up encounter (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "235595009"
+          display: Gastroesophageal reflux disease
+
+      # Upper GI endoscopy — EGD for alarm symptoms or Barrett's surveillance
+      - resource_type: Procedure
+        spec_id: gerd_egd
+        when: today
+        link_to: gerd_gi_visit
+        probability: 0.25
+        code:
+          system: http://snomed.info/sct
+          code: "34197004"
+          display: Esophagogastroduodenoscopy (procedure)
+        reason:
+          system: http://snomed.info/sct
+          code: "235595009"
+          display: Gastroesophageal reflux disease
+
+      # PPI — omeprazole (most commonly prescribed PPI in the US)
+      - resource_type: MedicationRequest
+        spec_id: gerd_omeprazole
+        when: today
+        link_to: gerd_gi_visit
+        probability: 0.55
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "40790"
+          display: Omeprazole 20 MG Oral Capsule
+
+      # PPI — pantoprazole (second most prescribed; preferred in hospital)
+      - resource_type: MedicationRequest
+        spec_id: gerd_pantoprazole
+        when: today
+        link_to: gerd_gi_visit
+        probability: 0.25
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "283731"
+          display: Pantoprazole 40 MG Delayed Release Oral Tablet
+
+      # H2 blocker — famotidine (step-down or alternative)
+      - resource_type: MedicationRequest
+        spec_id: gerd_famotidine
+        when: today
+        link_to: gerd_gi_visit
+        probability: 0.15
+        medication:
+          system: http://www.nlm.nih.gov/research/umls/rxnorm
+          code: "310964"
+          display: Famotidine 20 MG Oral Tablet
