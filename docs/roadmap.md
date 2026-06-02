@@ -96,12 +96,11 @@ Dates are indicative; actual delivery depends on team capacity and clinical revi
 - Automated validation loop: ✅ smoke-test + full test suite on every authoring batch
 - Launch-demo cohort preset: ✅ `atlas launch-demo`
 - GTM validation preset: ✅ `atlas validate --gtm` across 18 sourced launch expectations
-- Authoring workflow documentation: ⏳ Module authoring guide not yet written
+- Authoring workflow documentation: ✅ Module authoring guide written ([`docs/authoring/module_dsl.md`](./authoring/module_dsl.md))
 
 **Remaining:**
 
 - Formal clinician review UI (web-based) for sign-off workflow
-- Authoring documentation: `docs/authoring/module_dsl.md` spec
 - Automated prevalence validation for all 100 modules against sourced expectations (currently 28 modules have sourced fidelity expectations; 18 are included in the GTM validation preset)
 - LLM provider abstraction for non-Claude backends
 
