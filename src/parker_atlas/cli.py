@@ -108,6 +108,13 @@ ingest_app = typer.Typer(
 )
 app.add_typer(ingest_app)
 
+author_app = typer.Typer(
+    name="author",
+    help="Research-grounded module authoring (dossier → draft module + expectation → promote).",
+    no_args_is_help=True,
+)
+app.add_typer(author_app)
+
 console = Console()
 err_console = Console(stderr=True)
 
@@ -1727,6 +1734,149 @@ def ingest_progression_cmd(
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(overlay_yaml, encoding="utf-8")
     console.print(f"[green]✓[/green] Wrote {output}")
+
+
+# -- author ------------------------------------------------------------------
+
+
+def _signoff_template(condition: str, dossier) -> str:  # noqa: ANN001 - Dossier
+    """A clinician sign-off checklist. `atlas author promote` reads the
+    `Signed-off-by:` line; a non-empty value unlocks promotion."""
+    method = dossier.generated.get("method", "manual")
+    return (
+        f"# Clinician sign-off — `{condition}`\n\n"
+        f"This module was auto-drafted by `atlas author` (method={method}) and is "
+        f"**not shippable** until a licensed clinician reviews it and fills in the "
+        f"`Signed-off-by:` line below.\n\n"
+        f"## Review checklist\n\n"
+        f"- [ ] SNOMED/ICD-10 codes correctly identify the condition\n"
+        f"- [ ] Prevalence cells match the cited source table (age/sex bands and rates)\n"
+        f"- [ ] Observation value ranges are clinically plausible and correctly coded (LOINC/units)\n"
+        f"- [ ] Medication choices and treated-fraction reflect current standard of care\n"
+        f"- [ ] Progressions (targets, timing, probabilities) are clinically sound and cited\n"
+        f"- [ ] Every numeric claim traces to a citation in `dossier.yaml`\n\n"
+        f"## Sign-off\n\n"
+        f"Signed-off-by: \n"
+        f"Date: \n"
+        f"Notes: \n"
+    )
+
+
+@author_app.command("synthesize")
+def author_synthesize_cmd(
+    dossier: Annotated[Path, typer.Option("--dossier", "-d", help="Research dossier YAML to synthesize.")],
+    out: Annotated[Path, typer.Option("--out", "-o", help="Staging directory for drafts.")] = Path("./atlas-drafts"),
+    overwrite: Annotated[bool, typer.Option("--overwrite", help="Allow overwriting an existing draft directory's files.")] = False,
+) -> None:
+    """Synthesize a draft module + draft fidelity expectation from a dossier.
+
+    Writes `<out>/<condition>/{<condition>.yaml, <condition>.expectation.yaml,
+    dossier.yaml, SIGNOFF.md}`. Both generated artifacts are round-tripped
+    through the real loaders, so a malformed dossier fails here rather than at
+    `atlas generate` / `atlas validate` time. Drafts live outside the bundled
+    library and are invisible to the runtime until `atlas author promote`.
+    """
+    from parker_atlas.author import (
+        AuthorError,
+        DossierError,
+        load_dossier_from_str,
+        synthesize_expectation,
+        synthesize_module,
+    )
+
+    if not dossier.exists():
+        err_console.print(f"[red]dossier does not exist:[/red] {dossier}")
+        raise typer.Exit(code=1)
+
+    dossier_text = dossier.read_text(encoding="utf-8")
+    try:
+        doc = load_dossier_from_str(dossier_text)
+        module_yaml = synthesize_module(doc)
+        expectation_yaml = synthesize_expectation(doc)
+    except (DossierError, AuthorError) as exc:
+        err_console.print(f"[red]author failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    draft_dir = out / doc.condition
+    targets = {
+        draft_dir / f"{doc.condition}.yaml": module_yaml,
+        draft_dir / f"{doc.condition}.expectation.yaml": expectation_yaml,
+        draft_dir / "dossier.yaml": dossier_text,
+        draft_dir / "SIGNOFF.md": _signoff_template(doc.condition, doc),
+    }
+    existing = [p for p in targets if p.exists()]
+    if existing and not overwrite:
+        err_console.print(
+            f"[red]draft files already exist:[/red] "
+            f"{', '.join(str(p) for p in existing)}. Pass --overwrite to replace."
+        )
+        raise typer.Exit(code=1)
+
+    draft_dir.mkdir(parents=True, exist_ok=True)
+    for path, content in targets.items():
+        path.write_text(content, encoding="utf-8")
+
+    console.print(f"[green]✓[/green] Drafted [bold]{doc.condition}[/bold] → {draft_dir}")
+    console.print(f"  module:      {draft_dir / f'{doc.condition}.yaml'}")
+    console.print(f"  expectation: {draft_dir / f'{doc.condition}.expectation.yaml'}")
+    console.print(
+        f"  [yellow]Next:[/yellow] clinician review → fill `Signed-off-by:` in "
+        f"{draft_dir / 'SIGNOFF.md'} → [bold]atlas author promote --draft {draft_dir}[/bold]"
+    )
+
+
+@author_app.command("promote")
+def author_promote_cmd(
+    draft: Annotated[Path, typer.Option("--draft", "-d", help="Draft directory produced by `atlas author synthesize`.")],
+    overwrite: Annotated[bool, typer.Option("--overwrite", help="Allow replacing an existing library module/expectation.")] = False,
+    force: Annotated[bool, typer.Option("--force", help="Promote even without a clinician sign-off (NOT recommended).")] = False,
+) -> None:
+    """Install a clinician-reviewed draft into the bundled library.
+
+    Re-validates the reviewed module + expectation, refuses to proceed unless
+    `SIGNOFF.md` carries a non-empty `Signed-off-by:` value (override with
+    --force), strips the DRAFT banner, and writes both files into the shipping
+    library + expectation directories.
+    """
+    from parker_atlas.author.promote import PromotionError, promote_draft
+
+    try:
+        module_path, expectation_path = promote_draft(
+            draft, overwrite=overwrite, force=force
+        )
+    except PromotionError as exc:
+        err_console.print(f"[red]promote failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    console.print(f"[green]✓[/green] Promoted [bold]{draft.name}[/bold] into the library")
+    console.print(f"  module:      {module_path}")
+    console.print(f"  expectation: {expectation_path}")
+    console.print(
+        f"  [yellow]Next:[/yellow] verify with "
+        f"[bold]atlas validate --cohort --module {draft.name}[/bold] at a sufficient cohort size."
+    )
+
+
+@author_app.command("research")
+def author_research_cmd(
+    condition: Annotated[str, typer.Option("--condition", "-c", help="Condition / module name to research.")],
+) -> None:
+    """Produce a dossier from live sources (Phase 2 — not yet implemented).
+
+    Until the in-package web_search backend ships, produce a dossier with the
+    `deep-research` skill (or by hand) against the schema in
+    docs/authoring/research_authoring.md, then run `atlas author synthesize`.
+    """
+    err_console.print(
+        f"[yellow]atlas author research[/yellow] (autonomous dossier generation for "
+        f"[bold]{condition}[/bold]) is not yet implemented."
+    )
+    err_console.print(
+        "  For now, produce a dossier YAML with the deep-research skill or by hand "
+        "(see docs/authoring/research_authoring.md), then run "
+        "[bold]atlas author synthesize --dossier <file>[/bold]."
+    )
+    raise typer.Exit(code=2)
 
 
 if __name__ == "__main__":
