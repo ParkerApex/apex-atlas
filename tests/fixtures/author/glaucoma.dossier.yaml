@@ -1,0 +1,98 @@
+# Golden test fixture: a research dossier for primary open-angle glaucoma.
+#
+# Hand-authored for tests (method: manual). The same schema is what the
+# deep-research skill / web_search backend produce autonomously. Prevalence
+# and treatment figures are anchored to public ophthalmology epidemiology;
+# values are representative for pipeline testing, not a clinical reference.
+condition: glaucoma
+version: 0.1.0
+generated:
+  method: manual
+  accessed: "2026-06-03"
+codes:
+  snomed:
+    system: http://snomed.info/sct
+    code: "23986001"
+    display: Glaucoma (disorder)
+  icd10:
+    - {code: "H40.9", display: "Unspecified glaucoma"}
+    - {code: "H40.11X0", display: "Primary open-angle glaucoma, stage unspecified"}
+prevalence:
+  stratify_by: age_bracket
+  cells:
+    "0-39": 0.001
+    "40-59": 0.012
+    "60-99": 0.040
+  citation:
+    source: >-
+      Friedman DS, Wolfs RCW, O'Colmain BJ, et al. Prevalence of open-angle
+      glaucoma among adults in the United States. Arch Ophthalmol.
+      2004;122(4):532-538 (Eye Diseases Prevalence Research Group).
+    url: https://jamanetwork.com/journals/jamaophthalmology/fullarticle/416180
+    table: "Table 2 (POAG prevalence by age, US, both sexes)"
+    accessed: "2026-06-03"
+    summary: >-
+      US open-angle glaucoma prevalence rises steeply with age — well under
+      1% before 40, roughly 1% in the 40-59 band, and 4%+ among adults 60 and
+      older. Cells here approximate the pooled both-sex estimates.
+onset_age:
+  min: 40
+  max: 80
+clinical:
+  encounters:
+    - spec_id: glaucoma_eye_visit
+      class: AMB
+      type:
+        system: http://snomed.info/sct
+        code: "185349003"
+        display: Encounter for check up
+      reason:
+        system: http://snomed.info/sct
+        code: "23986001"
+        display: Glaucoma
+  observations:
+    - spec_id: glaucoma_iop
+      category: laboratory
+      link_to: glaucoma_eye_visit
+      loinc:
+        system: http://loinc.org
+        code: "79892-9"
+        display: Intraocular pressure of Eye
+      value_range: {low: 22, high: 32, precision: 0}
+      unit: mm[Hg]
+      unit_code: mm[Hg]
+      citation:
+        source: >-
+          American Academy of Ophthalmology. Primary Open-Angle Glaucoma
+          Preferred Practice Pattern. 2020.
+        url: https://www.aaojournal.org/article/S0161-6420(20)30982-2/fulltext
+        table: "Diagnostic criteria — elevated intraocular pressure"
+        accessed: "2026-06-03"
+        summary: >-
+          Untreated POAG commonly presents with IOP above the ~21 mm Hg
+          statistical upper limit; the 22-32 mm Hg range models the elevated
+          pressures seen at diagnosis prior to therapy.
+  medications:
+    - spec_id: glaucoma_latanoprost
+      medication:
+        system: http://www.nlm.nih.gov/research/umls/rxnorm
+        code: "28809"
+        display: latanoprost
+      fraction: 0.70
+      link_to: glaucoma_eye_visit
+      citation:
+        source: >-
+          American Academy of Ophthalmology. Primary Open-Angle Glaucoma
+          Preferred Practice Pattern. 2020.
+        url: https://www.aaojournal.org/article/S0161-6420(20)30982-2/fulltext
+        table: "Initial medical therapy"
+        accessed: "2026-06-03"
+        summary: >-
+          Prostaglandin analogues (latanoprost) are the most common first-line
+          IOP-lowering therapy; ~70% models the share of treated POAG patients
+          started on a prostaglandin analogue.
+notes: >-
+  First-cut POAG module: diagnosis-day ophthalmology encounter, an elevated
+  intraocular-pressure exam Observation, and first-line prostaglandin-analogue
+  therapy in most patients. No progression modeled yet (visual-field loss /
+  blindness would be a natural one-hop downstream condition).
