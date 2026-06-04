@@ -112,6 +112,20 @@ class TestSynthesizeModule:
         # Loader ignores the comment banner.
         assert load_module_from_str(rendered).name == "glaucoma"
 
+    def test_description_is_promotion_safe(self):
+        # The description is permanent metadata that survives promotion (the
+        # DRAFT banner is stripped on promote), so it must NOT carry
+        # draft/lifecycle wording — only the banner does. Guards against shipped
+        # modules reading "DRAFT ... pending sign-off before promotion".
+        d = _load_glaucoma()
+        desc = load_module_from_str(synthesize_module(d)).description
+        assert "DRAFT" not in desc
+        assert "before promotion" not in desc
+        assert "pending" not in desc.lower()
+        # It still records provenance.
+        assert "atlas author" in desc
+        assert "sourced" in desc.lower()
+
     def test_invalid_loinc_code_fails_at_author_time(self):
         raw = yaml.safe_load(GLAUCOMA.read_text(encoding="utf-8"))
         # value_range with high < low is structurally invalid for the module loader.
