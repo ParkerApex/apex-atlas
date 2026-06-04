@@ -25,6 +25,7 @@ Every synthetic patient receives a Parker Global Patient Identifier (GPX) under 
 
 Existing synthetic patient generators share a common set of limitations: disease module libraries that plateau in the dozens, clinical notes that read as obviously templated, and social determinants of health treated as metadata rather than causal variables. Apex Atlas addresses all three — and adds capabilities no other open generator offers:
 
+- **Research-grounded module authoring** — `atlas author` turns a cited research dossier into a draft module *and* its sourced fidelity expectation in a single pass, both validated through the runtime loaders, then gated behind clinician sign-off before promotion. `atlas author research` produces that dossier autonomously — Claude with the web_search tool pulls current prevalence and codes from authoritative public sources (NHANES, CDC, SEER, peer-reviewed epidemiology). This is the antidote to the plateau problem: the library stays current and auditable because every new module arrives validation-ready, with no uncited numbers. No other open generator can extend itself this way.
 - **SDoH as a causal simulation variable** — food insecurity, housing instability, transportation barriers, financial strain, and social isolation are sampled from BRFSS-grounded distributions and causally reduce outpatient encounter completion and medication adherence rates. Patients with barriers miss appointments and don't fill prescriptions — not as a tag, but as a change in what resources get generated.
 - **Quality MeasureReport output** — Apex Atlas is the only open generator that emits DEQM-profiled MeasureReport resources alongside patient records. Five HEDIS-analog measures (HbA1c testing in diabetics, BP control in hypertensives, preventive care, flu immunization, pediatric well-child) are evaluated per patient and summarized for the cohort.
 - **Full lifecycle coverage** — pediatric well-child visits with the ACIP 2024 immunization schedule, maternal health and obstetric complications, and 101 clinical modules spanning 14 domains (cardiovascular, metabolic, pulmonary, GI, renal/urology, musculoskeletal/rheumatology, mental health, substance use, neurology, oncology/hematology, infectious disease, pediatric/OB/prevention, dermatology/allergy, and ENT/ophthalmology).
@@ -260,6 +261,27 @@ atlas validate ./cohort --cohort --module hypertension
 atlas report ./cohort --module hypertension --out cohort-report.html
 # generation-metadata.json captured at generation time provides an audit trail for internal governance
 ```
+
+### Authoring a new module from research
+
+```bash
+# Autonomous: research a condition, draft module + sourced expectation in one step
+# (requires the `anthropic` extra and ANTHROPIC_API_KEY)
+atlas author research --condition glaucoma --draft-out ./atlas-drafts
+
+# Or synthesize from a dossier you authored by hand / via the deep-research workflow
+atlas author synthesize --dossier ./glaucoma.dossier.yaml --out ./atlas-drafts
+
+# A clinician reviews the draft and fills the Signed-off-by: line in SIGNOFF.md,
+# then promote installs the validated module + expectation into the library
+atlas author promote --draft ./atlas-drafts/glaucoma
+
+# Verify the loop closes: the new module validates against its own sourced expectation
+atlas generate --patients 8000 --seed 7 --module glaucoma --out ./g && \
+  atlas validate ./g --cohort --module glaucoma
+```
+
+See [`docs/authoring/research_authoring.md`](./docs/authoring/research_authoring.md) for the dossier contract and the full workflow.
 
 ## Architecture
 
