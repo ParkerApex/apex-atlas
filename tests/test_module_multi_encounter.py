@@ -155,7 +155,7 @@ class TestMultiEncounterEndToEnd:
         assert result.exit_code == 0, result.output
 
         examined = 0
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             entries_by_type: dict[str, list[dict]] = {}
             for e in data["entry"]:
@@ -220,7 +220,7 @@ class TestMultiEncounterEndToEnd:
         )
         assert result.exit_code == 0, result.output
 
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             meds = [
                 e for e in data["entry"]
@@ -255,7 +255,7 @@ class TestMultiEncounterEndToEnd:
                 ],
             )
             assert r.exit_code == 0, r.output
-            for f in sorted(out.glob("*.json")):
+            for f in sorted(out.glob("GPX-SYN-*.json")):
                 data = json.loads(f.read_text())
                 meds = [
                     e for e in data["entry"]

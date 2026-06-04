@@ -38,7 +38,7 @@ def _generate(tmp_path, *, modules: str, patients: int = 5000, seed: int = 42):
 
 
 def _walk_conditions(tmp_path):
-    for f in sorted(tmp_path.glob("*.json")):
+    for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
         data = json.loads(f.read_text())
         gpx = f.stem
         for entry in data["entry"]:
@@ -77,7 +77,7 @@ class TestIHDToMIChain:
 
     def test_mi_diagnosis_carries_inpatient_encounter(self, tmp_path):
         _generate(tmp_path, modules="ischemic_heart_disease", patients=5000)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             has_mi = False
             inpatient_encounters = []
@@ -97,7 +97,7 @@ class TestIHDToMIChain:
 
     def test_mi_onset_is_ten_years_after_ihd_onset(self, tmp_path):
         _generate(tmp_path, modules="ischemic_heart_disease", patients=2000)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             ihd_onset: date | None = None
             mi_onset: date | None = None
@@ -145,7 +145,7 @@ class TestHFToCardiorenalChain:
 
     def test_cardiorenal_diagnosis_carries_egfr(self, tmp_path):
         _generate(tmp_path, modules="heart_failure", patients=5000)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             has_crs = False
             has_egfr = False
@@ -164,7 +164,7 @@ class TestHFToCardiorenalChain:
 
     def test_cardiorenal_onset_is_ten_years_after_hf_onset(self, tmp_path):
         _generate(tmp_path, modules="heart_failure", patients=2000)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             hf_onset: date | None = None
             crs_onset: date | None = None

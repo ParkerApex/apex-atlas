@@ -35,8 +35,10 @@ class TestParquetOutputShape:
         _generate_parquet(tmp_path, patients=10, module="hypertension")
         present = sorted(p.name for p in tmp_path.glob("*.parquet"))
         assert "Patient.parquet" in present
-        # No JSON or NDJSON files in parquet mode.
-        assert not list(tmp_path.glob("*.json"))
+        # No patient-bundle JSON or NDJSON in parquet mode. The
+        # generation-metadata.json audit sidecar is written in every mode and
+        # is not a resource file, so it doesn't count here.
+        assert not [p for p in tmp_path.glob("*.json") if p.name != "generation-metadata.json"]
         assert not list(tmp_path.glob("*.ndjson"))
 
     def test_patient_file_has_one_row_per_patient(self, tmp_path):

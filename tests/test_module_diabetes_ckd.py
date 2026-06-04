@@ -36,7 +36,7 @@ def _generate(tmp_path, patients=2000, seed=42):
 
 
 def _walk_conditions(tmp_path):
-    for f in sorted(tmp_path.glob("*.json")):
+    for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
         data = json.loads(f.read_text())
         gpx = f.stem
         for entry in data["entry"]:
@@ -92,7 +92,7 @@ class TestDiabeticCKDProgression:
 
     def test_ckd_diagnosis_carries_egfr_observation(self, tmp_path):
         _generate(tmp_path, patients=2000, seed=42)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             has_ckd = False
             has_egfr = False
@@ -114,7 +114,7 @@ class TestDiabeticCKDProgression:
 
     def test_ckd_onset_is_ten_years_after_diabetes_onset(self, tmp_path):
         _generate(tmp_path, patients=2000, seed=42)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             dm_onset: date | None = None
             ckd_onset: date | None = None

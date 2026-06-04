@@ -396,7 +396,7 @@ class TestCLIEndToEnd:
 
         # Find at least one hypertensive bundle with all four non-Patient resources.
         bundles_with_full_set = 0
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             types = [e["resource"]["resourceType"] for e in data["entry"]]
             if {"Condition", "Encounter", "Observation"}.issubset(types):

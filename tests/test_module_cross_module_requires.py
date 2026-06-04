@@ -153,7 +153,7 @@ class TestMultiModuleCLI:
         )
         assert result.exit_code == 0, result.output
         # Multi-module bundles can have both Conditions present.
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             condition_codes = {
                 e["resource"]["code"]["coding"][0]["code"]
@@ -179,7 +179,7 @@ class TestMultiModuleCLI:
             ],
         )
         assert result.exit_code == 0, result.output
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             for e in data["entry"]:
                 if e["resource"]["resourceType"] == "Condition":
@@ -200,7 +200,7 @@ class TestMultiModuleCLI:
         )
         assert result.exit_code == 0, result.output
         htn_count = ckd_count = 0
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             codes = {
                 e["resource"]["code"]["coding"][0]["code"]
