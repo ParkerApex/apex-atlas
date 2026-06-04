@@ -163,11 +163,32 @@ banner that promotion strips.
 
 ---
 
-## Phase 2 — autonomous research (`atlas author research`)
+## Autonomous research (`atlas author research`)
 
-`atlas author research --condition <name>` is currently a stub. When the
-in-package, `web_search`-backed backend ships, it will fetch live sources and
-emit a dossier against the schema above autonomously; until then, produce the
-dossier with the `deep-research` skill or by hand and run `atlas author
-synthesize`. The dossier contract is identical either way, so nothing
-downstream changes when the backend lands.
+`atlas author research --condition <name>` generates the dossier for you:
+Claude uses the `web_search` server tool to find authoritative public US
+sources (NHANES/CDC/SEER/published meta-analyses, plus SNOMED/ICD-10/LOINC/
+RxNorm terminologies), then returns a dossier matching the schema above. The
+result is validated through the dossier loader before anything is written, so
+the same *no uncited numbers* rule applies to autonomous and hand-authored
+dossiers alike.
+
+```bash
+# Requires the `anthropic` extra and ANTHROPIC_API_KEY.
+pip install -e ".[llm]"
+export ANTHROPIC_API_KEY=sk-...
+
+# Write a dossier to a file (review it before synthesizing):
+atlas author research --condition glaucoma --output glaucoma.dossier.yaml
+
+# Or go straight from a condition name to a reviewable draft bundle:
+atlas author research --condition glaucoma --draft-out ./atlas-drafts
+# → ./atlas-drafts/glaucoma/{glaucoma.yaml, glaucoma.expectation.yaml, dossier.yaml, SIGNOFF.md}
+```
+
+Flags: `--model` overrides the research model (default: Sonnet 4.6),
+`--output/-o` writes the dossier (omit to print to stdout), `--draft-out`
+chains research → synthesis, and `--overwrite` allows replacing existing files.
+The dossier contract is identical to the manual path, so synthesis, promotion,
+generation, and validation behave the same regardless of how the dossier was
+produced — and the clinician sign-off gate still applies before anything ships.
