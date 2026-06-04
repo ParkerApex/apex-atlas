@@ -36,7 +36,7 @@ def _generate(tmp_path, patients=2000, seed=42):
 
 def _walk_conditions(tmp_path):
     """Yield (gpx, condition_dict) for every Condition across every Bundle."""
-    for f in sorted(tmp_path.glob("*.json")):
+    for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
         data = json.loads(f.read_text())
         gpx = f.stem
         for entry in data["entry"]:
@@ -102,7 +102,7 @@ class TestHypertensiveCKDProgression:
         _generate(tmp_path, patients=2000, seed=42)
         # For each patient with a CKD diagnosis, confirm an eGFR Observation
         # was emitted.
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             entries = data["entry"]
             has_ckd = False
@@ -129,7 +129,7 @@ class TestHypertensiveCKDProgression:
         _generate(tmp_path, patients=2000, seed=42)
         # A patient's CKD onset must be exactly 10 years (3650 days) after
         # their HTN onset.
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             htn_onset: date | None = None
             ckd_onset: date | None = None

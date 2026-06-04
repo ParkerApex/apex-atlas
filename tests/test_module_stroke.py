@@ -42,7 +42,7 @@ class TestStrokeModule:
     def test_some_patients_get_stroke(self, tmp_path):
         _generate(tmp_path, patients=5000, seed=42)
         stroke_count = 0
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 r = entry["resource"]
@@ -55,7 +55,7 @@ class TestStrokeModule:
 
     def test_stroke_diagnosis_carries_nihss(self, tmp_path):
         _generate(tmp_path, patients=5000, seed=42)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             has_stroke = False
             has_nihss = False
@@ -74,7 +74,7 @@ class TestStrokeModule:
 
     def test_pediatric_patients_never_get_stroke(self, tmp_path):
         _generate(tmp_path, patients=5000, seed=42)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             patient_birth: date | None = None
             has_stroke = False

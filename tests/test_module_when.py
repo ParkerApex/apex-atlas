@@ -235,7 +235,7 @@ class TestWhenEndToEnd:
         assert result.exit_code == 0, result.output
 
         examined = 0
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             cond = next(
                 (e["resource"] for e in data["entry"] if e["resource"]["resourceType"] == "Condition"),
@@ -276,7 +276,7 @@ class TestWhenEndToEnd:
         )
         assert result.exit_code == 0, result.output
 
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             entries = data["entry"]
             enc_entry = next(
@@ -306,7 +306,7 @@ class TestWhenEndToEnd:
         )
         assert result.exit_code == 0, result.output
 
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             cond = next(
                 (e["resource"] for e in data["entry"] if e["resource"]["resourceType"] == "Condition"),

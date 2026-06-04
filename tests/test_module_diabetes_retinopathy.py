@@ -38,7 +38,7 @@ def _generate(tmp_path, patients=2000, seed=42):
 
 
 def _walk_conditions(tmp_path):
-    for f in sorted(tmp_path.glob("*.json")):
+    for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
         data = json.loads(f.read_text())
         gpx = f.stem
         for entry in data["entry"]:
@@ -93,7 +93,7 @@ class TestDiabeticRetinopathyProgression:
 
     def test_dr_diagnosis_carries_visual_acuity_observation(self, tmp_path):
         _generate(tmp_path, patients=2000, seed=42)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             has_dr = False
             has_va = False
@@ -115,7 +115,7 @@ class TestDiabeticRetinopathyProgression:
 
     def test_dr_onset_is_ten_years_after_diabetes_onset(self, tmp_path):
         _generate(tmp_path, patients=2000, seed=42)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             dm_onset: date | None = None
             dr_onset: date | None = None
@@ -142,7 +142,7 @@ class TestDiabeticRetinopathyProgression:
     def test_visual_acuity_in_logmar_npdr_range(self, tmp_path):
         _generate(tmp_path, patients=2000, seed=42)
         any_va = False
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 r = entry["resource"]

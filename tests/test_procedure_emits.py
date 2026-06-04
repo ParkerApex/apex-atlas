@@ -93,7 +93,7 @@ class TestBundledModulesEmitProcedures:
     ):
         _generate(tmp_path, modules=module_name, patients=3000)
         seen: set[str] = set()
-        for f in tmp_path.glob("*.json"):
+        for f in tmp_path.glob("GPX-SYN-*.json"):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 r = entry["resource"]
@@ -115,7 +115,7 @@ class TestProceduresAreValidFHIR:
             patients=500,
         )
         any_proc = False
-        for f in tmp_path.glob("*.json"):
+        for f in tmp_path.glob("GPX-SYN-*.json"):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 r = entry["resource"]
@@ -158,7 +158,7 @@ class TestProcedureLinkingToEncounter:
         # carry an `encounter` reference pointing at the right Encounter.
         _generate(tmp_path, modules="heart_failure", patients=200)
         any_linked = False
-        for f in tmp_path.glob("*.json"):
+        for f in tmp_path.glob("GPX-SYN-*.json"):
             data = json.loads(f.read_text())
             entries = data["entry"]
             encounter_urls = {

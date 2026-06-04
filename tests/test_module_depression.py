@@ -42,7 +42,7 @@ class TestDepressionModule:
     def test_some_patients_get_depression(self, tmp_path):
         _generate(tmp_path, patients=5000, seed=42)
         mdd_count = 0
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 r = entry["resource"]
@@ -55,7 +55,7 @@ class TestDepressionModule:
 
     def test_depression_diagnosis_carries_phq9(self, tmp_path):
         _generate(tmp_path, patients=5000, seed=42)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             has_mdd = False
             has_phq9 = False
@@ -75,7 +75,7 @@ class TestDepressionModule:
     def test_phq9_in_moderate_to_severe_range(self, tmp_path):
         _generate(tmp_path, patients=2000, seed=42)
         any_obs = False
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 r = entry["resource"]

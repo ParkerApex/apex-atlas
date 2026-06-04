@@ -43,7 +43,7 @@ class TestIschemicHeartDiseaseModule:
     def test_some_patients_get_ihd(self, tmp_path):
         _generate(tmp_path, patients=5000, seed=42)
         ihd_count = 0
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 r = entry["resource"]
@@ -56,7 +56,7 @@ class TestIschemicHeartDiseaseModule:
 
     def test_ihd_diagnosis_carries_ldl_c(self, tmp_path):
         _generate(tmp_path, patients=5000, seed=42)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             has_ihd = False
             has_ldl = False
@@ -75,7 +75,7 @@ class TestIschemicHeartDiseaseModule:
 
     def test_pediatric_patients_never_get_ihd(self, tmp_path):
         _generate(tmp_path, patients=5000, seed=42)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             patient_birth: date | None = None
             has_ihd = False
