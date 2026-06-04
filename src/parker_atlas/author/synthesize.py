@@ -175,17 +175,21 @@ def synthesize_expectation(dossier: Dossier) -> str:
 
 
 def _module_description(dossier: Dossier) -> str:
+    """Build the module description.
+
+    This text is permanent module metadata: it survives promotion, so it must
+    read correctly both as a draft and once shipped. The *draft* signal lives in
+    the `DRAFT_BANNER` comment (stripped on promote) and the SIGNOFF.md gate —
+    NOT here. So the description states provenance, not lifecycle status.
+    """
     method = dossier.generated.get("method", "manual")
     src = dossier.prevalence_citation.get("source", "an unnamed source")
     parts = [
-        f"DRAFT module auto-synthesized by `atlas author` from a research dossier "
-        f"(method={method}). Prevalence is sourced from {src}.",
+        f"Auto-drafted by `atlas author` from a research dossier (method={method}). "
+        f"Prevalence sourced from {src}.",
     ]
     if dossier.notes:
         parts.append(dossier.notes)
-    parts.append(
-        "Pending clinician sign-off before promotion into the bundled library."
-    )
     return " ".join(parts)
 
 
