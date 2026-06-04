@@ -50,7 +50,7 @@ class TestCOPDCohortGeneration:
     def test_generate_produces_some_copd_patients(self, tmp_path):
         _generate(tmp_path, patients=2000, seed=42)
         copd_count = 0
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 r = entry["resource"]
@@ -63,7 +63,7 @@ class TestCOPDCohortGeneration:
 
     def test_copd_diagnosis_carries_fev1_fvc_observation(self, tmp_path):
         _generate(tmp_path, patients=2000, seed=42)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             has_copd = False
             has_fev1_fvc = False
@@ -86,7 +86,7 @@ class TestCOPDCohortGeneration:
     def test_fev1_fvc_in_gold_diagnostic_range(self, tmp_path):
         _generate(tmp_path, patients=2000, seed=42)
         any_obs = False
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 r = entry["resource"]
@@ -106,7 +106,7 @@ class TestCOPDCohortGeneration:
         # Module sets pediatric prevalence to 0; no patient with age <18
         # should have a COPD diagnosis.
         _generate(tmp_path, patients=5000, seed=42)
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             patient_birth: date | None = None
             has_copd = False

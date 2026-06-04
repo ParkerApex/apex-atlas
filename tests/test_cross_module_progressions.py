@@ -52,7 +52,7 @@ def _generate(tmp_path, *, modules: str, patients: int = 5000, seed: int = 42):
 
 def _patient_codes(tmp_path) -> dict[str, set[str]]:
     by_patient: dict[str, set[str]] = {}
-    for f in sorted(tmp_path.glob("*.json")):
+    for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
         data = json.loads(f.read_text())
         codes = by_patient.setdefault(f.stem, set())
         for entry in data["entry"]:
@@ -212,7 +212,7 @@ class TestStandaloneRunsStillWork:
         # HTN's cross-module progressions to HF and stroke must silently
         # no-op when those modules aren't active in the run.
         _generate(tmp_path, modules="hypertension", patients=100)
-        assert any(tmp_path.glob("*.json"))
+        assert any(tmp_path.glob("GPX-SYN-*.json"))
 
     def test_hypertension_alone_emits_no_hf_or_stroke(self, tmp_path):
         _generate(tmp_path, modules="hypertension", patients=500)

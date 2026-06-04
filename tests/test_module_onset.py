@@ -131,7 +131,7 @@ class TestOnsetEndToEnd:
         assert result.exit_code == 0, result.output
 
         hits = 0
-        for f in sorted(tmp_path.glob("*.json")):
+        for f in sorted(tmp_path.glob("GPX-SYN-*.json")):
             data = json.loads(f.read_text())
             for entry in data["entry"]:
                 if entry["resource"]["resourceType"] == "Condition":
@@ -159,7 +159,7 @@ class TestOnsetEndToEnd:
             )
             assert result.exit_code == 0, result.output
             had_condition = False
-            for f in sorted(out.glob("*.json")):
+            for f in sorted(out.glob("GPX-SYN-*.json")):
                 data = json.loads(f.read_text())
                 for entry in data["entry"]:
                     if entry["resource"]["resourceType"] == "Condition":
@@ -184,6 +184,6 @@ class TestOnsetEndToEnd:
             )
             assert r.exit_code == 0, r.output
         # Same files, same content.
-        for f1 in sorted(out1.glob("*.json")):
+        for f1 in sorted(out1.glob("GPX-SYN-*.json")):
             f2 = out2 / f1.name
             assert f1.read_text() == f2.read_text()
