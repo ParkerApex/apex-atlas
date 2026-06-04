@@ -1,0 +1,35 @@
+module: urinary_incontinence
+version: 0.1.0
+source:
+  name: NIDDK Urinary Incontinence
+  provenance: sourced
+  url: https://www.niddk.nih.gov/health-information/urologic-diseases/bladder-control-problems
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check against the cited source). Urinary incontinence is common, especially in older adults and women,
+    and is managed with behavioral, pelvic floor, medication, and procedural strategies.
+
+    '
+  citations:
+  - source: NIDDK Urinary Incontinence
+    url: https://www.niddk.nih.gov/health-information/urologic-diseases/bladder-control-problems
+    accessed: '2026-06-04'
+metrics:
+- id: urinary_incontinence_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '165232002'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    female:
+      0-17: 0.01
+      18-39: 0.08
+      40-59: 0.18
+      60-99: 0.32
+    male:
+      0-17: 0.008
+      18-39: 0.02
+      40-59: 0.08
+      60-99: 0.18

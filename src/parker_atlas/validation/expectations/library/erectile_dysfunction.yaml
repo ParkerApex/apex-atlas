@@ -1,0 +1,33 @@
+module: erectile_dysfunction
+version: 0.1.0
+source:
+  name: American Urological Association erectile dysfunction guideline
+  provenance: sourced
+  url: https://www.auanet.org/guidelines-and-quality/guidelines/erectile-dysfunction-(ed)-guideline
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check
+    against the cited source). Erectile dysfunction care includes risk assessment and phosphodiesterase-5
+    inhibitor therapy for many patients.
+  citations:
+  - source: American Urological Association erectile dysfunction guideline
+    url: https://www.auanet.org/guidelines-and-quality/guidelines/erectile-dysfunction-(ed)-guideline
+    accessed: '2026-06-04'
+metrics:
+- id: erectile_dysfunction_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '397803000'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    female:
+      0-17: 0.0
+      18-39: 0.0
+      40-59: 0.0
+      60-99: 0.0
+    male:
+      0-17: 0.002
+      18-39: 0.08
+      40-59: 0.18
+      60-99: 0.34

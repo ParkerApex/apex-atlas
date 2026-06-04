@@ -1,0 +1,43 @@
+module: anxiety
+version: 0.1.0
+source:
+  name: 'NIMH — Any Anxiety Disorder, United States. National Survey on Drug Use and Health (NSDUH) 2021.
+
+    '
+  provenance: sourced
+  url: https://www.nimh.nih.gov/health/statistics/any-anxiety-disorder
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check against the cited source). 12-month prevalence: 19.1% of US adults (any anxiety disorder). Female:
+    23.4%; Male: 14.3%. Highest in 18-29 (30.4%) and 30-44 (22.7%); declines to ~15% in 45-59 and ~11%
+    in 60+.
+
+    '
+  citations:
+  - source: 'NIMH — Any Anxiety Disorder, United States. National Survey on Drug Use and Health (NSDUH)
+      2021.
+
+      '
+    url: https://www.nimh.nih.gov/health/statistics/any-anxiety-disorder
+    accessed: '2026-06-04'
+metrics:
+- id: anxiety_disorder_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '197480006'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    female:
+      0-17: 0.0
+      18-29: 0.304
+      30-44: 0.24
+      45-59: 0.17
+      60-99: 0.12
+    male:
+      0-17: 0.0
+      18-29: 0.185
+      30-44: 0.145
+      45-59: 0.105
+      60-99: 0.075

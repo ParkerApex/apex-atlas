@@ -1,0 +1,33 @@
+module: uterine_fibroids
+version: 0.1.0
+source:
+  name: ACOG uterine fibroids patient FAQ
+  provenance: sourced
+  url: https://www.acog.org/womens-health/faqs/uterine-fibroids
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check
+    against the cited source). Uterine fibroids are common benign tumors that may cause bleeding, pain,
+    and reproductive symptoms.
+  citations:
+  - source: ACOG uterine fibroids patient FAQ
+    url: https://www.acog.org/womens-health/faqs/uterine-fibroids
+    accessed: '2026-06-04'
+metrics:
+- id: uterine_fibroids_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '95315005'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    female:
+      0-17: 0.002
+      18-39: 0.09
+      40-59: 0.26
+      60-99: 0.06
+    male:
+      0-17: 0.0
+      18-39: 0.0
+      40-59: 0.0
+      60-99: 0.0

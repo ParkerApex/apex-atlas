@@ -1,0 +1,27 @@
+module: hearing_loss
+version: 0.1.0
+source:
+  name: National Institute on Deafness and Other Communication Disorders age-related hearing loss
+  provenance: sourced
+  url: https://www.nidcd.nih.gov/health/age-related-hearing-loss
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check
+    against the cited source). Age-related hearing loss is common in older adults and may require audiologic
+    evaluation.
+  citations:
+  - source: National Institute on Deafness and Other Communication Disorders age-related hearing loss
+    url: https://www.nidcd.nih.gov/health/age-related-hearing-loss
+    accessed: '2026-06-04'
+metrics:
+- id: hearing_loss_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '15188001'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    0-17: 0.015
+    18-39: 0.03
+    40-59: 0.09
+    60-99: 0.28
