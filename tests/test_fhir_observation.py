@@ -201,7 +201,7 @@ class TestInputValidation:
                 gpx,
                 fullurl_for_gpx(gpx),
                 "obs",
-                category="social-history",  # not yet supported
+                category="not-a-real-category",  # outside the HL7 value set
                 code=_sample_lab_code(),
                 effective=date(2026, 4, 24),
                 value=Quantity(value=1.0, unit="mg/dL"),
@@ -221,3 +221,37 @@ class TestIdDeterminism:
         g1 = GPX.mint(Category.SYNTHETIC, 1)
         g2 = GPX.mint(Category.SYNTHETIC, 2)
         assert observation_id(g1, "a") != observation_id(g2, "a")
+
+
+class TestNonLabVitalCategories:
+    """survey / social-history / exam are valid FHIR observation categories that
+    real modules emit (PHQ-9, smoking status, exam findings). They must build a
+    valid Observation, but claim no US Core profile (we don't conform to one)."""
+
+    def _build(self, category):
+        return build_observation_resource(
+            _sample_gpx(),
+            fullurl_for_gpx(_sample_gpx()),
+            f"obs_{category}",
+            category=category,
+            code=Coding(system="http://loinc.org", code="44249-1", display="PHQ-9 total score"),
+            effective=date(2024, 1, 1),
+            value=Quantity(value=12, unit="{score}"),
+        )
+
+    @pytest.mark.parametrize("category", ["survey", "social-history", "exam"])
+    def test_builds_valid_observation(self, category):
+        resource = self._build(category)
+        Observation.model_validate(resource)
+        assert resource["category"][0]["coding"][0]["code"] == category
+
+    @pytest.mark.parametrize("category", ["survey", "social-history", "exam"])
+    def test_claims_no_us_core_profile(self, category):
+        # No US Core profile for these categories — meta carries only the tag.
+        resource = self._build(category)
+        assert "profile" not in resource["meta"]
+        assert resource["meta"]["tag"]
+
+    def test_rejects_unknown_category(self):
+        with pytest.raises(ValueError, match="unsupported category"):
+            self._build("not-a-real-category")

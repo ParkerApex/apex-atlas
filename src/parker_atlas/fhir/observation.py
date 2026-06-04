@@ -13,11 +13,16 @@ Every Observation carries:
 - `subject.reference` pointing at the Patient's Bundle fullUrl
 - An `effectiveDateTime` describing when the measurement was taken
 - The HL7 HTEST meta tag marking the data as synthetic
-- A claim of the appropriate US Core 6.1 profile (vital-signs,
-  blood pressure, or laboratory result)
+- A claim of the appropriate US Core 6.1 profile *where one applies*
+  (vital-signs, blood pressure, or laboratory result)
 
-Callers pick the profile via `profile_url`; sensible defaults are
-derived from `category` and the Observation code.
+`category` accepts any code from the HL7 observation-category value set
+(vital-signs, laboratory, survey, social-history, exam, …) — these are the
+categories real modules emit (PHQ-9/GAD-7 screening surveys, smoking status,
+exam findings). Categories without a dedicated US Core 6.1 profile are emitted
+as valid base FHIR R4 Observations carrying only the category coding and the
+synthetic tag — we don't claim a US Core profile we don't conform to. Callers
+can still pin a profile explicitly via `profile_url`.
 """
 
 from __future__ import annotations
@@ -45,7 +50,23 @@ US_CORE_LAB_RESULT_PROFILE = (
     f"{US_CORE_PROFILE_BASE}/us-core-laboratory-result-observation|6.1.0"
 )
 
-SUPPORTED_CATEGORIES = ("vital-signs", "laboratory")
+# The HL7 observation-category value set
+# (http://terminology.hl7.org/CodeSystem/observation-category). Modules legitimately
+# emit several of these — survey (PHQ-9, GAD-7, AUDIT), social-history (smoking
+# status), exam findings — not just labs and vitals. Display strings are the
+# value set's official displays.
+OBSERVATION_CATEGORY_DISPLAYS = {
+    "social-history": "Social History",
+    "vital-signs": "Vital Signs",
+    "imaging": "Imaging",
+    "laboratory": "Laboratory",
+    "procedure": "Procedure",
+    "survey": "Survey",
+    "exam": "Exam",
+    "therapy": "Therapy",
+    "activity": "Activity",
+}
+SUPPORTED_CATEGORIES = tuple(OBSERVATION_CATEGORY_DISPLAYS)
 
 # Match US Core's "blood pressure panel" LOINC so the BP profile is auto-chosen.
 BLOOD_PRESSURE_PANEL_LOINC = "85354-9"
@@ -79,13 +100,12 @@ def observation_id(gpx: GPX, observation_spec_id: str) -> str:
 
 
 def _category_element(category: str) -> dict[str, Any]:
-    display = "Vital Signs" if category == "vital-signs" else "Laboratory"
     return {
         "coding": [
             {
                 "system": OBSERVATION_CATEGORY_SYSTEM,
                 "code": category,
-                "display": display,
+                "display": OBSERVATION_CATEGORY_DISPLAYS[category],
             }
         ]
     }
@@ -102,13 +122,20 @@ def _quantity_element(q: Quantity) -> dict[str, Any]:
     }
 
 
-def _default_profile(category: str, code: Coding) -> str:
+def _default_profile(category: str, code: Coding) -> str | None:
+    """The US Core 6.1 profile for this category, or None if none applies.
+
+    Only vital-signs and laboratory have a US Core profile we conform to here.
+    Other valid categories (survey, social-history, exam, …) are emitted as base
+    FHIR Observations — returning None means no US Core profile is claimed.
+    """
     if category == "laboratory":
         return US_CORE_LAB_RESULT_PROFILE
-    # vital-signs
-    if code.code == BLOOD_PRESSURE_PANEL_LOINC:
-        return US_CORE_BLOOD_PRESSURE_PROFILE
-    return US_CORE_VITAL_SIGNS_PROFILE
+    if category == "vital-signs":
+        if code.code == BLOOD_PRESSURE_PANEL_LOINC:
+            return US_CORE_BLOOD_PRESSURE_PROFILE
+        return US_CORE_VITAL_SIGNS_PROFILE
+    return None
 
 
 def build_observation_resource(
@@ -138,13 +165,16 @@ def build_observation_resource(
 
     profile = profile_url or _default_profile(category, code)
 
+    # Claim a US Core profile only when one actually applies; otherwise emit a
+    # valid base FHIR R4 Observation carrying just the synthetic tag.
+    meta: dict[str, Any] = {"tag": [GPX.synthetic_meta_tag()]}
+    if profile is not None:
+        meta["profile"] = [profile]
+
     resource: dict[str, Any] = {
         "resourceType": "Observation",
         "id": observation_id(gpx, observation_spec_id),
-        "meta": {
-            "profile": [profile],
-            "tag": [GPX.synthetic_meta_tag()],
-        },
+        "meta": meta,
         "status": status,
         "category": [_category_element(category)],
         "code": {
