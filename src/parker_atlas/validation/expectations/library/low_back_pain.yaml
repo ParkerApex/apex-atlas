@@ -1,0 +1,29 @@
+module: low_back_pain
+version: 0.1.0
+source:
+  name: CDC National Health Statistics Reports — Back, lower limb, and upper limb pain
+  provenance: sourced
+  url: https://www.cdc.gov/nchs/products/nhsr.htm
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check against the cited source). NCHS reports back pain as one of the most common pain complaints
+    among US adults, with prevalence increasing through middle age.
+
+    '
+  citations:
+  - source: CDC National Health Statistics Reports — Back, lower limb, and upper limb pain
+    url: https://www.cdc.gov/nchs/products/nhsr.htm
+    accessed: '2026-06-04'
+metrics:
+- id: low_back_pain_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '279039007'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    0-17: 0.05
+    18-39: 0.22
+    40-59: 0.31
+    60-99: 0.28

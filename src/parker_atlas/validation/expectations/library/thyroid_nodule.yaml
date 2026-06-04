@@ -1,0 +1,27 @@
+module: thyroid_nodule
+version: 0.1.0
+source:
+  name: American Thyroid Association thyroid nodule guideline
+  provenance: sourced
+  url: https://www.liebertpub.com/doi/10.1089/thy.2015.0020
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check
+    against the cited source). Thyroid nodule care includes TSH testing, ultrasound risk stratification,
+    and biopsy for selected nodules.
+  citations:
+  - source: American Thyroid Association thyroid nodule guideline
+    url: https://www.liebertpub.com/doi/10.1089/thy.2015.0020
+    accessed: '2026-06-04'
+metrics:
+- id: thyroid_nodule_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '237495005'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    0-17: 0.006
+    18-39: 0.05
+    40-59: 0.11
+    60-99: 0.18

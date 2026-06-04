@@ -1,0 +1,29 @@
+module: peripheral_neuropathy
+version: 0.1.0
+source:
+  name: NINDS Peripheral Neuropathy
+  provenance: sourced
+  url: https://www.ninds.nih.gov/health-information/disorders/peripheral-neuropathy
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check against the cited source). Peripheral neuropathy has many causes, including diabetes, and commonly
+    presents with sensory symptoms requiring evaluation and symptom management.
+
+    '
+  citations:
+  - source: NINDS Peripheral Neuropathy
+    url: https://www.ninds.nih.gov/health-information/disorders/peripheral-neuropathy
+    accessed: '2026-06-04'
+metrics:
+- id: peripheral_neuropathy_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '302226006'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    0-17: 0.002
+    18-39: 0.02
+    40-59: 0.06
+    60-99: 0.14

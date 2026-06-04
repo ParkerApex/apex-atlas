@@ -1,0 +1,35 @@
+module: gallbladder_disease
+version: 0.1.0
+source:
+  name: NIDDK Gallstones
+  provenance: sourced
+  url: https://www.niddk.nih.gov/health-information/digestive-diseases/gallstones
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check against the cited source). Gallstones are common and may lead to biliary colic, cholecystitis,
+    imaging, and surgical management.
+
+    '
+  citations:
+  - source: NIDDK Gallstones
+    url: https://www.niddk.nih.gov/health-information/digestive-diseases/gallstones
+    accessed: '2026-06-04'
+metrics:
+- id: gallbladder_disease_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '266474003'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    female:
+      0-17: 0.002
+      18-39: 0.035
+      40-59: 0.09
+      60-99: 0.15
+    male:
+      0-17: 0.001
+      18-39: 0.02
+      40-59: 0.055
+      60-99: 0.095

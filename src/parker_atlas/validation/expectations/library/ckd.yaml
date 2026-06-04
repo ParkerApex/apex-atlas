@@ -1,0 +1,40 @@
+module: ckd
+version: 0.1.0
+source:
+  name: 'CDC Chronic Kidney Disease Surveillance System — United States, 2021.
+
+    '
+  provenance: sourced
+  url: https://www.cdc.gov/kidneydisease/publications-resources/ckd-national-facts.html
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check against the cited source). ~37 million US adults have CKD (14.8%). Prevalence by age: 18-44
+    ~3%, 45-64 ~10%, 65+ ~38%. Rates are higher in adults with diabetes (1 in 3), hypertension (1 in 5),
+    and Black and Hispanic adults.
+
+    '
+  citations:
+  - source: 'CDC Chronic Kidney Disease Surveillance System — United States, 2021.
+
+      '
+    url: https://www.cdc.gov/kidneydisease/publications-resources/ckd-national-facts.html
+    accessed: '2026-06-04'
+metrics:
+- id: chronic_kidney_disease_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '709044004'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    female:
+      0-17: 0.0
+      18-44: 0.032
+      45-64: 0.105
+      65-99: 0.37
+    male:
+      0-17: 0.0
+      18-44: 0.025
+      45-64: 0.095
+      65-99: 0.41
