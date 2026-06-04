@@ -97,11 +97,13 @@ Dates are indicative; actual delivery depends on team capacity and clinical revi
 - Launch-demo cohort preset: ✅ `atlas launch-demo`
 - GTM validation preset: ✅ `atlas validate --gtm` across 18 sourced launch expectations
 - Authoring workflow documentation: ✅ Module authoring guide written ([`docs/authoring/module_dsl.md`](./authoring/module_dsl.md))
+- Research-grounded authoring (`atlas author`): ✅ Dossier → draft module **+ sourced fidelity expectation** in one pass, both validated through the runtime loaders; clinician sign-off gate + `atlas author promote`. Each draft ships its own sourced expectation, so new modules arrive validation-ready rather than adding to the unsourced backlog. ([`docs/authoring/research_authoring.md`](./authoring/research_authoring.md))
+- Autonomous research backend (`atlas author research`): ✅ Claude + the web_search server tool researches a condition against public US sources and emits a dossier validated against the same contract; `--draft-out` chains research → synthesis so a condition name yields a reviewable draft in one command.
 
 **Remaining:**
 
-- Formal clinician review UI (web-based) for sign-off workflow
-- Automated prevalence validation for all 100 modules against sourced expectations (currently 28 modules have sourced fidelity expectations; 18 are included in the GTM validation preset)
+- Formal clinician review UI (web-based) for sign-off workflow (the `atlas author` SIGNOFF.md gate is the CLI-level interim)
+- Automated prevalence validation for all 100 modules against sourced expectations (currently 28 modules have sourced fidelity expectations; 18 are included in the GTM validation preset). New `atlas author`-drafted modules close this gap by construction.
 - LLM provider abstraction for non-Claude backends
 
 **Exit criteria (revised):** 100 total modules in the library, all with sourced citations; clinician review workflow established with at least one licensed clinician sign-off per module.

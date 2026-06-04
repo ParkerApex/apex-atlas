@@ -75,6 +75,8 @@ Apex Atlas is not trained on, derived from, or in any way informed by restricted
 | Pediatric well-child         | ✅ Implemented        | 4 age cohorts (0-2, 3-5, 6-11, 12-17); ACIP 2024 schedule; NIS-Child/Teen rates |
 | Maternal health / OB         | ✅ Implemented        | Pregnancy + prenatal cascade + GDM + preeclampsia + postpartum depression |
 | LLM-assisted module authoring| ⏳ Milestone 3        | Natural-language → validated module YAML pipeline |
+| `atlas author` (dossier→draft)| ✅ Implemented        | Research dossier → draft module + sourced expectation, validated via loader round-trip; clinician sign-off gate + `atlas author promote`. See [`docs/authoring/research_authoring.md`](./docs/authoring/research_authoring.md) |
+| `atlas author research`       | ✅ Implemented        | Autonomous dossier generation via Claude + web_search server tool, validated against the dossier contract; `--draft-out` chains straight into synthesis. Requires `anthropic` extra + `ANTHROPIC_API_KEY` |
 | FHIR IPS conformance         | ⏳ Post-v1            | International Patient Summary for non-US use cases |
 | $export endpoint             | ⏳ Post-v1            | REST API for on-demand Bulk Data generation |
 
