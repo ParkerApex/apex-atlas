@@ -1,0 +1,27 @@
+module: constipation
+version: 0.1.0
+source:
+  name: American Gastroenterological Association constipation guideline
+  provenance: sourced
+  url: https://gastrojournal.org/article/S0016-5085(13)00152-5/fulltext
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check
+    against the cited source). Constipation evaluation and management includes history, medication review,
+    and laxative therapy.
+  citations:
+  - source: American Gastroenterological Association constipation guideline
+    url: https://gastrojournal.org/article/S0016-5085(13)00152-5/fulltext
+    accessed: '2026-06-04'
+metrics:
+- id: constipation_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '14760008'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    0-17: 0.04
+    18-39: 0.06
+    40-59: 0.075
+    60-99: 0.14

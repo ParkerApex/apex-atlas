@@ -1,0 +1,27 @@
+module: chronic_pain
+version: 0.1.0
+source:
+  name: CDC guideline for prescribing opioids for pain
+  provenance: sourced
+  url: https://www.cdc.gov/overdose-prevention/hcp/clinical-guidance/index.html
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check
+    against the cited source). Chronic pain care emphasizes functional goals, non-opioid therapies, and
+    careful medication stewardship.
+  citations:
+  - source: CDC guideline for prescribing opioids for pain
+    url: https://www.cdc.gov/overdose-prevention/hcp/clinical-guidance/index.html
+    accessed: '2026-06-04'
+metrics:
+- id: chronic_pain_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '82423001'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    0-17: 0.02
+    18-39: 0.09
+    40-59: 0.17
+    60-99: 0.24

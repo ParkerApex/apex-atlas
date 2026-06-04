@@ -1,0 +1,41 @@
+module: alzheimers_dementia
+version: 0.1.0
+source:
+  name: 'Alzheimer''s Association. 2024 Alzheimer''s Disease Facts and Figures. Alzheimers Dement. 2024;20(5):3708-3821.
+
+    '
+  provenance: sourced
+  url: https://www.alz.org/media/Documents/alzheimers-facts-and-figures.pdf
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check against the cited source). 6.9 million Americans 65+ with Alzheimer''s in 2024. Prevalence:
+    ~5% at 65-74, ~14% at 75-84, ~35% at 85+. Two-thirds are women. Total costs $360 billion in 2024.
+    By 2050, projected 12.7 million.
+
+    '
+  citations:
+  - source: 'Alzheimer''s Association. 2024 Alzheimer''s Disease Facts and Figures. Alzheimers Dement.
+      2024;20(5):3708-3821.
+
+      '
+    url: https://www.alz.org/media/Documents/alzheimers-facts-and-figures.pdf
+    accessed: '2026-06-04'
+metrics:
+- id: alzheimers_dementia_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '26929004'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    female:
+      0-59: 0.001
+      60-74: 0.045
+      75-84: 0.165
+      85-99: 0.39
+    male:
+      0-59: 0.001
+      60-74: 0.03
+      75-84: 0.12
+      85-99: 0.3
