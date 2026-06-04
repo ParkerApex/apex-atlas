@@ -1,0 +1,34 @@
+module: glaucoma
+version: 0.1.0
+source:
+  name: Ehrlich JR, Burke-Conte Z, Wittenborn JS, et al. Prevalence of Glaucoma Among US Adults in 2022.
+    JAMA Ophthalmol. 2024;142(11):1046-1053.
+  provenance: sourced
+  url: https://pmc.ncbi.nlm.nih.gov/articles/PMC11581589/
+  note: 'Crude US prevalence of any glaucoma by age in 2022: 0.08% (18-39), 1.09% (40-64), 4.44% (65-79),
+    7.75% (80+). Bayesian meta-regression over NHANES, Medicare/MarketScan claims, and population eye
+    studies. Children (0-17) modeled at zero — glaucoma in this module is an adult-onset condition.'
+  citations:
+  - source: Ehrlich JR, Burke-Conte Z, Wittenborn JS, et al. Prevalence of Glaucoma Among US Adults in
+      2022. JAMA Ophthalmol. 2024;142(11):1046-1053.
+    url: https://pmc.ncbi.nlm.nih.gov/articles/PMC11581589/
+    table: Crude prevalence of any glaucoma by age group (PMID 39418040; doi:10.1001/jamaophthalmol.2024.3884)
+    accessed: '2026-06-04'
+    note: 'Crude US prevalence of any glaucoma by age in 2022: 0.08% (18-39), 1.09% (40-64), 4.44% (65-79),
+      7.75% (80+). Bayesian meta-regression over NHANES, Medicare/MarketScan claims, and population eye
+      studies. Children (0-17) modeled at zero — glaucoma in this module is an adult-onset condition.'
+metrics:
+- id: glaucoma_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '23986001'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    0-17: 0.0
+    18-39: 0.0008
+    40-64: 0.0109
+    65-79: 0.0444
+    80-99: 0.0775

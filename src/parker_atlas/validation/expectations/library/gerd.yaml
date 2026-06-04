@@ -1,0 +1,42 @@
+module: gerd
+version: 0.1.0
+source:
+  name: 'El-Serag HB, Sweet S, Winchester CC, Dent J. Update on the epidemiology of gastro-oesophageal
+    reflux disease: a systematic review. Gut. 2014;63(6):871-880.
+
+    '
+  provenance: sourced
+  url: https://gut.bmj.com/content/63/6/871
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check against the cited source). Systematic review of 102 studies: GERD prevalence 18.1-27.8% in North
+    America (heartburn or regurgitation ≥weekly). Higher in males for erosive esophagitis and Barrett''s;
+    overall GERD symptom prevalence similar across sexes. Rises with age and BMI.
+
+    '
+  citations:
+  - source: 'El-Serag HB, Sweet S, Winchester CC, Dent J. Update on the epidemiology of gastro-oesophageal
+      reflux disease: a systematic review. Gut. 2014;63(6):871-880.
+
+      '
+    url: https://gut.bmj.com/content/63/6/871
+    accessed: '2026-06-04'
+metrics:
+- id: gerd_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '235595009'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    female:
+      0-17: 0.0
+      18-39: 0.145
+      40-59: 0.21
+      60-99: 0.24
+    male:
+      0-17: 0.0
+      18-39: 0.165
+      40-59: 0.225
+      60-99: 0.26
