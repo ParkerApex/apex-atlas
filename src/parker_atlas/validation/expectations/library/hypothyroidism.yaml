@@ -1,0 +1,43 @@
+module: hypothyroidism
+version: 0.1.0
+source:
+  name: 'Hollowell JG, Staehling NW, Flanders WD, et al. Serum TSH, T4, and thyroid antibodies in the
+    United States population (1988-1994): National Health and Nutrition Examination Survey (NHANES III).
+    J Clin Endocrinol Metab. 2002;87(2):489-499.
+
+    '
+  provenance: sourced
+  url: https://academic.oup.com/jcem/article/87/2/489/2846790
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check against the cited source). NHANES III: hypothyroidism prevalence 4.6% overall (TSH >4.5 mIU/L
+    or current thyroid medication). Female: ~7-8%; male: ~2-3%. Rises with age; 60+ women approach 12-15%.
+
+    '
+  citations:
+  - source: 'Hollowell JG, Staehling NW, Flanders WD, et al. Serum TSH, T4, and thyroid antibodies in
+      the United States population (1988-1994): National Health and Nutrition Examination Survey (NHANES
+      III). J Clin Endocrinol Metab. 2002;87(2):489-499.
+
+      '
+    url: https://academic.oup.com/jcem/article/87/2/489/2846790
+    accessed: '2026-06-04'
+metrics:
+- id: hypothyroidism_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '40930008'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    female:
+      0-17: 0.005
+      18-39: 0.03
+      40-59: 0.075
+      60-99: 0.13
+    male:
+      0-17: 0.002
+      18-39: 0.012
+      40-59: 0.025
+      60-99: 0.055

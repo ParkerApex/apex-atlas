@@ -39,8 +39,10 @@ BATCH_C_MODULES = [
 ]
 
 
-def test_batch_c_reaches_100_bundled_modules() -> None:
-    assert len(list_bundled_modules()) == 100
+def test_bundled_library_module_count() -> None:
+    # 100-module launch library + glaucoma (the first `atlas author`-drafted,
+    # Tier 3 post-launch addition).
+    assert len(list_bundled_modules()) == 101
 
 
 @pytest.mark.parametrize("module_name", BATCH_C_MODULES)

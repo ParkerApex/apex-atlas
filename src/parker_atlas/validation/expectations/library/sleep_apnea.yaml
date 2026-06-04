@@ -1,0 +1,42 @@
+module: sleep_apnea
+version: 0.1.0
+source:
+  name: 'Benjafield AV, Ayas NT, Eastwood PR, et al. Estimation of the global prevalence and burden of
+    obstructive sleep apnoea: a literature-based analysis. Lancet Respir Med. 2019;7(8):687-698.
+
+    '
+  provenance: sourced
+  url: https://www.thelancet.com/journals/lanres/article/PIIS2213-2600(19)30198-5/fulltext
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check against the cited source). 936 million adults globally with AHI ≥5; 425 million with AHI ≥15
+    (moderate-severe). US estimates: ~70 million with any OSA, ~26 million with moderate-severe. Higher
+    in males (2:1 ratio); rising with obesity.
+
+    '
+  citations:
+  - source: 'Benjafield AV, Ayas NT, Eastwood PR, et al. Estimation of the global prevalence and burden
+      of obstructive sleep apnoea: a literature-based analysis. Lancet Respir Med. 2019;7(8):687-698.
+
+      '
+    url: https://www.thelancet.com/journals/lanres/article/PIIS2213-2600(19)30198-5/fulltext
+    accessed: '2026-06-04'
+metrics:
+- id: obstructive_sleep_apnea_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '78275009'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    female:
+      0-17: 0.0
+      18-39: 0.03
+      40-59: 0.08
+      60-99: 0.13
+    male:
+      0-17: 0.0
+      18-39: 0.065
+      40-59: 0.15
+      60-99: 0.21

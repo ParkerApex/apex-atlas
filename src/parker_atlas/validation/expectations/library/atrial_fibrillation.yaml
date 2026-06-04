@@ -1,0 +1,42 @@
+module: atrial_fibrillation
+version: 0.1.0
+source:
+  name: 'Tsao CW, Aday AW, Almarzooq ZI, et al. Heart Disease and Stroke Statistics — 2024 Update: A Report
+    from the American Heart Association. Circulation 2024;149(8):e347-e913.
+
+    '
+  provenance: sourced
+  url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001209
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check against the cited source). US AF prevalence: ~5.2M adults (~1.8%). By age (NHANES + clinical
+    cohorts): 20-39 ~0.1%; 40-59 men 1.1% / women 0.7%; 60-79 men 6.9% / women 5.6%; 80+ men 12.0% / women
+    11.4%.
+
+    '
+  citations:
+  - source: 'Tsao CW, Aday AW, Almarzooq ZI, et al. Heart Disease and Stroke Statistics — 2024 Update:
+      A Report from the American Heart Association. Circulation 2024;149(8):e347-e913.
+
+      '
+    url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001209
+    accessed: '2026-06-04'
+metrics:
+- id: atrial_fibrillation_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '49436004'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99
+  targets:
+    female:
+      0-17: 0.0
+      18-39: 0.001
+      40-59: 0.007
+      60-99: 0.078
+    male:
+      0-17: 0.0
+      18-39: 0.001
+      40-59: 0.011
+      60-99: 0.092

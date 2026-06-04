@@ -1,0 +1,76 @@
+module: glaucoma
+version: 0.1.0
+description: >-
+  Adult-onset glaucoma (any type), drafted by the `atlas author` research
+  pipeline and keyed to the 2024 JAMA Ophthalmology national prevalence
+  estimate (Ehrlich JR, Burke-Conte Z, Wittenborn JS, et al. Prevalence of
+  Glaucoma Among US Adults in 2022. JAMA Ophthalmol. 2024;142(11):1046-1053).
+  Diagnosis-day ophthalmology encounter, an elevated intraocular-pressure
+  measurement (LOINC 56844-4), and first-line prostaglandin-analogue therapy in
+  ~70% of patients. No progression modeled in this first cut; glaucoma-related
+  visual impairment/blindness is the natural one-hop downstream condition.
+  Tier 3 (auto-drafted, sourced prevalence) — pending clinical review.
+cites:
+- source: Ehrlich JR, Burke-Conte Z, Wittenborn JS, et al. Prevalence of Glaucoma Among US Adults in 2022.
+    JAMA Ophthalmol. 2024;142(11):1046-1053.
+  url: https://pmc.ncbi.nlm.nih.gov/articles/PMC11581589/
+  summary: 'Crude US prevalence of any glaucoma by age in 2022: 0.08% (18-39), 1.09% (40-64), 4.44% (65-79),
+    7.75% (80+). Bayesian meta-regression over NHANES, Medicare/MarketScan claims, and population eye
+    studies. Children (0-17) modeled at zero — glaucoma in this module is an adult-onset condition.'
+- source: American Academy of Ophthalmology. Primary Open-Angle Glaucoma Preferred Practice Pattern. Ophthalmology.
+    2021;128(1):P71-P150.
+  url: https://www.aaojournal.org/article/S0161-6420(20)31024-1/fulltext
+  summary: Untreated open-angle glaucoma / ocular hypertension frequently presents with IOP above the
+    ~21 mm Hg statistical upper limit of normal; 22-34 mm Hg models pre-treatment pressures at diagnosis.
+conditions:
+- id: glaucoma
+  code:
+    system: http://snomed.info/sct
+    code: '23986001'
+    display: Glaucoma (disorder)
+  prevalence:
+    0-17: 0.0
+    18-39: 0.0008
+    40-64: 0.0109
+    65-79: 0.0444
+    80-99: 0.0775
+  onset_age:
+    min: 18
+    max: 85
+  emits:
+  - resource_type: Encounter
+    spec_id: glaucoma_eye_visit
+    when: onset
+    encounter_class: AMB
+    type:
+      system: http://snomed.info/sct
+      code: '185349003'
+      display: Encounter for check up
+    reason:
+      system: http://snomed.info/sct
+      code: '23986001'
+      display: Glaucoma
+  - resource_type: Observation
+    spec_id: glaucoma_iop
+    when: onset
+    category: laboratory
+    code:
+      system: http://loinc.org
+      code: 56844-4
+      display: Intraocular pressure of Eye
+    value_range:
+      low: 22.0
+      high: 34.0
+      precision: 0
+    unit: mm[Hg]
+    unit_code: mm[Hg]
+    link_to: glaucoma_eye_visit
+  - resource_type: MedicationRequest
+    spec_id: glaucoma_latanoprost
+    when: onset
+    medication:
+      system: http://www.nlm.nih.gov/research/umls/rxnorm
+      code: '314072'
+      display: latanoprost 0.005 % Ophthalmic Solution
+    probability: 0.7
+    link_to: glaucoma_eye_visit

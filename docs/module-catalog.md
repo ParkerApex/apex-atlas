@@ -25,7 +25,7 @@ launch readiness, not clinical importance.
 | anxiety | Mental health / Behavioral | 2 | Pending | Internal technical review |
 | asthma | Pulmonary | 1 | Sourced | Internal technical review |
 | atopic_dermatitis | Dermatology / Allergy | 2 | Pending | Internal technical review |
-| atrial_fibrillation | Cardiovascular | 2 | Pending | Internal technical review |
+| atrial_fibrillation | Cardiovascular | 2 | Sourced | Internal technical review |
 | autism_spectrum_disorder | Neurology / Cognition | 2 | Pending | Internal technical review |
 | benign_prostatic_hyperplasia | Renal / Urology | 2 | Sourced | Internal technical review |
 | bipolar_disorder | Mental health / Behavioral | 2 | Pending | Internal technical review |
@@ -53,7 +53,8 @@ launch readiness, not clinical importance.
 | fibromyalgia | Musculoskeletal / Rheumatology | 2 | Pending | Internal technical review |
 | frailty | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
 | gallbladder_disease | GI / Hepatology | 2 | Pending | Internal technical review |
-| gerd | GI / Hepatology | 2 | Pending | Internal technical review |
+| gerd | GI / Hepatology | 2 | Sourced | Internal technical review |
+| glaucoma | ENT / Ophthalmology | 3 | Sourced | Auto-drafted via `atlas author`; pending clinical review |
 | gout | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
 | hearing_loss | ENT / Ophthalmology | 2 | Pending | Internal technical review |
 | heart_failure | Cardiovascular | 1 | Sourced | Internal technical review |
@@ -62,7 +63,7 @@ launch readiness, not clinical importance.
 | hypercholesterolemia | Cardiovascular | 1 | Sourced | Internal technical review |
 | hypertension | Cardiovascular | 1 | Sourced | Internal technical review |
 | hyperthyroidism | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
-| hypothyroidism | Metabolic / Endocrine | 2 | Pending | Internal technical review |
+| hypothyroidism | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
 | inflammatory_bowel_disease | GI / Hepatology | 2 | Pending | Internal technical review |
 | influenza | Infectious disease | 2 | Pending | Internal technical review |
 | insomnia | Mental health / Behavioral | 2 | Pending | Internal technical review |
@@ -103,7 +104,7 @@ launch readiness, not clinical importance.
 | sexual_health_sti | Infectious disease | 2 | Pending | Internal technical review |
 | sickle_cell | Oncology / Hematology | 2 | Pending | Internal technical review |
 | sinusitis | ENT / Ophthalmology | 2 | Pending | Internal technical review |
-| sleep_apnea | Pulmonary | 2 | Pending | Internal technical review |
+| sleep_apnea | Pulmonary | 2 | Sourced | Internal technical review |
 | stroke | Cardiovascular | 1 | Sourced | Internal technical review |
 | thyroid_nodule | Metabolic / Endocrine | 2 | Pending | Internal technical review |
 | tobacco_use_disorder | Substance use | 2 | Pending | Internal technical review |
@@ -133,5 +134,5 @@ launch readiness, not clinical importance.
 | Infectious disease | 7 |
 | Pediatric / OB / Prevention | 12 |
 | Dermatology / Allergy | 4 |
-| ENT / Ophthalmology | 5 |
-| **Total** | **100** |
+| ENT / Ophthalmology | 6 |
+| **Total** | **101** |
