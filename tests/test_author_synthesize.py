@@ -68,10 +68,11 @@ class TestDossierLoader:
             load_dossier_from_str(yaml.safe_dump(raw))
 
     def test_ungeneratable_observation_category_rejected(self):
-        # The FHIR Observation builder only supports vital-signs / laboratory.
-        # A dossier using e.g. "exam" must fail at author time, not generate time.
+        # A category outside the HL7 observation-category value set is not
+        # generatable and must fail at author time, not generate time. (Valid
+        # categories like survey / social-history / exam ARE accepted.)
         raw = yaml.safe_load(GLAUCOMA.read_text(encoding="utf-8"))
-        raw["clinical"]["observations"][0]["category"] = "exam"
+        raw["clinical"]["observations"][0]["category"] = "not-a-real-category"
         with pytest.raises(DossierError, match="not generatable"):
             load_dossier_from_str(yaml.safe_dump(raw))
 
