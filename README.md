@@ -27,7 +27,7 @@ Existing synthetic patient generators share a common set of limitations: disease
 
 - **SDoH as a causal simulation variable** — food insecurity, housing instability, transportation barriers, financial strain, and social isolation are sampled from BRFSS-grounded distributions and causally reduce outpatient encounter completion and medication adherence rates. Patients with barriers miss appointments and don't fill prescriptions — not as a tag, but as a change in what resources get generated.
 - **Quality MeasureReport output** — Apex Atlas is the only open generator that emits DEQM-profiled MeasureReport resources alongside patient records. Five HEDIS-analog measures (HbA1c testing in diabetics, BP control in hypertensives, preventive care, flu immunization, pediatric well-child) are evaluated per patient and summarized for the cohort.
-- **Full lifecycle coverage** — pediatric well-child visits with the ACIP 2024 immunization schedule, maternal health and obstetric complications, and 100 clinical modules spanning 14 domains (cardiovascular, metabolic, pulmonary, GI, renal/urology, musculoskeletal/rheumatology, mental health, substance use, neurology, oncology/hematology, infectious disease, pediatric/OB/prevention, dermatology/allergy, and ENT/ophthalmology).
+- **Full lifecycle coverage** — pediatric well-child visits with the ACIP 2024 immunization schedule, maternal health and obstetric complications, and 101 clinical modules spanning 14 domains (cardiovascular, metabolic, pulmonary, GI, renal/urology, musculoskeletal/rheumatology, mental health, substance use, neurology, oncology/hematology, infectious disease, pediatric/OB/prevention, dermatology/allergy, and ENT/ophthalmology).
 - **Grounded clinical notes** — progress notes, H&Ps, and discharge summaries generated with structured-data grounding. LLM-authored notes (Claude, configurable) are available today via `--notes-strategy llm`.
 - **Statistical validation against public norms** — every module declares its prevalence sources (NHANES, CDC, SEER, AHA) and the cohort fidelity harness checks aggregate distributions against those targets.
 - **FHIR-first, always** — R4 and R5 output, US Core 6.1 conformance, FHIR Bulk Data Access-compatible NDJSON, Gravity Project SDOHCC Observations, and DEQM MeasureReport profiles.
@@ -63,7 +63,7 @@ Apex Atlas is not trained on, derived from, or in any way informed by restricted
 | `atlas report`               | ✅ Implemented        | Self-contained HTML cohort report (demographics + fidelity) |
 | `atlas modules`              | ✅ Implemented        | List and inspect bundled modules |
 | Module runtime               | ✅ Implemented        | Time-aware emits, onset dating, cross-module `requires`, progressions |
-| Module library               | ✅ 100 modules        | CV · metabolic/endocrine · pulmonary · GI/hepatology · renal/urology · MSK/rheum · mental health · SUD · neuro/cognition · oncology/heme · ID · pediatric/OB/prevention · derm/allergy · ENT/ophthalmology |
+| Module library               | ✅ 101 modules        | 100-module launch library + `glaucoma` (first `atlas author`-drafted, Tier 3). CV · metabolic/endocrine · pulmonary · GI/hepatology · renal/urology · MSK/rheum · mental health · SUD · neuro/cognition · oncology/heme · ID · pediatric/OB/prevention · derm/allergy · ENT/ophthalmology |
 | Fidelity expectations        | ✅ 28 modules         | 18 launch-hardened sourced expectations available through `atlas validate --gtm` |
 | Cross-module dependencies    | ✅ Implemented        | `requires: module:cond_id` gates cross-module comorbidity chains |
 | State-machine progressions   | ✅ One-hop            | 13+ chains live: HTN→CKD/HF/stroke, DM→CKD/retinopathy, AFib→stroke, CKD→ESRD, NAFLD→cirrhosis, pregnancy→GDM/preeclampsia/PPD, SCD→VOC, T1D→DKA |
@@ -84,7 +84,7 @@ See [`docs/roadmap.md`](./docs/roadmap.md) for milestone timeline and exit crite
 
 ## Launch Library
 
-Apex Atlas currently ships **100 bundled modules** across 14 clinical domains. Every module carries public-source citations and representative FHIR emits; high-priority GTM modules are backed by sourced fidelity expectations and can be checked together with `atlas validate --gtm`.
+Apex Atlas currently ships **101 bundled modules** across 14 clinical domains — the 100-module launch library plus `glaucoma`, the first module drafted by the `atlas author` research pipeline (Tier 3, sourced prevalence, pending clinical review). Every module carries public-source citations and representative FHIR emits; high-priority GTM modules are backed by sourced fidelity expectations and can be checked together with `atlas validate --gtm`.
 
 The launch library is deliberately balanced across GTM use cases:
 

@@ -146,7 +146,7 @@ The v1.0 library target is now complete at 100 modules. The count matters for GT
 | Batch A | 50 modules | Complete: primary-care, acute-care, allergy/derm, neuro, vascular, and ophthalmology gaps filled |
 | Batch B | 75 modules | Complete: specialty breadth added across cardiovascular, endocrine, pulmonary, GI, urology, MSK, neurology, oncology/heme, ID, and ENT |
 | Batch C | 100 modules | Complete: launch library, smoke tests, catalog tiering, demo preset, and GTM validation preset |
-| Batch D | 100+ modules | Convert remaining high-use modules to Tier 1 and publish sample cohorts |
+| Batch D | 100+ modules | In progress: `glaucoma` added (101st module) — first drafted by the `atlas author` research pipeline (Tier 3, sourced prevalence from Ehrlich 2024 JAMA Ophthalmol, cohort-validated). Next: convert remaining high-use modules to Tier 1 and publish sample cohorts |
 
 ---
 

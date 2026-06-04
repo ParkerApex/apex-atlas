@@ -54,6 +54,7 @@ launch readiness, not clinical importance.
 | frailty | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
 | gallbladder_disease | GI / Hepatology | 2 | Pending | Internal technical review |
 | gerd | GI / Hepatology | 2 | Pending | Internal technical review |
+| glaucoma | ENT / Ophthalmology | 3 | Sourced | Auto-drafted via `atlas author`; pending clinical review |
 | gout | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
 | hearing_loss | ENT / Ophthalmology | 2 | Pending | Internal technical review |
 | heart_failure | Cardiovascular | 1 | Sourced | Internal technical review |
@@ -133,5 +134,5 @@ launch readiness, not clinical importance.
 | Infectious disease | 7 |
 | Pediatric / OB / Prevention | 12 |
 | Dermatology / Allergy | 4 |
-| ENT / Ophthalmology | 5 |
-| **Total** | **100** |
+| ENT / Ophthalmology | 6 |
+| **Total** | **101** |
