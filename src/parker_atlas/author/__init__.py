@@ -22,6 +22,10 @@ from __future__ import annotations
 
 from parker_atlas.author.dossier import Dossier, DossierError, load_dossier_from_str
 from parker_atlas.author.promote import promote_draft
+from parker_atlas.author.research import (
+    AuthorResearchUnavailable,
+    research_condition,
+)
 from parker_atlas.author.synthesize import (
     AuthorError,
     synthesize_expectation,
@@ -30,10 +34,12 @@ from parker_atlas.author.synthesize import (
 
 __all__ = [
     "AuthorError",
+    "AuthorResearchUnavailable",
     "Dossier",
     "DossierError",
     "load_dossier_from_str",
     "promote_draft",
+    "research_condition",
     "synthesize_expectation",
     "synthesize_module",
 ]

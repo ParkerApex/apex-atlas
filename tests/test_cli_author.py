@@ -96,9 +96,5 @@ class TestAuthorPromoteCli:
         assert "not signed off" in result.output
 
 
-class TestAuthorResearchStub:
-    def test_research_is_stub(self):
-        result = runner.invoke(app, ["author", "research", "--condition", "glaucoma"])
-        assert result.exit_code == 2
-        # Rich may wrap the message, so match a single unwrapped token.
-        assert "implemented" in result.output
+# `atlas author research` is now implemented; its behavior is covered in
+# tests/test_author_research.py.

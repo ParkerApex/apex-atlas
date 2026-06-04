@@ -1859,24 +1859,84 @@ def author_promote_cmd(
 
 @author_app.command("research")
 def author_research_cmd(
-    condition: Annotated[str, typer.Option("--condition", "-c", help="Condition / module name to research.")],
+    condition: Annotated[str, typer.Option("--condition", "-c", help="Condition / module name to research (snake_case).")],
+    output: Annotated[Path | None, typer.Option("--output", "-o", help="Destination dossier file. Omit to print the dossier YAML to stdout.")] = None,
+    model: Annotated[str | None, typer.Option("--model", help="Override the research model (default: Sonnet 4.6).")] = None,
+    draft_out: Annotated[Path | None, typer.Option("--draft-out", help="If set, also synthesize a draft bundle into this staging dir.")] = None,
+    overwrite: Annotated[bool, typer.Option("--overwrite", help="Allow overwriting an existing --output / draft file.")] = False,
 ) -> None:
-    """Produce a dossier from live sources (Phase 2 — not yet implemented).
+    """Research a condition with Claude + web_search and emit a validated dossier.
 
-    Until the in-package web_search backend ships, produce a dossier with the
-    `deep-research` skill (or by hand) against the schema in
-    docs/authoring/research_authoring.md, then run `atlas author synthesize`.
+    The model searches authoritative public US sources, then returns a dossier
+    matching the schema in docs/authoring/research_authoring.md; it is validated
+    through the dossier loader before anything is written. Requires the
+    `anthropic` extra and ANTHROPIC_API_KEY. With --draft-out, the dossier is
+    fed straight into synthesis so you go from a condition name to a reviewable
+    draft in one command.
     """
-    err_console.print(
-        f"[yellow]atlas author research[/yellow] (autonomous dossier generation for "
-        f"[bold]{condition}[/bold]) is not yet implemented."
+    from parker_atlas.author import (
+        AuthorError,
+        DossierError,
+        load_dossier_from_str,
+        synthesize_expectation,
+        synthesize_module,
     )
-    err_console.print(
-        "  For now, produce a dossier YAML with the deep-research skill or by hand "
-        "(see docs/authoring/research_authoring.md), then run "
-        "[bold]atlas author synthesize --dossier <file>[/bold]."
+    from parker_atlas.author.research import (
+        AuthorResearchUnavailable,
+        research_condition,
     )
-    raise typer.Exit(code=2)
+
+    research_kwargs = {"model": model} if model else {}
+    try:
+        dossier_yaml = research_condition(condition, **research_kwargs)
+    except AuthorResearchUnavailable as exc:
+        err_console.print(f"[red]research failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    if output is not None:
+        if output.exists() and not overwrite:
+            err_console.print(f"[red]{output} already exists[/red]. Pass --overwrite to replace.")
+            raise typer.Exit(code=1)
+        output.parent.mkdir(parents=True, exist_ok=True)
+        output.write_text(dossier_yaml, encoding="utf-8")
+        console.print(f"[green]✓[/green] Wrote dossier {output}")
+    elif draft_out is None:
+        console.print(dossier_yaml, end="", highlight=False)
+
+    if draft_out is None:
+        return
+
+    # Convenience: chain research → synthesize so a condition name yields a draft.
+    try:
+        doc = load_dossier_from_str(dossier_yaml)
+        module_yaml = synthesize_module(doc)
+        expectation_yaml = synthesize_expectation(doc)
+    except (DossierError, AuthorError) as exc:
+        err_console.print(f"[red]author failed:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    draft_dir = draft_out / doc.condition
+    targets = {
+        draft_dir / f"{doc.condition}.yaml": module_yaml,
+        draft_dir / f"{doc.condition}.expectation.yaml": expectation_yaml,
+        draft_dir / "dossier.yaml": dossier_yaml,
+        draft_dir / "SIGNOFF.md": _signoff_template(doc.condition, doc),
+    }
+    existing = [p for p in targets if p.exists()]
+    if existing and not overwrite:
+        err_console.print(
+            f"[red]draft files already exist:[/red] "
+            f"{', '.join(str(p) for p in existing)}. Pass --overwrite to replace."
+        )
+        raise typer.Exit(code=1)
+    draft_dir.mkdir(parents=True, exist_ok=True)
+    for path, content in targets.items():
+        path.write_text(content, encoding="utf-8")
+    console.print(f"[green]✓[/green] Researched + drafted [bold]{doc.condition}[/bold] → {draft_dir}")
+    console.print(
+        f"  [yellow]Next:[/yellow] clinician review → fill `Signed-off-by:` in "
+        f"{draft_dir / 'SIGNOFF.md'} → [bold]atlas author promote --draft {draft_dir}[/bold]"
+    )
 
 
 if __name__ == "__main__":
