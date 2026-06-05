@@ -1,0 +1,38 @@
+module: maternal_health
+version: 0.1.0
+source:
+  name: 'CDC National Vital Statistics System (NVSS) — Births: Final Data for 2022. Hamilton BE, Martin
+    JA, Osterman MJK. NVSS 2024;72(1).
+
+    '
+  provenance: sourced
+  url: https://www.cdc.gov/nchs/products/nvsr.htm
+  note: 'Coverage/visit/episode rates mirror the module''s declared, sourced prevalence (one metric per
+    ungated condition; gated sub-conditions are conditional and excluded). Zero strata omitted; Wilson
+    99.9%. Crude birth rate 11.0 per 1,000 population (2022). General fertility rate 56.0 per 1,000 females
+    aged 15-44 years. This module uses 5.5% annual pregnancy probability as a round-number approximation
+    over all 15-49 females; fertility peaks in 20s and is near zero outside 15-49.
+
+    '
+  citations:
+  - source: 'CDC National Vital Statistics System (NVSS) — Births: Final Data for 2022. Hamilton BE, Martin
+      JA, Osterman MJK. NVSS 2024;72(1).
+
+      '
+    url: https://www.cdc.gov/nchs/products/nvsr.htm
+    accessed: '2026-06-04'
+metrics:
+- id: active_pregnancy_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '72892002'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      15-19: 0.025
+      20-29: 0.085
+      30-39: 0.065
+      40-49: 0.015

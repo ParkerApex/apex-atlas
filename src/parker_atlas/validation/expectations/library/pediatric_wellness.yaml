@@ -1,0 +1,63 @@
+module: pediatric_wellness
+version: 0.1.0
+source:
+  name: 'CDC National Health Interview Survey (NHIS) 2022 — Well-child Visits Among Children Under Age
+    18 by Age Group.
+
+    '
+  provenance: sourced
+  url: https://www.cdc.gov/nchs/nhis/index.htm
+  note: 'Coverage/visit/episode rates mirror the module''s declared, sourced prevalence (one metric per
+    ungated condition; gated sub-conditions are conditional and excluded). Zero strata omitted; Wilson
+    99.9%. Well-child visit prevalence (past 12 months): ~94% ages 0-2, ~88% ages 3-5, ~79% ages 6-11,
+    ~59% ages 12-17. Rates decrease substantially in adolescence.
+
+    '
+  citations:
+  - source: 'CDC National Health Interview Survey (NHIS) 2022 — Well-child Visits Among Children Under
+      Age 18 by Age Group.
+
+      '
+    url: https://www.cdc.gov/nchs/nhis/index.htm
+    accessed: '2026-06-04'
+metrics:
+- id: infant_wellness_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '170149006'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-2: 0.94
+- id: toddler_wellness_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '170149006'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    3-5: 0.88
+- id: school_age_wellness_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '170149006'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    6-11: 0.79
+- id: adolescent_wellness_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '170149006'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    12-17: 0.59
