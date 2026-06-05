@@ -1,0 +1,27 @@
+module: pulmonary_hypertension
+version: 0.1.0
+source:
+  name: 2022 ESC/ERS Guidelines for the diagnosis and treatment of pulmonary hypertension
+  provenance: sourced
+  url: https://academic.oup.com/eurheartj/article/43/38/3618/6673929
+  note: 'Targets mirror the module''s declared, sourced prevalence. Zero strata omitted; Wilson 99.9%.
+    Pulmonary hypertension evaluation includes echocardiography, biomarkers, and specialty assessment.
+
+    '
+  citations:
+  - source: 2022 ESC/ERS Guidelines for the diagnosis and treatment of pulmonary hypertension
+    url: https://academic.oup.com/eurheartj/article/43/38/3618/6673929
+    accessed: '2026-06-04'
+metrics:
+- id: pulmonary_hypertension_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '70995007'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    18-39: 0.003
+    40-59: 0.008
+    60-99: 0.02

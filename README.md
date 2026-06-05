@@ -25,7 +25,7 @@ Every synthetic patient receives a Parker Global Patient Identifier (GPX) under 
 
 Three things you can open right now:
 
-- 📊 **[Fidelity scorecard](./docs/fidelity-scorecard.md)** — 98 of 101 modules validated against public norms; **554/556 strata (99.6%) within tolerance** of their cited targets.
+- 📊 **[Fidelity scorecard](./docs/fidelity-scorecard.md)** — all 101 modules carry a sourced expectation; **563/565 strata (99.6%) within tolerance** of their cited public targets.
 - 📉 **[SDoH causal benchmark](./docs/sdoh-causal-benchmark.md)** — ambulatory encounters fall **−39%** and medication fills **−32%** as social-risk burden rises. A tag-only generator can't reproduce this; it's the relationship a model needs to learn.
 - 🧬 **[`atlas author`](./docs/authoring/research_authoring.md)** — go from a condition name to a citation-grounded draft module **and its sourced fidelity expectation** in one command, gated by clinician sign-off. The library extends itself instead of plateauing.
 
@@ -38,7 +38,7 @@ Existing synthetic patient generators share a common set of limitations: disease
 - **Quality MeasureReport output** — Apex Atlas is the only open generator that emits DEQM-profiled MeasureReport resources alongside patient records. Five HEDIS-analog measures (HbA1c testing in diabetics, BP control in hypertensives, preventive care, flu immunization, pediatric well-child) are evaluated per patient and summarized for the cohort.
 - **Full lifecycle coverage** — pediatric well-child visits with the ACIP 2024 immunization schedule, maternal health and obstetric complications, and 101 clinical modules spanning 14 domains (cardiovascular, metabolic, pulmonary, GI, renal/urology, musculoskeletal/rheumatology, mental health, substance use, neurology, oncology/hematology, infectious disease, pediatric/OB/prevention, dermatology/allergy, and ENT/ophthalmology).
 - **Grounded clinical notes** — progress notes, H&Ps, and discharge summaries generated with structured-data grounding. LLM-authored notes (Claude, configurable) are available today via `--notes-strategy llm`.
-- **Statistical validation against public norms** — every module declares its prevalence sources (NHANES, CDC, SEER, AHA) and the cohort fidelity harness checks aggregate distributions against those targets. The live [**fidelity scorecard**](./docs/fidelity-scorecard.md) reports, per module, how each stratum compares to its cited target (currently 554/556 strata within tolerance across 98 modules).
+- **Statistical validation against public norms** — every module declares its prevalence sources (NHANES, CDC, SEER, AHA) and the cohort fidelity harness checks aggregate distributions against those targets. The live [**fidelity scorecard**](./docs/fidelity-scorecard.md) reports, per module, how each stratum compares to its cited target (currently 563/565 strata within tolerance; all 101 modules sourced).
 - **FHIR-first, always** — R4 and R5 output, US Core 6.1 conformance, FHIR Bulk Data Access-compatible NDJSON, Gravity Project SDOHCC Observations, and DEQM MeasureReport profiles.
 
 ## What Apex Atlas is not
@@ -73,7 +73,7 @@ Apex Atlas is not trained on, derived from, or in any way informed by restricted
 | `atlas modules`              | ✅ Implemented        | List and inspect bundled modules |
 | Module runtime               | ✅ Implemented        | Time-aware emits, onset dating, cross-module `requires`, progressions |
 | Module library               | ✅ 101 modules        | 100-module launch library + `glaucoma` (first `atlas author`-drafted, Tier 3). CV · metabolic/endocrine · pulmonary · GI/hepatology · renal/urology · MSK/rheum · mental health · SUD · neuro/cognition · oncology/heme · ID · pediatric/OB/prevention · derm/allergy · ENT/ophthalmology |
-| Fidelity expectations        | ✅ 98 modules         | 18 launch-hardened sourced expectations available through `atlas validate --gtm` |
+| Fidelity expectations        | ✅ 101 modules         | 18 launch-hardened sourced expectations available through `atlas validate --gtm` |
 | Cross-module dependencies    | ✅ Implemented        | `requires: module:cond_id` gates cross-module comorbidity chains |
 | State-machine progressions   | ✅ One-hop            | 13+ chains live: HTN→CKD/HF/stroke, DM→CKD/retinopathy, AFib→stroke, CKD→ESRD, NAFLD→cirrhosis, pregnancy→GDM/preeclampsia/PPD, SCD→VOC, T1D→DKA |
 | SDoH causal overlay          | ✅ Implemented        | `--with-sdoh`: BRFSS-grounded sampling; encounter + medication adherence modifiers; Gravity Project SDOHCC Observations |

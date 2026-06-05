@@ -1,0 +1,41 @@
+module: sickle_cell
+version: 0.1.0
+source:
+  name: 'CDC. Sickle Cell Disease — Data & Statistics. Centers for Disease Control and Prevention. 2024.
+
+    '
+  provenance: sourced
+  url: https://www.cdc.gov/sickle-cell/data/index.html
+  note: 'Targets mirror the module''s declared, sourced prevalence. Zero strata omitted; Wilson 99.9%.
+    ~100,000 Americans with SCD; ~1 in 365 Black/African American births; ~1 in 16,300 Hispanic births;
+    ~1 in 100,000 White births. All 50 states screen newborns for SCD. SCD causes ~113,000 hospitalizations
+    and ~75,000 vaso-occlusive crisis admissions per year.
+
+    '
+  citations:
+  - source: 'CDC. Sickle Cell Disease — Data & Statistics. Centers for Disease Control and Prevention.
+      2024.
+
+      '
+    url: https://www.cdc.gov/sickle-cell/data/index.html
+    accessed: '2026-06-04'
+metrics:
+- id: sickle_cell_disease_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '127040003'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      0-17: 0.0004
+      18-39: 0.0004
+      40-59: 0.0003
+      60-99: 0.0002
+    male:
+      0-17: 0.0004
+      18-39: 0.0004
+      40-59: 0.0003
+      60-99: 0.0002

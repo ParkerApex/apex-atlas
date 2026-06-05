@@ -13,8 +13,11 @@ cites:
 conditions:
   - id: pulmonary_hypertension
     code: {system: http://snomed.info/sct, code: "70995007", display: Pulmonary hypertension}
+    # Modeled as adult-onset (onset_age starts at 18), so the 0-17 bracket is
+    # 0: pediatric PH is a distinct, largely congenital entity not represented
+    # here. A nonzero 0-17 rate with adult-only onset was undatable (issue #8).
     prevalence:
-      "0-17": 0.001
+      "0-17": 0.0
       "18-39": 0.003
       "40-59": 0.008
       "60-99": 0.020

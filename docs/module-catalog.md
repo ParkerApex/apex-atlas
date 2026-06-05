@@ -81,7 +81,7 @@ launch readiness, not clinical importance.
 | nephrolithiasis | Renal / Urology | 2 | Sourced | Internal technical review |
 | obesity | Metabolic / Endocrine | 1 | Sourced | Internal technical review |
 | opioid_use_disorder | Substance use | 2 | Sourced | Internal technical review |
-| osteoarthritis | Musculoskeletal / Rheumatology | 2 | Pending | Internal technical review |
+| osteoarthritis | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
 | osteoporosis | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
 | osteoporosis_fracture | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
 | otitis_media | ENT / Ophthalmology | 2 | Sourced | Internal technical review |
@@ -98,11 +98,11 @@ launch readiness, not clinical importance.
 | prostate_cancer | Oncology / Hematology | 2 | Sourced | Internal technical review |
 | psoriasis | Dermatology / Allergy | 2 | Sourced | Internal technical review |
 | pulmonary_embolism | Pulmonary | 2 | Sourced | Internal technical review |
-| pulmonary_hypertension | Pulmonary | 2 | Pending | Internal technical review |
+| pulmonary_hypertension | Pulmonary | 2 | Sourced | Internal technical review |
 | rheumatoid_arthritis | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
 | sepsis_survivorship | Infectious disease | 2 | Sourced | Internal technical review |
 | sexual_health_sti | Infectious disease | 2 | Sourced | Internal technical review |
-| sickle_cell | Oncology / Hematology | 2 | Pending | Internal technical review |
+| sickle_cell | Oncology / Hematology | 2 | Sourced | Internal technical review |
 | sinusitis | ENT / Ophthalmology | 2 | Sourced | Internal technical review |
 | sleep_apnea | Pulmonary | 2 | Sourced | Internal technical review |
 | stroke | Cardiovascular | 1 | Sourced | Internal technical review |

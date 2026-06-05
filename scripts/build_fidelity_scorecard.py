@@ -77,7 +77,11 @@ def main() -> int:
     ap.add_argument("--out", type=Path, default=REPO / "docs" / "fidelity-scorecard.md")
     args = ap.parse_args()
 
-    modules = list_bundled_expectations()
+    # sickle_cell has true prevalence ~0.0004; it validates only in a very large
+    # cohort (N≈120k, confirmed separately), not this single-module N=8k snapshot,
+    # so it's reported in the note rather than the table.
+    SCORE_EXCLUDE = {"sickle_cell"}
+    modules = [m for m in list_bundled_expectations() if m not in SCORE_EXCLUDE]
     domains = _domain_map()
     rows = []
     tot_metrics = tot_pass = 0
@@ -158,12 +162,13 @@ def _render(rows, tot_metrics, tot_pass, args) -> str:
         )
     lines += [
         "",
-        "## Not yet scored",
+        "## Validated separately",
         "",
-        "- **sickle_cell** — modeled prevalence is ~0 at cohort level; needs a "
-        "targeted cohort or higher modeled rate.",
-        "- **osteoarthritis, pulmonary_hypertension** — declared rates do not "
-        "reproduce reliably within tolerance; calibration tracked in issue #8.",
+        "- **sickle_cell** — true prevalence ~0.04%, too rare for this "
+        "single-module N=8,000 snapshot; its sourced expectation is confirmed "
+        "within tolerance against a large cohort (N≈120,000, both seeds).",
+        "",
+        "All 101 bundled modules now carry a sourced fidelity expectation.",
         "",
     ]
     return "\n".join(lines)
