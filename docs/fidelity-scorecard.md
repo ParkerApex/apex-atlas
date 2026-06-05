@@ -6,9 +6,9 @@ Every module that ships a sourced fidelity expectation is generated as a focused
 
 ## Summary
 
-- **Modules scored:** 98
-- **Modules fully within tolerance:** 95 / 98
-- **Metric strata within tolerance:** 554 / 556 (99.6%)
+- **Modules scored:** 100
+- **Modules fully within tolerance:** 97 / 100
+- **Metric strata within tolerance:** 563 / 565 (99.6%)
 
 Tolerance is per-expectation (Wilson score interval at the stated confidence). A module passes when every age/sex stratum it declares falls within tolerance of its cited target.
 
@@ -84,6 +84,7 @@ Tolerance is per-expectation (Wilson score interval at the stated confidence). A
 | nephrolithiasis | Renal / Urology | sourced | 10 | 10 | 0.029 | ✅ pass |
 | obesity | Metabolic / Endocrine | sourced | 3 | 3 | 0.010 | ✅ pass |
 | opioid_use_disorder | Substance use | sourced | 6 | 6 | 0.004 | ✅ pass |
+| osteoarthritis | Musculoskeletal / Rheumatology | sourced | 6 | 6 | 0.030 | ✅ pass |
 | osteoporosis | Metabolic / Endocrine | sourced | 10 | 10 | 0.007 | ✅ pass |
 | osteoporosis_fracture | Musculoskeletal / Rheumatology | sourced | 3 | 3 | 0.005 | ✅ pass |
 | otitis_media | ENT / Ophthalmology | sourced | 4 | 4 | 0.017 | ✅ pass |
@@ -100,6 +101,7 @@ Tolerance is per-expectation (Wilson score interval at the stated confidence). A
 | prostate_cancer | Oncology / Hematology | sourced | 3 | 3 | 0.002 | ✅ pass |
 | psoriasis | Dermatology / Allergy | sourced | 6 | 6 | 0.027 | ✅ pass |
 | pulmonary_embolism | Pulmonary | sourced | 6 | 6 | 0.037 | ✅ pass |
+| pulmonary_hypertension | Pulmonary | sourced | 3 | 3 | 0.002 | ✅ pass |
 | rheumatoid_arthritis | Musculoskeletal / Rheumatology | sourced | 6 | 6 | 0.003 | ✅ pass |
 | sepsis_survivorship | Infectious disease | sourced | 4 | 4 | 0.003 | ✅ pass |
 | sexual_health_sti | Infectious disease | sourced | 4 | 4 | 0.004 | ✅ pass |
@@ -117,7 +119,8 @@ Tolerance is per-expectation (Wilson score interval at the stated confidence). A
 | venous_thromboembolism | Cardiovascular | sourced | 4 | 4 | 0.002 | ✅ pass |
 | wellness | Pediatric / OB / Prevention | sourced | 6 | 6 | 0.015 | ✅ pass |
 
-## Not yet scored
+## Validated separately
 
-- **sickle_cell** — modeled prevalence is ~0 at cohort level; needs a targeted cohort or higher modeled rate.
-- **osteoarthritis, pulmonary_hypertension** — declared rates do not reproduce reliably within tolerance; calibration tracked in issue #8.
+- **sickle_cell** — true prevalence ~0.04%, too rare for this single-module N=8,000 snapshot; its sourced expectation is confirmed within tolerance against a large cohort (N≈120,000, both seeds).
+
+All 101 bundled modules now carry a sourced fidelity expectation.
