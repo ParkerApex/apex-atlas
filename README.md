@@ -71,6 +71,7 @@ Apex Atlas is not trained on, derived from, or in any way informed by restricted
 | `atlas validate --cohort`    | ✅ Implemented        | Fidelity harness: aggregate metrics vs. sourced expectations with tolerance |
 | `atlas report`               | ✅ Implemented        | Self-contained HTML cohort report (demographics + fidelity) |
 | `atlas modules`              | ✅ Implemented        | List and inspect bundled modules |
+| `atlas serve` (dev API)     | ✅ First cut          | Stdlib HTTP server: /health, /modules, POST /generate (NDJSON), and async FHIR Bulk Data `$export` kickoff/poll/download. Dev-only; see [`docs/api.md`](./docs/api.md) |
 | Module runtime               | ✅ Implemented        | Time-aware emits, onset dating, cross-module `requires`, progressions |
 | Module library               | ✅ 101 modules        | 100-module launch library + `glaucoma` (first `atlas author`-drafted, Tier 3). CV · metabolic/endocrine · pulmonary · GI/hepatology · renal/urology · MSK/rheum · mental health · SUD · neuro/cognition · oncology/heme · ID · pediatric/OB/prevention · derm/allergy · ENT/ophthalmology |
 | Fidelity expectations        | ✅ 101 modules         | 18 launch-hardened sourced expectations available through `atlas validate --gtm` |
