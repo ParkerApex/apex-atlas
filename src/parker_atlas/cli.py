@@ -1939,5 +1939,32 @@ def author_research_cmd(
     )
 
 
+@app.command()
+def serve(
+    host: Annotated[str, typer.Option("--host", help="Interface to bind.")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", "-p", help="Port to listen on.")] = 8080,
+) -> None:
+    """Run the Apex Atlas dev API server (HTTP generation + FHIR Bulk Data $export).
+
+    A single-process development server — not a production deployment. Endpoints:
+    GET /health, GET /modules, GET /fhir/metadata, POST /generate (synchronous
+    NDJSON), GET /fhir/$export (async kickoff) → poll GET /jobs/<id> → download
+    GET /jobs/<id>/<Type>.ndjson. Patient count is capped per request.
+    """
+    from parker_atlas.server import serve as _serve
+
+    httpd = _serve(host, port)
+    bound = httpd.server_address
+    console.print(
+        f"[green]Apex Atlas dev server[/green] listening on "
+        f"http://{bound[0]}:{bound[1]}  (Ctrl-C to stop)"
+    )
+    try:
+        httpd.serve_forever()
+    except KeyboardInterrupt:
+        console.print("\n[yellow]shutting down[/yellow]")
+        httpd.shutdown()
+
+
 if __name__ == "__main__":
     app()
