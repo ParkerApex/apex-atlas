@@ -1,0 +1,38 @@
+module: wellness
+version: 0.1.0
+source:
+  name: 'CDC National Health Interview Survey 2022 — Health Care Access and Utilization Among Adults.
+
+    '
+  provenance: sourced
+  url: https://www.cdc.gov/nchs/nhis/index.htm
+  note: 'Coverage/visit/episode rates mirror the module''s declared, sourced prevalence (one metric per
+    ungated condition; gated sub-conditions are conditional and excluded). Zero strata omitted; Wilson
+    99.9%. ~80% of US adults reported a visit to a doctor or other health professional in the past 12
+    months. Rates rise with age and are slightly higher in women than men.
+
+    '
+  citations:
+  - source: 'CDC National Health Interview Survey 2022 — Health Care Access and Utilization Among Adults.
+
+      '
+    url: https://www.cdc.gov/nchs/nhis/index.htm
+    accessed: '2026-06-04'
+metrics:
+- id: annual_wellness_visit_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '162673000'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      18-39: 0.74
+      40-59: 0.82
+      60-99: 0.91
+    male:
+      18-39: 0.62
+      40-59: 0.75
+      60-99: 0.88

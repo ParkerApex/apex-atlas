@@ -18,7 +18,7 @@ launch readiness, not clinical importance.
 | acne | Dermatology / Allergy | 2 | Sourced | Internal technical review |
 | acute_bronchitis | Pulmonary | 2 | Sourced | Internal technical review |
 | adhd | Mental health / Behavioral | 2 | Sourced | Internal technical review |
-| adult_immunizations | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
+| adult_immunizations | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 | alcohol_use_disorder | Substance use | 2 | Sourced | Internal technical review |
 | allergic_rhinitis | Dermatology / Allergy | 2 | Sourced | Internal technical review |
 | alzheimers_dementia | Neurology / Cognition | 2 | Sourced | Internal technical review |
@@ -72,9 +72,9 @@ launch readiness, not clinical importance.
 | low_back_pain | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
 | lung_cancer | Oncology / Hematology | 2 | Sourced | Internal technical review |
 | lupus | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
-| maternal_health | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
+| maternal_health | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 | melanoma | Oncology / Hematology | 2 | Sourced | Internal technical review |
-| menopause | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
+| menopause | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 | metabolic_syndrome | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
 | migraine | Neurology / Cognition | 2 | Sourced | Internal technical review |
 | nafld | GI / Hepatology | 2 | Sourced | Internal technical review |
@@ -88,7 +88,7 @@ launch readiness, not clinical importance.
 | pancreatitis | GI / Hepatology | 2 | Sourced | Internal technical review |
 | parkinsons_disease | Neurology / Cognition | 2 | Sourced | Internal technical review |
 | pcos | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
-| pediatric_wellness | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
+| pediatric_wellness | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 | peripheral_artery_disease | Cardiovascular | 2 | Sourced | Internal technical review |
 | peripheral_neuropathy | Neurology / Cognition | 2 | Sourced | Internal technical review |
 | pneumonia | Pulmonary | 2 | Sourced | Internal technical review |
@@ -115,7 +115,7 @@ launch readiness, not clinical importance.
 | uterine_fibroids | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 | valvular_heart_disease | Cardiovascular | 2 | Sourced | Internal technical review |
 | venous_thromboembolism | Cardiovascular | 2 | Sourced | Internal technical review |
-| wellness | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
+| wellness | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 
 ## Count Summary
 
