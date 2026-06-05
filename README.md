@@ -21,6 +21,14 @@ Every synthetic patient receives a Parker Global Patient Identifier (GPX) under 
 
 > **Why did Parker build this?** See [`docs/why-atlas.md`](./docs/why-atlas.md) for the full rationale — the problem with existing tools, the design decisions that set Atlas apart, and where it fits in the Parker mission.
 
+## Proof, not promises
+
+Three things you can open right now:
+
+- 📊 **[Fidelity scorecard](./docs/fidelity-scorecard.md)** — 98 of 101 modules validated against public norms; **554/556 strata (99.6%) within tolerance** of their cited targets.
+- 📉 **[SDoH causal benchmark](./docs/sdoh-causal-benchmark.md)** — ambulatory encounters fall **−39%** and medication fills **−32%** as social-risk burden rises. A tag-only generator can't reproduce this; it's the relationship a model needs to learn.
+- 🧬 **[`atlas author`](./docs/authoring/research_authoring.md)** — go from a condition name to a citation-grounded draft module **and its sourced fidelity expectation** in one command, gated by clinician sign-off. The library extends itself instead of plateauing.
+
 ## What sets Apex Atlas apart
 
 Existing synthetic patient generators share a common set of limitations: disease module libraries that plateau in the dozens, clinical notes that read as obviously templated, and social determinants of health treated as metadata rather than causal variables. Apex Atlas addresses all three — and adds capabilities no other open generator offers:
