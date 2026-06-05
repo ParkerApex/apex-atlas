@@ -1,0 +1,1542 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "GPX-SYN-0000000020-8",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race",
+            "extension": [
+              {
+                "url": "ombCategory",
+                "valueCoding": {
+                  "system": "urn:oid:2.16.840.1.113883.6.238",
+                  "code": "2106-3",
+                  "display": "White"
+                }
+              },
+              {
+                "url": "text",
+                "valueString": "White"
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity",
+            "extension": [
+              {
+                "url": "ombCategory",
+                "valueCoding": {
+                  "system": "urn:oid:2.16.840.1.113883.6.238",
+                  "code": "2186-5",
+                  "display": "Not Hispanic or Latino"
+                }
+              },
+              {
+                "url": "text",
+                "valueString": "Not Hispanic or Latino"
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex",
+            "valueCode": "M"
+          }
+        ],
+        "identifier": [
+          {
+            "use": "official",
+            "system": "https://parkerapex.com/gpx",
+            "value": "GPX-SYN-0000000020-8",
+            "assigner": {
+              "display": "APEX Atlas Synthetic Population"
+            }
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Martin",
+            "given": [
+              "Donald"
+            ]
+          }
+        ],
+        "gender": "male",
+        "birthDate": "2000-11-27"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:efee1000-8c4a-5c8b-8837-3eb280109273",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "76c966c9-dd1f-5bc6-aaf6-e6e84e76a256",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-organization|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/payer",
+            "value": "medicaid-state-syn"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+                "code": "pay",
+                "display": "Payer"
+              }
+            ]
+          }
+        ],
+        "name": "State Medicaid (Synthetic)"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:455d3c0d-6ae0-5c4b-a539-08d9351baa26",
+      "resource": {
+        "resourceType": "InsurancePlan",
+        "id": "8c58c136-442e-5329-b1aa-24f62d0d0494",
+        "meta": {
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/insurance-plan",
+            "value": "medicaid-state-syn"
+          }
+        ],
+        "status": "active",
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/insurance-plan-type",
+                "code": "medical",
+                "display": "Medical"
+              }
+            ]
+          }
+        ],
+        "name": "State Medicaid (Synthetic)",
+        "ownedBy": {
+          "reference": "urn:uuid:efee1000-8c4a-5c8b-8837-3eb280109273"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "InsurancePlan"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:531c4a4d-ed41-5858-b48c-4eb789b1884f",
+      "resource": {
+        "resourceType": "Coverage",
+        "id": "6515ce5c-ec61-5c9a-b383-38440bec09fd",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-coverage|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/coverage",
+            "value": "6515ce5c-ec61-5c9a-b383-38440bec09fd"
+          }
+        ],
+        "status": "active",
+        "type": {
+          "coding": [
+            {
+              "system": "https://nahdo.org/sopt",
+              "code": "2",
+              "display": "Medicaid"
+            }
+          ],
+          "text": "Medicaid"
+        },
+        "subscriber": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "subscriberId": "SYN-AB6D492E0E",
+        "beneficiary": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "relationship": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+              "code": "self",
+              "display": "Self"
+            }
+          ]
+        },
+        "payor": [
+          {
+            "reference": "urn:uuid:efee1000-8c4a-5c8b-8837-3eb280109273"
+          }
+        ],
+        "order": 1,
+        "class": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/coverage-class",
+                  "code": "plan",
+                  "display": "Plan"
+                }
+              ]
+            },
+            "value": "medicaid-state-syn",
+            "name": "medicaid-state-syn"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Coverage"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:90538946-063c-53c7-ba1b-1b094efe30aa",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "390e490e-df06-52cd-9e58-cdcaca29893c",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "59621000",
+              "display": "Essential hypertension (disorder)"
+            }
+          ],
+          "text": "Essential hypertension (disorder)"
+        },
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "onsetDateTime": "2026-06-04"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Condition"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3c1c8179-27e6-5f38-9c63-833a67648cb8",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "a51cfbb8-6bd0-59ef-b643-fcb825136db4",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-encounter|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/encounter",
+            "value": "a51cfbb8-6bd0-59ef-b643-fcb825136db4"
+          }
+        ],
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "ambulatory"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "185349003",
+                "display": "Encounter for check up"
+              }
+            ],
+            "text": "Encounter for check up"
+          }
+        ],
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "period": {
+          "start": "2026-06-04",
+          "end": "2026-06-04"
+        },
+        "reasonCode": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "59621000",
+                "display": "Essential hypertension"
+              }
+            ],
+            "text": "Essential hypertension"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Encounter"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:185ff253-b5bf-5acf-8dd4-d7d61767b77a",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "fcedb9c4-d78c-5849-aaaf-b10515aa1f58",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-encounter|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/encounter",
+            "value": "fcedb9c4-d78c-5849-aaaf-b10515aa1f58"
+          }
+        ],
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "ambulatory"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "390906007",
+                "display": "Follow-up encounter"
+              }
+            ],
+            "text": "Follow-up encounter"
+          }
+        ],
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "period": {
+          "start": "2026-06-04",
+          "end": "2026-06-04"
+        },
+        "reasonCode": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "59621000",
+                "display": "Essential hypertension"
+              }
+            ],
+            "text": "Essential hypertension"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Encounter"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:6ea8bc92-ca66-5d0f-a2a8-f561c6ed000b",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "3fcfdce6-0065-5c21-9bdd-48c19a5afec5",
+        "meta": {
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ],
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure|6.1.0"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "85354-9",
+              "display": "Blood pressure panel with all children optional"
+            }
+          ],
+          "text": "Blood pressure panel with all children optional"
+        },
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "effectiveDateTime": "2026-06-04",
+        "component": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8480-6",
+                  "display": "Systolic blood pressure"
+                }
+              ],
+              "text": "Systolic blood pressure"
+            },
+            "valueQuantity": {
+              "value": 150.0,
+              "unit": "mm[Hg]",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8462-4",
+                  "display": "Diastolic blood pressure"
+                }
+              ],
+              "text": "Diastolic blood pressure"
+            },
+            "valueQuantity": {
+              "value": 90.0,
+              "unit": "mm[Hg]",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          }
+        ],
+        "encounter": {
+          "reference": "urn:uuid:3c1c8179-27e6-5f38-9c63-833a67648cb8"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:cc3965ed-f859-57ef-b3f3-2a17e020bc3a",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "570310c9-448d-5680-a065-d4585873d506",
+        "meta": {
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ],
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-blood-pressure|6.1.0"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "85354-9",
+              "display": "Blood pressure panel with all children optional"
+            }
+          ],
+          "text": "Blood pressure panel with all children optional"
+        },
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "effectiveDateTime": "2026-06-04",
+        "component": [
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8480-6",
+                  "display": "Systolic blood pressure"
+                }
+              ],
+              "text": "Systolic blood pressure"
+            },
+            "valueQuantity": {
+              "value": 136.0,
+              "unit": "mm[Hg]",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          },
+          {
+            "code": {
+              "coding": [
+                {
+                  "system": "http://loinc.org",
+                  "code": "8462-4",
+                  "display": "Diastolic blood pressure"
+                }
+              ],
+              "text": "Diastolic blood pressure"
+            },
+            "valueQuantity": {
+              "value": 82.0,
+              "unit": "mm[Hg]",
+              "system": "http://unitsofmeasure.org",
+              "code": "mm[Hg]"
+            }
+          }
+        ],
+        "encounter": {
+          "reference": "urn:uuid:185ff253-b5bf-5acf-8dd4-d7d61767b77a"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:5f2d1d6d-469e-59e6-8a7f-1d22ae237e7a",
+      "resource": {
+        "resourceType": "DocumentReference",
+        "id": "ce12b224-8f5f-53c8-a354-db2a18f38c94",
+        "meta": {
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "current",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "11506-3",
+              "display": "Progress note"
+            }
+          ],
+          "text": "Progress note"
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "47039-3",
+                "display": "Hospital Admission history and physical note"
+              }
+            ]
+          }
+        ],
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "date": "2026-06-04T12:00:00+00:00",
+        "content": [
+          {
+            "attachment": {
+              "contentType": "text/markdown",
+              "data": "IyBQcm9ncmVzcyBOb3RlCgoqKlBhdGllbnQ6KiogTWFydGluLCBEb25hbGQKKipBZ2UgLyBTZXg6KiogMjUgLyBtYWxlCioqRGF0ZToqKiAyMDI2LTA2LTA0CgojIyBBY3RpdmUgUHJvYmxlbXMKLSBFc3NlbnRpYWwgaHlwZXJ0ZW5zaW9uIChkaXNvcmRlcikgKGh0dHA6Ly9zbm9tZWQuaW5mby9zY3QgNTk2MjEwMDApIChvbnNldCAyMDI2LTA2LTA0KQotIEFzdGhtYSAoZGlzb3JkZXIpIChodHRwOi8vc25vbWVkLmluZm8vc2N0IDE5NTk2NzAwMSkgKG9uc2V0IDIwMjEtMDYtMDUpCgojIyBTdWJqZWN0aXZlClBhdGllbnQgc2VlbiB0b2RheSBmb3IgZm9sbG93LXVwIG9mIEVzc2VudGlhbCBoeXBlcnRlbnNpb24gKGRpc29yZGVyKS4KTm8gbmV3IGFjdXRlIGNvbXBsYWludHMgZG9jdW1lbnRlZCBpbiB0aGlzIHN5bnRoZXRpYyByZWNvcmQuCgojIyBPYmplY3RpdmUKCiMjIyBWaXRhbHMgJiBsYWJzIChtb3N0IHJlY2VudCkKLSBCbG9vZCBwcmVzc3VyZTogMTUwLzkwIG1tSGcgKDIwMjYtMDYtMDQpCgojIyMgQWN0aXZlIG1lZGljYXRpb25zCl9Ob25lIG9uIGZpbGUuXwoKIyMgQXNzZXNzbWVudCAmIFBsYW4KQ29udGludWUgY3VycmVudCBtYW5hZ2VtZW50IG9mIEVzc2VudGlhbCBoeXBlcnRlbnNpb24gKGRpc29yZGVyKS4gUmVhc3Nlc3MgYXQgbmV4dCByb3V0aW5lIGZvbGxvdy11cC4KCi0tLQpfR2VuZXJhdGVkIGJ5IEFQRVggQXRsYXMgKHRlbXBsYXRlIG1vZGUpLiBUaGlzIGlzIHN5bnRoZXRpYyBkYXRhOyBubyByZWFsIHBhdGllbnQgaXMgZGVwaWN0ZWQuXw=="
+            }
+          }
+        ],
+        "context": {
+          "encounter": [
+            {
+              "reference": "urn:uuid:3c1c8179-27e6-5f38-9c63-833a67648cb8"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "DocumentReference"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:e4061919-91ed-5d34-9757-dc7e4294deb9",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "2dcac928-82e0-54f7-8654-a057a7d6189d",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "195967001",
+              "display": "Asthma (disorder)"
+            }
+          ],
+          "text": "Asthma (disorder)"
+        },
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "onsetDateTime": "2021-06-05"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Condition"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:bb18d8c5-963f-59b0-af49-e144f36686a6",
+      "resource": {
+        "resourceType": "DocumentReference",
+        "id": "7220ec6f-70d4-50d5-9fee-c57e11bfb285",
+        "meta": {
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "current",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "11506-3",
+              "display": "Progress note"
+            }
+          ],
+          "text": "Progress note"
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "47039-3",
+                "display": "Hospital Admission history and physical note"
+              }
+            ]
+          }
+        ],
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "date": "2026-06-04T12:00:00+00:00",
+        "content": [
+          {
+            "attachment": {
+              "contentType": "text/markdown",
+              "data": "IyBQcm9ncmVzcyBOb3RlCgoqKlBhdGllbnQ6KiogTWFydGluLCBEb25hbGQKKipBZ2UgLyBTZXg6KiogMjUgLyBtYWxlCioqRGF0ZToqKiAyMDI2LTA2LTA0CgojIyBBY3RpdmUgUHJvYmxlbXMKLSBFc3NlbnRpYWwgaHlwZXJ0ZW5zaW9uIChkaXNvcmRlcikgKGh0dHA6Ly9zbm9tZWQuaW5mby9zY3QgNTk2MjEwMDApIChvbnNldCAyMDI2LTA2LTA0KQotIEFzdGhtYSAoZGlzb3JkZXIpIChodHRwOi8vc25vbWVkLmluZm8vc2N0IDE5NTk2NzAwMSkgKG9uc2V0IDIwMjEtMDYtMDUpCgojIyBTdWJqZWN0aXZlClBhdGllbnQgc2VlbiB0b2RheSBmb3IgZm9sbG93LXVwIG9mIEFzdGhtYSAoZGlzb3JkZXIpLgpObyBuZXcgYWN1dGUgY29tcGxhaW50cyBkb2N1bWVudGVkIGluIHRoaXMgc3ludGhldGljIHJlY29yZC4KCiMjIE9iamVjdGl2ZQoKIyMjIFZpdGFscyAmIGxhYnMgKG1vc3QgcmVjZW50KQotIEJsb29kIHByZXNzdXJlOiAxNTAvOTAgbW1IZyAoMjAyNi0wNi0wNCkKCiMjIyBBY3RpdmUgbWVkaWNhdGlvbnMKX05vbmUgb24gZmlsZS5fCgojIyBBc3Nlc3NtZW50ICYgUGxhbgpDb250aW51ZSBjdXJyZW50IG1hbmFnZW1lbnQgb2YgQXN0aG1hIChkaXNvcmRlcikuIFJlYXNzZXNzIGF0IG5leHQgcm91dGluZSBmb2xsb3ctdXAuCgotLS0KX0dlbmVyYXRlZCBieSBBUEVYIEF0bGFzICh0ZW1wbGF0ZSBtb2RlKS4gVGhpcyBpcyBzeW50aGV0aWMgZGF0YTsgbm8gcmVhbCBwYXRpZW50IGlzIGRlcGljdGVkLl8="
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "DocumentReference"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:640e6d1a-8719-56d7-8fb9-090f6c517292",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "dc4b5b6d-1de2-5cd9-8614-fa79833857d4",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/sdoh-clinicalcare/StructureDefinition/SDOHCC-ObservationScreeningResponse"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "social-history",
+                "display": "Social History"
+              }
+            ]
+          },
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/us/sdoh-clinicalcare/CodeSystem/SDOHCC-CodeSystemTemporaryCodes",
+                "code": "food-insecurity",
+                "display": "Food Insecurity"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "88122-0",
+              "display": "Within the past 12 months, we worried whether our food would run out"
+            }
+          ],
+          "text": "Within the past 12 months, we worried whether our food would run out"
+        },
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "effectiveDateTime": "2026-06-04",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "LA32-8",
+              "display": "No"
+            }
+          ],
+          "text": "No"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:465a2b5f-8b60-5573-87aa-f91d53df3449",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "10e77250-7be0-5352-bb79-480016033911",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/sdoh-clinicalcare/StructureDefinition/SDOHCC-ObservationScreeningResponse"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "social-history",
+                "display": "Social History"
+              }
+            ]
+          },
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/us/sdoh-clinicalcare/CodeSystem/SDOHCC-CodeSystemTemporaryCodes",
+                "code": "housing-instability",
+                "display": "Housing Instability"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "71802-3",
+              "display": "What is your living situation today?"
+            }
+          ],
+          "text": "What is your living situation today?"
+        },
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "effectiveDateTime": "2026-06-04",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "LA31994-9",
+              "display": "I have housing"
+            }
+          ],
+          "text": "I have housing"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:7da7993b-0915-51dc-9ac8-a92037c3f24f",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "8f606220-444d-55c5-83f9-db8da5e4cf11",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/sdoh-clinicalcare/StructureDefinition/SDOHCC-ObservationScreeningResponse"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "social-history",
+                "display": "Social History"
+              }
+            ]
+          },
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/us/sdoh-clinicalcare/CodeSystem/SDOHCC-CodeSystemTemporaryCodes",
+                "code": "transportation-insecurity",
+                "display": "Transportation Insecurity"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "93030-5",
+              "display": "Has lack of transportation kept you from medical appointments, meetings, work, or from getting things needed for daily living?"
+            }
+          ],
+          "text": "Has lack of transportation kept you from medical appointments, meetings, work, or from getting things needed for daily living?"
+        },
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "effectiveDateTime": "2026-06-04",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "LA33-6",
+              "display": "Yes"
+            }
+          ],
+          "text": "Yes"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:d80cfa78-6adf-5aee-b78e-c828bfde4eb8",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "c18ebb33-ccb7-59e1-b1ae-53ad437324a4",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/sdoh-clinicalcare/StructureDefinition/SDOHCC-ObservationScreeningResponse"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "social-history",
+                "display": "Social History"
+              }
+            ]
+          },
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/us/sdoh-clinicalcare/CodeSystem/SDOHCC-CodeSystemTemporaryCodes",
+                "code": "financial-insecurity",
+                "display": "Financial Insecurity"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "96780-2",
+              "display": "Do you want help finding or keeping work or a job?"
+            }
+          ],
+          "text": "Do you want help finding or keeping work or a job?"
+        },
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "effectiveDateTime": "2026-06-04",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "LA33-6",
+              "display": "Yes, help finding work"
+            }
+          ],
+          "text": "Yes, help finding work"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:2ecdeb07-e0d5-54f0-abed-dbbc225de297",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "9e95999a-c2fe-50a6-9179-f81895c5bfb1",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/sdoh-clinicalcare/StructureDefinition/SDOHCC-ObservationScreeningResponse"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "social-history",
+                "display": "Social History"
+              }
+            ]
+          },
+          {
+            "coding": [
+              {
+                "system": "http://hl7.org/fhir/us/sdoh-clinicalcare/CodeSystem/SDOHCC-CodeSystemTemporaryCodes",
+                "code": "social-connection",
+                "display": "Social Connection"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "54899-0",
+              "display": "How often do you feel lonely or isolated from those around you?"
+            }
+          ],
+          "text": "How often do you feel lonely or isolated from those around you?"
+        },
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "effectiveDateTime": "2026-06-04",
+        "valueCodeableConcept": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "LA6270-8",
+              "display": "Never"
+            }
+          ],
+          "text": "Never"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:6823f1d1-d277-528f-b853-181d10174f56",
+      "resource": {
+        "resourceType": "MeasureReport",
+        "id": "06c4293f-5564-5bec-b9fe-211d9367fe11",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-deqm/StructureDefinition/indv-measurereport-deqm"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "complete",
+        "type": "individual",
+        "measure": "https://parkerapex.com/fhir/Measure/DM-HbA1c",
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "date": "2026-12-31",
+        "period": {
+          "start": "2026-01-01",
+          "end": "2026-12-31"
+        },
+        "group": [
+          {
+            "population": [
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "initial-population",
+                      "display": "Initial Population"
+                    }
+                  ]
+                },
+                "count": 0
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "denominator",
+                      "display": "Denominator"
+                    }
+                  ]
+                },
+                "count": 0
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "numerator",
+                      "display": "Numerator"
+                    }
+                  ]
+                },
+                "count": 0
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "MeasureReport"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:599459ed-0f75-55b6-85b3-fa0d3c56c548",
+      "resource": {
+        "resourceType": "MeasureReport",
+        "id": "0ce69984-a149-549e-b854-a69596948682",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-deqm/StructureDefinition/indv-measurereport-deqm"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "complete",
+        "type": "individual",
+        "measure": "https://parkerapex.com/fhir/Measure/HTN-BPControl",
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "date": "2026-12-31",
+        "period": {
+          "start": "2026-01-01",
+          "end": "2026-12-31"
+        },
+        "group": [
+          {
+            "population": [
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "initial-population",
+                      "display": "Initial Population"
+                    }
+                  ]
+                },
+                "count": 1
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "denominator",
+                      "display": "Denominator"
+                    }
+                  ]
+                },
+                "count": 1
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "numerator",
+                      "display": "Numerator"
+                    }
+                  ]
+                },
+                "count": 1
+              }
+            ],
+            "measureScore": {
+              "value": 1.0,
+              "unit": "1"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "MeasureReport"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:21f8c599-e841-5f3b-801a-f68af7677d89",
+      "resource": {
+        "resourceType": "MeasureReport",
+        "id": "6139619b-447a-55e8-89d7-c77dab4149a7",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-deqm/StructureDefinition/indv-measurereport-deqm"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "complete",
+        "type": "individual",
+        "measure": "https://parkerapex.com/fhir/Measure/PreventiveCare",
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "date": "2026-12-31",
+        "period": {
+          "start": "2026-01-01",
+          "end": "2026-12-31"
+        },
+        "group": [
+          {
+            "population": [
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "initial-population",
+                      "display": "Initial Population"
+                    }
+                  ]
+                },
+                "count": 1
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "denominator",
+                      "display": "Denominator"
+                    }
+                  ]
+                },
+                "count": 1
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "numerator",
+                      "display": "Numerator"
+                    }
+                  ]
+                },
+                "count": 1
+              }
+            ],
+            "measureScore": {
+              "value": 1.0,
+              "unit": "1"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "MeasureReport"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:a8f3df7b-989b-5a1b-8098-5961d8ede12d",
+      "resource": {
+        "resourceType": "MeasureReport",
+        "id": "0bb06f41-db87-5a6e-907a-b9d98d25446d",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-deqm/StructureDefinition/indv-measurereport-deqm"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "complete",
+        "type": "individual",
+        "measure": "https://parkerapex.com/fhir/Measure/FluVaccine",
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "date": "2026-12-31",
+        "period": {
+          "start": "2026-01-01",
+          "end": "2026-12-31"
+        },
+        "group": [
+          {
+            "population": [
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "initial-population",
+                      "display": "Initial Population"
+                    }
+                  ]
+                },
+                "count": 1
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "denominator",
+                      "display": "Denominator"
+                    }
+                  ]
+                },
+                "count": 1
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "numerator",
+                      "display": "Numerator"
+                    }
+                  ]
+                },
+                "count": 0
+              }
+            ],
+            "measureScore": {
+              "value": 0.0,
+              "unit": "1"
+            }
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "MeasureReport"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:2519b3af-0258-5181-a1d8-9b9ce81ed46b",
+      "resource": {
+        "resourceType": "MeasureReport",
+        "id": "2e9e0b6e-36ef-5454-ac0d-ec22172afdb6",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/davinci-deqm/StructureDefinition/indv-measurereport-deqm"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "complete",
+        "type": "individual",
+        "measure": "https://parkerapex.com/fhir/Measure/PedWellChild",
+        "subject": {
+          "reference": "urn:uuid:8fe88a8c-8dc1-5633-8903-1575abd4a61a"
+        },
+        "date": "2026-12-31",
+        "period": {
+          "start": "2026-01-01",
+          "end": "2026-12-31"
+        },
+        "group": [
+          {
+            "population": [
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "initial-population",
+                      "display": "Initial Population"
+                    }
+                  ]
+                },
+                "count": 0
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "denominator",
+                      "display": "Denominator"
+                    }
+                  ]
+                },
+                "count": 0
+              },
+              {
+                "code": {
+                  "coding": [
+                    {
+                      "system": "http://terminology.hl7.org/CodeSystem/measure-population",
+                      "code": "numerator",
+                      "display": "Numerator"
+                    }
+                  ]
+                },
+                "count": 0
+              }
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "MeasureReport"
+      }
+    }
+  ]
+}
