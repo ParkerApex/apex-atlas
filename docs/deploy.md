@@ -3,6 +3,16 @@
 This makes the [web generator](./generator.html) work for visitors with **zero
 local setup** — a hosted `atlas serve` that the static page calls.
 
+> **Bring your own cloud and keys.** You deploy this to *your own* cloud account
+> (Fly / Render / Cloud Run / etc.) under your own billing. **No secrets are
+> baked into the image** and none are needed to run the generator: synthetic
+> generation is fully deterministic and uses no AI. The only feature that needs
+> an AI key is the *separate* `atlas author research` CLI command, which reads
+> **your own** `ANTHROPIC_API_KEY` (or another provider's key) from the
+> environment at run time — it is never bundled, and it is not exposed by this
+> server. Configure such keys as your platform's secrets, never in the repo or
+> image.
+
 > **Read this first — security.** `atlas serve` is a *development* server. It has
 > two built-in safeguards (a 5,000-patient cap per request and a generation
 > timeout, `ATLAS_GEN_TIMEOUT`, default 180s) but **no auth, rate limiting, or
