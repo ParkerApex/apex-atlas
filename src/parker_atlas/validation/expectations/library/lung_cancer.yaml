@@ -1,0 +1,40 @@
+module: lung_cancer
+version: 0.1.0
+source:
+  name: 'Siegel RL, Giaquinto AN, Jemal A. Cancer statistics, 2024. CA Cancer J Clin. 2024;74(1):12-49.
+    (American Cancer Society analysis of NCI SEER + NCHS data.)
+
+    '
+  provenance: sourced
+  url: https://acsjournals.onlinelibrary.wiley.com/doi/10.3322/caac.21820
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance. US lung & bronchus cancer 2024 estimates:
+    234,580 new cases, 125,070 deaths. Lifetime probability of developing lung cancer ~6.0% (men) / ~5.7%
+    (women). Age-conditional incidence rises sharply after age 55.
+
+    '
+  citations:
+  - source: 'Siegel RL, Giaquinto AN, Jemal A. Cancer statistics, 2024. CA Cancer J Clin. 2024;74(1):12-49.
+      (American Cancer Society analysis of NCI SEER + NCHS data.)
+
+      '
+    url: https://acsjournals.onlinelibrary.wiley.com/doi/10.3322/caac.21820
+    accessed: '2026-06-04'
+metrics:
+- id: lung_cancer_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '254637007'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      18-39: 0.0001
+      40-59: 0.003
+      60-99: 0.018
+    male:
+      18-39: 0.0001
+      40-59: 0.004
+      60-99: 0.022

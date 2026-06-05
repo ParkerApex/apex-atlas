@@ -1,0 +1,26 @@
+module: frailty
+version: 0.1.0
+source:
+  name: National Institute on Aging frailty research overview
+  provenance: sourced
+  url: https://www.nia.nih.gov/research/blog/2023/02/frailty-research
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check).
+    Zero-prevalence strata omitted; Wilson 99.9% tolerance. Frailty is a multidimensional geriatric syndrome
+    associated with vulnerability and functional decline.
+  citations:
+  - source: National Institute on Aging frailty research overview
+    url: https://www.nia.nih.gov/research/blog/2023/02/frailty-research
+    accessed: '2026-06-04'
+metrics:
+- id: frailty_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '248279007'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    18-39: 0.002
+    40-59: 0.015
+    60-99: 0.12

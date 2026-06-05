@@ -1,0 +1,36 @@
+module: breast_cancer
+version: 0.1.0
+source:
+  name: 'Siegel RL, Giaquinto AN, Jemal A. Cancer statistics, 2024. CA Cancer J Clin. 2024;74(1):12-49.
+
+    '
+  provenance: sourced
+  url: https://acsjournals.onlinelibrary.wiley.com/doi/10.3322/caac.21820
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance. Breast cancer 2024 (women): 313,510
+    new invasive cases, 42,780 deaths. Most common cancer in women; second leading cancer death. Lifetime
+    risk ~13% (1 in 8). Incidence 132/100,000 women. Rising in women <50.
+
+    '
+  citations:
+  - source: 'Siegel RL, Giaquinto AN, Jemal A. Cancer statistics, 2024. CA Cancer J Clin. 2024;74(1):12-49.
+
+      '
+    url: https://acsjournals.onlinelibrary.wiley.com/doi/10.3322/caac.21820
+    accessed: '2026-06-04'
+metrics:
+- id: breast_cancer_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '254837009'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      18-44: 0.002
+      45-64: 0.021
+      65-99: 0.045
+    male:
+      0-99: 0.0002

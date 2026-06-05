@@ -1,0 +1,27 @@
+module: postpartum_depression
+version: 0.1.0
+source:
+  name: ACOG screening and diagnosis of mental health conditions during pregnancy and postpartum
+  provenance: sourced
+  url: https://www.acog.org/clinical/clinical-guidance/clinical-practice-guideline
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check).
+    Zero-prevalence strata omitted; Wilson 99.9% tolerance. Perinatal and postpartum care includes screening
+    for depression and anxiety with validated tools.
+  citations:
+  - source: ACOG screening and diagnosis of mental health conditions during pregnancy and postpartum
+    url: https://www.acog.org/clinical/clinical-guidance/clinical-practice-guideline
+    accessed: '2026-06-04'
+metrics:
+- id: postpartum_depression_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '47821001'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      0-17: 0.003
+      18-39: 0.055
+      40-59: 0.005

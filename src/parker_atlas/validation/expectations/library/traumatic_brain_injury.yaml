@@ -1,0 +1,29 @@
+module: traumatic_brain_injury
+version: 0.1.0
+source:
+  name: CDC Traumatic Brain Injury and Concussion
+  provenance: sourced
+  url: https://www.cdc.gov/traumatic-brain-injury/
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance. TBI is a common injury-related condition
+    that may require emergency evaluation, imaging, and follow-up depending on severity.
+
+    '
+  citations:
+  - source: CDC Traumatic Brain Injury and Concussion
+    url: https://www.cdc.gov/traumatic-brain-injury/
+    accessed: '2026-06-04'
+metrics:
+- id: traumatic_brain_injury_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '127295002'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.025
+    18-39: 0.03
+    40-59: 0.02
+    60-99: 0.025

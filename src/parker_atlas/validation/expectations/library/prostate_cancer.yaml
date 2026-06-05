@@ -1,0 +1,34 @@
+module: prostate_cancer
+version: 0.1.0
+source:
+  name: 'Siegel RL, Giaquinto AN, Jemal A. Cancer statistics, 2024. CA Cancer J Clin. 2024;74(1):12-49.
+
+    '
+  provenance: sourced
+  url: https://acsjournals.onlinelibrary.wiley.com/doi/10.3322/caac.21820
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance. Prostate cancer 2024: 299,010 new
+    cases, 35,250 deaths. Most common cancer in men. Lifetime risk ~13%. Significant racial disparity:
+    Black men have 1.75x incidence and 2.1x mortality vs White men.
+
+    '
+  citations:
+  - source: 'Siegel RL, Giaquinto AN, Jemal A. Cancer statistics, 2024. CA Cancer J Clin. 2024;74(1):12-49.
+
+      '
+    url: https://acsjournals.onlinelibrary.wiley.com/doi/10.3322/caac.21820
+    accessed: '2026-06-04'
+metrics:
+- id: prostate_cancer_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '399068003'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    male:
+      18-44: 0.0001
+      45-64: 0.012
+      65-99: 0.065
