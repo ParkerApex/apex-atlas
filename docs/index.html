@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Apex Atlas — Synthetic FHIR patient populations</title>
+<meta name="description" content="Apex Atlas generates large-scale, fully synthetic FHIR patient populations that are current, causal, and auditable — validated against public epidemiological norms." />
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2e; --panel2:#0e1729; --line:#1f2d49;
+    --ink:#e8eef9; --muted:#9fb0cc; --brand:#3ba9a0; --brand2:#5b8def; --accent:#7ee0d3;
+    --good:#46c08a; --warn:#e0b450;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55;
+    -webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:1060px;margin:0 auto;padding:0 22px}
+  .eyebrow{color:var(--brand);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px}
+  header.hero{padding:74px 0 36px;background:
+    radial-gradient(1100px 420px at 78% -10%,rgba(91,141,239,.18),transparent),
+    radial-gradient(900px 360px at 6% 0%,rgba(59,169,160,.16),transparent)}
+  h1{font-size:clamp(34px,5vw,56px);line-height:1.05;margin:.35em 0 .25em;letter-spacing:-.02em}
+  h1 .grad{background:linear-gradient(92deg,var(--accent),var(--brand2));-webkit-background-clip:text;
+    background-clip:text;color:transparent}
+  .lede{font-size:clamp(17px,2.2vw,21px);color:var(--muted);max-width:760px}
+  .badges{display:flex;flex-wrap:wrap;gap:8px;margin:20px 0 4px}
+  .badge{font-size:12px;color:var(--muted);border:1px solid var(--line);border-radius:999px;
+    padding:5px 11px;background:var(--panel)}
+  .cta{display:flex;flex-wrap:wrap;gap:12px;margin-top:26px}
+  .btn{display:inline-block;font-weight:650;border-radius:10px;padding:12px 18px;border:1px solid var(--line)}
+  .btn.primary{background:linear-gradient(92deg,var(--brand),var(--brand2));color:#04121a;border:none}
+  .btn.ghost{background:var(--panel);color:var(--ink)}
+  .author{margin-top:26px;color:var(--muted);font-size:14px}
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin:30px 0 6px}
+  .stat{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  .stat b{display:block;font-size:clamp(22px,3vw,30px);color:var(--ink);letter-spacing:-.01em}
+  .stat span{color:var(--muted);font-size:13px}
+  section{padding:46px 0;border-top:1px solid var(--line)}
+  h2{font-size:clamp(23px,3vw,30px);margin:0 0 6px;letter-spacing:-.01em}
+  .sub{color:var(--muted);max-width:760px;margin:0 0 26px}
+  .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:16px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;display:flex;
+    flex-direction:column}
+  .card .ico{font-size:22px}
+  .card h3{margin:10px 0 6px;font-size:18px}
+  .card p{color:var(--muted);font-size:14px;margin:0 0 14px;flex:1}
+  .card .metric{font-size:26px;font-weight:750;color:var(--accent);letter-spacing:-.01em}
+  .card .metric small{display:block;font-size:12px;color:var(--muted);font-weight:500;letter-spacing:0}
+  table{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+  th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left}
+  th{color:var(--muted);font-weight:600;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+  td.num{font-variant-numeric:tabular-nums;text-align:right}
+  .drop{color:var(--good);font-weight:650;font-variant-numeric:tabular-nums;text-align:right}
+  .grid2{display:grid;grid-template-columns:1.05fr .95fr;gap:26px;align-items:start}
+  pre{background:#06101f;border:1px solid var(--line);border-radius:14px;padding:16px;overflow:auto;
+    font-family:var(--mono);font-size:12.5px;line-height:1.5;color:#cfe0f7}
+  pre .k{color:#7ee0d3}.pre .s{color:#e8b06b}
+  code.inline{font-family:var(--mono);background:var(--panel);border:1px solid var(--line);
+    border-radius:6px;padding:1px 6px;font-size:.92em}
+  ul.feat{list-style:none;padding:0;margin:0;display:grid;gap:12px}
+  ul.feat li{padding-left:26px;position:relative;color:var(--muted)}
+  ul.feat li::before{content:"▹";position:absolute;left:4px;color:var(--brand)}
+  ul.feat b{color:var(--ink)}
+  .note{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--brand);
+    border-radius:10px;padding:14px 16px;color:var(--muted);font-size:14px}
+  footer{padding:40px 0 60px;border-top:1px solid var(--line);color:var(--muted);font-size:14px}
+  footer a{color:var(--muted)}
+  .foot-links{display:flex;flex-wrap:wrap;gap:18px;margin-bottom:14px}
+  @media(max-width:820px){.cards{grid-template-columns:1fr}.stats{grid-template-columns:repeat(2,1fr)}
+    .grid2{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header class="hero">
+  <div class="wrap">
+    <div class="eyebrow">Parker · Apex Atlas</div>
+    <h1>Synthetic FHIR patients that are<br><span class="grad">current, causal, and auditable.</span></h1>
+    <p class="lede">Apex Atlas generates large-scale, fully synthetic patient populations in FHIR R4/R5,
+      grounded in public epidemiological data — for training healthcare AI, validating FHIR integrations,
+      demos, and quality-measure testing. No real patient is ever depicted.</p>
+    <div class="badges">
+      <span class="badge">FHIR R4 · R5</span>
+      <span class="badge">US Core 6.1</span>
+      <span class="badge">Bulk Data NDJSON</span>
+      <span class="badge">DEQM MeasureReport</span>
+      <span class="badge">Gravity SDOHCC</span>
+      <span class="badge">Apache 2.0</span>
+    </div>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/ParkerApex/apex-atlas">View on GitHub →</a>
+      <a class="btn ghost" href="https://github.com/ParkerApex/apex-atlas/blob/main/docs/fidelity-scorecard.md">Fidelity scorecard</a>
+      <a class="btn ghost" href="https://github.com/ParkerApex/apex-atlas/blob/main/docs/sdoh-causal-benchmark.md">SDoH benchmark</a>
+    </div>
+    <div class="stats">
+      <div class="stat"><b>101</b><span>clinical modules · 14 domains</span></div>
+      <div class="stat"><b>98</b><span>modules with sourced fidelity expectations</span></div>
+      <div class="stat"><b>99.6%</b><span>metric strata within tolerance</span></div>
+      <div class="stat"><b>R4 · R5</b><span>US Core 6.1 conformant</span></div>
+      <div class="stat"><b>0</b><span>credentialed datasets used</span></div>
+    </div>
+    <p class="author">Built by <a href="https://parkerapex.com">Parker Health, Inc.</a> ·
+      Author: Vincent J. Lopez, Founder &amp; CEO</p>
+  </div>
+</header>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Proof, not promises</div>
+    <h2>Three things you can open right now</h2>
+    <p class="sub">Most synthetic-data claims are unverifiable. Atlas ships the evidence.</p>
+    <div class="cards">
+      <div class="card">
+        <div class="ico">📊</div>
+        <h3>Fidelity scorecard</h3>
+        <p>Every sourced module is generated as a focused cohort and checked against its cited public
+          target (NHANES, CDC, SEER, AHA) by the cohort harness.</p>
+        <div class="metric">554 / 556<small>metric strata within tolerance · 95/98 modules fully pass</small></div>
+        <p style="flex:0;margin:14px 0 0"><a href="https://github.com/ParkerApex/apex-atlas/blob/main/docs/fidelity-scorecard.md">Open the scorecard →</a></p>
+      </div>
+      <div class="card">
+        <div class="ico">📉</div>
+        <h3>SDoH is causal, not a tag</h3>
+        <p>Social-risk burden reduces what actually gets generated — fewer ambulatory visits, fewer
+          filled prescriptions. The relationship a model needs to learn.</p>
+        <div class="metric">−39% / −32%<small>ambulatory encounters / medication fills at high burden</small></div>
+        <p style="flex:0;margin:14px 0 0"><a href="https://github.com/ParkerApex/apex-atlas/blob/main/docs/sdoh-causal-benchmark.md">Open the benchmark →</a></p>
+      </div>
+      <div class="card">
+        <div class="ico">🧬</div>
+        <h3>A library that extends itself</h3>
+        <p><code class="inline">atlas author</code> turns a condition name into a citation-grounded draft
+          module <em>and</em> its sourced fidelity expectation — gated by clinician sign-off.</p>
+        <div class="metric">dossier → module<small>research · synthesize · validate · promote</small></div>
+        <p style="flex:0;margin:14px 0 0"><a href="https://github.com/ParkerApex/apex-atlas/blob/main/docs/authoring/research_authoring.md">How authoring works →</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">The differentiator, measured</div>
+    <h2>Patients with barriers behave like patients with barriers</h2>
+    <p class="sub">Generated with <code class="inline">--with-sdoh</code> over a chronic-disease cohort. As a
+      patient's positive SDoH screens rise, utilization falls — a gradient a tag-only generator can't produce.</p>
+    <table>
+      <thead><tr><th>Positive SDoH screens</th><th class="num">Mean ambulatory encounters</th><th class="num">vs. none</th><th class="num">Mean medication fills</th><th class="num">vs. none</th></tr></thead>
+      <tbody>
+        <tr><td>0 (none)</td><td class="num">1.24</td><td class="num">—</td><td class="num">0.45</td><td class="num">—</td></tr>
+        <tr><td>1</td><td class="num">1.04</td><td class="drop">−16%</td><td class="num">0.38</td><td class="drop">−17%</td></tr>
+        <tr><td>2</td><td class="num">0.86</td><td class="drop">−31%</td><td class="num">0.31</td><td class="drop">−32%</td></tr>
+        <tr><td>3+</td><td class="num">0.76</td><td class="drop">−39%</td><td class="num">0.31</td><td class="drop">−32%</td></tr>
+      </tbody>
+    </table>
+    <p class="sub" style="margin-top:14px">Rates calibrated to BRFSS care-avoidance and Urban Institute cost-related non-adherence figures.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap grid2">
+    <div>
+      <div class="eyebrow">What it looks like</div>
+      <h2>FHIR-native, profile-conformant output</h2>
+      <p class="sub">One transaction Bundle per patient. Every resource targets a named US Core 6.1 profile and
+        carries the HL7 <code class="inline">HTEST</code> tag so synthetic data is never mistaken for real.</p>
+      <ul class="feat">
+        <li><b>Resources:</b> Patient, Condition, Observation, Encounter, MedicationRequest, Procedure,
+          Immunization, DiagnosticReport, Coverage, Claim/EOB, MeasureReport, DocumentReference.</li>
+        <li><b>Formats:</b> FHIR R4/R5 Bundles, <code class="inline">$export</code>-aligned NDJSON, and Parquet.</li>
+        <li><b>Identity:</b> every patient gets a Parker GPX identifier under the synthetic namespace.</li>
+        <li><b>Grounded notes:</b> template or Claude-authored progress notes grounded in structured data.</li>
+      </ul>
+    </div>
+    <div>
+<pre>{
+  "resourceType": "Patient",
+  "id": "GPX-SYN-0000000042-7",
+  "meta": {
+    "profile": ["…/us-core-patient|6.1.0"],
+    "tag": [{ "code": "HTEST",
+      "display": "test health data" }]
+  },
+  "gender": "female",
+  "birthDate": "1968-04-12"
+}
+{
+  "resourceType": "Observation",
+  "meta": { "profile": ["…/us-core-blood-pressure|6.1.0"] },
+  "category": [{ "coding": [{ "code": "vital-signs" }]}],
+  "code": { "text": "Blood pressure panel" },
+  "component": [
+    { "code": { "text": "Systolic" },
+      "valueQuantity": { "value": 152, "unit": "mm[Hg]" }},
+    { "code": { "text": "Diastolic" },
+      "valueQuantity": { "value": 96, "unit": "mm[Hg]" }}
+  ]
+}</pre>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="eyebrow">Quick start</div>
+    <h2>From clone to cohort in a minute</h2>
+    <p class="sub">Apex Atlas is a Python package. Generate a validated FHIR cohort locally, then check it against
+      public norms.</p>
+<pre>git clone https://github.com/ParkerApex/apex-atlas.git &amp;&amp; cd apex-atlas
+python -m venv .venv &amp;&amp; source .venv/bin/activate
+pip install -e ".[dev]"
+
+# Generate 1,000 synthetic FHIR R4 patients with SDoH causal modeling
+atlas generate --patients 1000 --seed 42 --with-sdoh --out ./out
+
+# Validate a cohort's prevalence against its cited public targets
+atlas generate --patients 20000 --seed 42 --module hypertension --out ./cohort
+atlas validate ./cohort --cohort --module hypertension
+
+# Draft a brand-new, citation-grounded module from a research dossier
+atlas author synthesize --dossier ./glaucoma.dossier.yaml --out ./atlas-drafts</pre>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
+    <div class="note">
+      <b>What Apex Atlas is not.</b> It is not trained on, derived from, or informed by restricted datasets
+      such as MIMIC or UK Biobank. It is built exclusively from public, license-clean statistical
+      distributions published by the CDC, NIH, AHA, and ACOG. No synthetic patient corresponds to any real
+      person.
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <div class="foot-links">
+      <a href="https://github.com/ParkerApex/apex-atlas">GitHub</a>
+      <a href="https://github.com/ParkerApex/apex-atlas/blob/main/docs/why-atlas.md">Why Atlas</a>
+      <a href="https://github.com/ParkerApex/apex-atlas/blob/main/docs/module-catalog.md">Module catalog</a>
+      <a href="https://github.com/ParkerApex/apex-atlas/blob/main/docs/roadmap.md">Roadmap</a>
+      <a href="https://parkerapex.com">Parker</a>
+    </div>
+    <div>© Parker Health, Inc. · Apache 2.0 (generator) + commercial licensing available · Synthetic data only.</div>
+  </div>
+</footer>
+</body>
+</html>
