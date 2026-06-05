@@ -1,0 +1,27 @@
+module: cellulitis
+version: 0.1.0
+source:
+  name: IDSA skin and soft tissue infection guideline
+  provenance: sourced
+  url: https://academic.oup.com/cid/article/59/2/e10/2895845
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check).
+    Zero-prevalence strata omitted; Wilson 99.9% tolerance. Cellulitis management includes severity assessment
+    and antibiotic therapy.
+  citations:
+  - source: IDSA skin and soft tissue infection guideline
+    url: https://academic.oup.com/cid/article/59/2/e10/2895845
+    accessed: '2026-06-04'
+metrics:
+- id: cellulitis_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '128045006'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.02
+    18-39: 0.025
+    40-59: 0.035
+    60-99: 0.05

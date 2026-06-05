@@ -1,0 +1,28 @@
+module: osteoporosis_fracture
+version: 0.1.0
+source:
+  name: Bone Health and Osteoporosis Foundation fracture resources
+  provenance: sourced
+  url: https://www.bonehealthandosteoporosis.org/
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance. Fragility fractures are a major consequence
+    of osteoporosis and commonly require imaging and orthopedic or fracture liaison care.
+
+    '
+  citations:
+  - source: Bone Health and Osteoporosis Foundation fracture resources
+    url: https://www.bonehealthandosteoporosis.org/
+    accessed: '2026-06-04'
+metrics:
+- id: osteoporotic_fracture_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '443165006'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    18-39: 0.001
+    40-59: 0.01
+    60-99: 0.06

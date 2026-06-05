@@ -1,0 +1,41 @@
+module: hiv
+version: 0.1.0
+source:
+  name: 'CDC. HIV Surveillance Report — Diagnoses of HIV Infection in the United States and Dependent
+    Areas, 2022. Vol. 34. Published 2024.
+
+    '
+  provenance: sourced
+  url: https://www.cdc.gov/hiv/library/reports/hiv-surveillance.html
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance. 1.2 million Americans living with
+    HIV at end of 2022 (0.37%). ~35,000 new diagnoses in 2022. Male:female ratio ~3.8:1. MSM accounts
+    for 68% of new diagnoses. Black Americans disproportionately affected (~40% of new diagnoses at 13%
+    of US population).
+
+    '
+  citations:
+  - source: 'CDC. HIV Surveillance Report — Diagnoses of HIV Infection in the United States and Dependent
+      Areas, 2022. Vol. 34. Published 2024.
+
+      '
+    url: https://www.cdc.gov/hiv/library/reports/hiv-surveillance.html
+    accessed: '2026-06-04'
+metrics:
+- id: hiv_infection_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '86406008'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      18-39: 0.002
+      40-59: 0.002
+      60-99: 0.001
+    male:
+      18-39: 0.006
+      40-59: 0.007
+      60-99: 0.003

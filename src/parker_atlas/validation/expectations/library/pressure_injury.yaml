@@ -1,0 +1,27 @@
+module: pressure_injury
+version: 0.1.0
+source:
+  name: Agency for Healthcare Research and Quality pressure injury prevention resources
+  provenance: sourced
+  url: https://www.ahrq.gov/patient-safety/settings/hospital/resource/pressure-injury/index.html
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check).
+    Zero-prevalence strata omitted; Wilson 99.9% tolerance. Pressure injury prevention and care include
+    risk assessment, wound staging, and skin care.
+  citations:
+  - source: Agency for Healthcare Research and Quality pressure injury prevention resources
+    url: https://www.ahrq.gov/patient-safety/settings/hospital/resource/pressure-injury/index.html
+    accessed: '2026-06-04'
+metrics:
+- id: pressure_injury_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '399912005'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.001
+    18-39: 0.004
+    40-59: 0.012
+    60-99: 0.05

@@ -1,0 +1,42 @@
+module: inflammatory_bowel_disease
+version: 0.1.0
+source:
+  name: 'Dahlhamer JM, Zammitti EP, Ward BW, et al. Prevalence of inflammatory bowel disease among adults
+    aged ≥18 years — United States, 2015. MMWR Morb Mortal Wkly Rep. 2016;65(42):1166-1169.
+
+    '
+  provenance: sourced
+  url: https://www.cdc.gov/mmwr/volumes/65/wr/mm6542a3.htm
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance. 3.1 million US adults (1.3%) diagnosed
+    with IBD in 2015. Prevalence higher in adults aged 45+ and those with higher education. Crohn''s and
+    UC roughly equal in prevalence (~0.5-0.7% each).
+
+    '
+  citations:
+  - source: 'Dahlhamer JM, Zammitti EP, Ward BW, et al. Prevalence of inflammatory bowel disease among
+      adults aged ≥18 years — United States, 2015. MMWR Morb Mortal Wkly Rep. 2016;65(42):1166-1169.
+
+      '
+    url: https://www.cdc.gov/mmwr/volumes/65/wr/mm6542a3.htm
+    accessed: '2026-06-04'
+metrics:
+- id: inflammatory_bowel_disease_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '24526004'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      0-17: 0.001
+      18-39: 0.012
+      40-59: 0.015
+      60-99: 0.013
+    male:
+      0-17: 0.001
+      18-39: 0.012
+      40-59: 0.014
+      60-99: 0.011
