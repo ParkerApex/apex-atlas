@@ -1,0 +1,24 @@
+# Fly.io deploy for the Apex Atlas generator API.
+#   fly launch --copy-config --no-deploy   # first time (creates the app)
+#   fly deploy
+# Scale-to-zero keeps a demo cheap; the machine wakes on the first request.
+app = "apex-atlas-generator"
+primary_region = "iad"
+
+[build]
+  dockerfile = "../Dockerfile"
+
+[env]
+  PORT = "8080"
+  ATLAS_GEN_TIMEOUT = "180"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = true
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"
