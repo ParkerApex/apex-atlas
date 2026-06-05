@@ -118,6 +118,10 @@
   var $ = function (id) { return document.getElementById(id); };
   var lastNdjson = "";
 
+  // Allow ?api=<url> to prefill the backend (e.g. a hosted atlas serve).
+  var apiParam = new URLSearchParams(location.search).get("api");
+  if (apiParam) $("api").value = apiParam;
+
   function base() { return $("api").value.replace(/\/+$/, ""); }
   function setStatus(msg, cls) { var s = $("status"); s.textContent = msg; s.className = "status" + (cls ? " " + cls : ""); }
 
