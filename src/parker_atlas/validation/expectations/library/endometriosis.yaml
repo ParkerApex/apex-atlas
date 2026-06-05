@@ -1,0 +1,28 @@
+module: endometriosis
+version: 0.1.0
+source:
+  name: ACOG practice bulletin on endometriosis
+  provenance: sourced
+  url: https://www.acog.org/clinical/clinical-guidance/practice-bulletin
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check).
+    Zero-prevalence strata omitted; Wilson 99.9% tolerance. Endometriosis evaluation and treatment includes
+    pain management, hormonal therapy, and surgical evaluation in selected patients.
+  citations:
+  - source: ACOG practice bulletin on endometriosis
+    url: https://www.acog.org/clinical/clinical-guidance/practice-bulletin
+    accessed: '2026-06-04'
+metrics:
+- id: endometriosis_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '129103003'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      0-17: 0.01
+      18-39: 0.09
+      40-59: 0.05
+      60-99: 0.003

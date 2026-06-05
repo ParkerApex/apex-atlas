@@ -1,0 +1,38 @@
+module: colorectal_cancer
+version: 0.1.0
+source:
+  name: 'Siegel RL, Giaquinto AN, Jemal A. Cancer statistics, 2024. CA Cancer J Clin. 2024;74(1):12-49.
+
+    '
+  provenance: sourced
+  url: https://acsjournals.onlinelibrary.wiley.com/doi/10.3322/caac.21820
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance. CRC 2024: 154,270 new cases, 52,180
+    deaths. Third most common cancer in both sexes. Lifetime risk ~4.1% men, ~3.8% women. Rising incidence
+    in adults under 50 (now ~20% of cases). Declining overall incidence due to colonoscopy screening.
+
+    '
+  citations:
+  - source: 'Siegel RL, Giaquinto AN, Jemal A. Cancer statistics, 2024. CA Cancer J Clin. 2024;74(1):12-49.
+
+      '
+    url: https://acsjournals.onlinelibrary.wiley.com/doi/10.3322/caac.21820
+    accessed: '2026-06-04'
+metrics:
+- id: colorectal_cancer_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '363346000'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      18-44: 0.001
+      45-64: 0.005
+      65-99: 0.014
+    male:
+      18-44: 0.001
+      45-64: 0.007
+      65-99: 0.018

@@ -1,0 +1,29 @@
+module: influenza
+version: 0.1.0
+source:
+  name: CDC Disease Burden of Flu
+  provenance: sourced
+  url: https://www.cdc.gov/flu-burden/php/about/index.html
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance. CDC estimates seasonal influenza causes
+    millions of illnesses and substantial outpatient, emergency, and inpatient utilization each year.
+
+    '
+  citations:
+  - source: CDC Disease Burden of Flu
+    url: https://www.cdc.gov/flu-burden/php/about/index.html
+    accessed: '2026-06-04'
+metrics:
+- id: seasonal_influenza_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '6142004'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.08
+    18-39: 0.045
+    40-59: 0.035
+    60-99: 0.06

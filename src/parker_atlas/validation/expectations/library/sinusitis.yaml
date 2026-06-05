@@ -1,0 +1,29 @@
+module: sinusitis
+version: 0.1.0
+source:
+  name: IDSA Clinical Practice Guideline for Acute Bacterial Rhinosinusitis
+  provenance: sourced
+  url: https://academic.oup.com/cid/article/54/8/e72/367144
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance. Acute bacterial rhinosinusitis diagnosis
+    and treatment includes clinical criteria and selective antibiotic use.
+
+    '
+  citations:
+  - source: IDSA Clinical Practice Guideline for Acute Bacterial Rhinosinusitis
+    url: https://academic.oup.com/cid/article/54/8/e72/367144
+    accessed: '2026-06-04'
+metrics:
+- id: acute_sinusitis_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '36971009'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.06
+    18-39: 0.08
+    40-59: 0.07
+    60-99: 0.045

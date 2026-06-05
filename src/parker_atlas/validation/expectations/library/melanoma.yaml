@@ -1,0 +1,29 @@
+module: melanoma
+version: 0.1.0
+source:
+  name: SEER Cancer Stat Facts — Melanoma of the Skin
+  provenance: sourced
+  url: https://seer.cancer.gov/statfacts/html/melan.html
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance. SEER publishes US melanoma incidence,
+    prevalence, and survival statistics by age and sex.
+
+    '
+  citations:
+  - source: SEER Cancer Stat Facts — Melanoma of the Skin
+    url: https://seer.cancer.gov/statfacts/html/melan.html
+    accessed: '2026-06-04'
+metrics:
+- id: melanoma_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '372244006'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.0002
+    18-39: 0.003
+    40-59: 0.012
+    60-99: 0.035

@@ -1,0 +1,30 @@
+module: otitis_media
+version: 0.1.0
+source:
+  name: American Academy of Pediatrics acute otitis media guideline
+  provenance: sourced
+  url: https://publications.aap.org/pediatrics/article/131/3/e964/30989/The-Diagnosis-and-Management-of-Acute-Otitis-Media
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance. Acute otitis media is among the most
+    common pediatric infections; guideline management includes observation or antibiotic therapy depending
+    on age, severity, and diagnostic certainty.
+
+    '
+  citations:
+  - source: American Academy of Pediatrics acute otitis media guideline
+    url: https://publications.aap.org/pediatrics/article/131/3/e964/30989/The-Diagnosis-and-Management-of-Acute-Otitis-Media
+    accessed: '2026-06-04'
+metrics:
+- id: acute_otitis_media_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '65363002'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.12
+    18-39: 0.02
+    40-59: 0.01
+    60-99: 0.01

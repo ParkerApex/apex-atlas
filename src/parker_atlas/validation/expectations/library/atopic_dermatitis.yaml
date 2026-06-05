@@ -1,0 +1,35 @@
+module: atopic_dermatitis
+version: 0.1.0
+source:
+  name: 'Silverberg JI, Hanifin JM. Adult eczema prevalence and associations with asthma and other health
+    and demographic factors. J Allergy Clin Immunol. 2013.
+
+    '
+  provenance: sourced
+  url: https://pubmed.ncbi.nlm.nih.gov/23664230/
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance. US survey analysis describing adult
+    eczema prevalence and common allergic comorbidity patterns.
+
+    '
+  citations:
+  - source: 'Silverberg JI, Hanifin JM. Adult eczema prevalence and associations with asthma and other
+      health and demographic factors. J Allergy Clin Immunol. 2013.
+
+      '
+    url: https://pubmed.ncbi.nlm.nih.gov/23664230/
+    accessed: '2026-06-04'
+metrics:
+- id: atopic_dermatitis_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '24079001'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.12
+    18-39: 0.06
+    40-59: 0.045
+    60-99: 0.03

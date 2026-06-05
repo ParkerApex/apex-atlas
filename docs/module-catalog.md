@@ -15,8 +15,8 @@ launch readiness, not clinical importance.
 
 | Module | Domain | Tier | Fidelity expectation | Review status |
 |---|---|---:|---|---|
-| acne | Dermatology / Allergy | 2 | Pending | Internal technical review |
-| acute_bronchitis | Pulmonary | 2 | Pending | Internal technical review |
+| acne | Dermatology / Allergy | 2 | Sourced | Internal technical review |
+| acute_bronchitis | Pulmonary | 2 | Sourced | Internal technical review |
 | adhd | Mental health / Behavioral | 2 | Sourced | Internal technical review |
 | adult_immunizations | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
 | alcohol_use_disorder | Substance use | 2 | Sourced | Internal technical review |
@@ -24,21 +24,21 @@ launch readiness, not clinical importance.
 | alzheimers_dementia | Neurology / Cognition | 2 | Sourced | Internal technical review |
 | anxiety | Mental health / Behavioral | 2 | Sourced | Internal technical review |
 | asthma | Pulmonary | 1 | Sourced | Internal technical review |
-| atopic_dermatitis | Dermatology / Allergy | 2 | Pending | Internal technical review |
+| atopic_dermatitis | Dermatology / Allergy | 2 | Sourced | Internal technical review |
 | atrial_fibrillation | Cardiovascular | 2 | Sourced | Internal technical review |
-| autism_spectrum_disorder | Neurology / Cognition | 2 | Pending | Internal technical review |
+| autism_spectrum_disorder | Neurology / Cognition | 2 | Sourced | Internal technical review |
 | benign_prostatic_hyperplasia | Renal / Urology | 2 | Sourced | Internal technical review |
 | bipolar_disorder | Mental health / Behavioral | 2 | Sourced | Internal technical review |
-| breast_cancer | Oncology / Hematology | 2 | Pending | Internal technical review |
+| breast_cancer | Oncology / Hematology | 2 | Sourced | Internal technical review |
 | cardiomyopathy | Cardiovascular | 2 | Sourced | Internal technical review |
 | cataract | ENT / Ophthalmology | 2 | Sourced | Internal technical review |
-| cellulitis | Infectious disease | 2 | Pending | Internal technical review |
+| cellulitis | Infectious disease | 2 | Sourced | Internal technical review |
 | chronic_liver_disease | GI / Hepatology | 2 | Sourced | Internal technical review |
 | chronic_pain | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
 | ckd | Renal / Urology | 2 | Sourced | Internal technical review |
-| colorectal_cancer | Oncology / Hematology | 2 | Pending | Internal technical review |
+| colorectal_cancer | Oncology / Hematology | 2 | Sourced | Internal technical review |
 | complications | Pediatric / OB / Prevention | 1 | Sourced | Internal technical review |
-| conjunctivitis | ENT / Ophthalmology | 2 | Pending | Internal technical review |
+| conjunctivitis | ENT / Ophthalmology | 2 | Sourced | Internal technical review |
 | constipation | GI / Hepatology | 2 | Sourced | Internal technical review |
 | copd | Pulmonary | 1 | Sourced | Internal technical review |
 | covid19 | Infectious disease | 2 | Sourced | Internal technical review |
@@ -46,12 +46,12 @@ launch readiness, not clinical importance.
 | depression | Mental health / Behavioral | 1 | Sourced | Internal technical review |
 | diabetes | Metabolic / Endocrine | 1 | Sourced | Internal technical review |
 | diverticulitis | GI / Hepatology | 2 | Sourced | Internal technical review |
-| endometriosis | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
+| endometriosis | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 | epilepsy | Neurology / Cognition | 2 | Sourced | Internal technical review |
 | erectile_dysfunction | Renal / Urology | 2 | Sourced | Internal technical review |
-| fall_risk | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
+| fall_risk | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 | fibromyalgia | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
-| frailty | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
+| frailty | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 | gallbladder_disease | GI / Hepatology | 2 | Sourced | Internal technical review |
 | gerd | GI / Hepatology | 2 | Sourced | Internal technical review |
 | glaucoma | ENT / Ophthalmology | 3 | Sourced | Auto-drafted via `atlas author`; pending clinical review |
@@ -59,21 +59,21 @@ launch readiness, not clinical importance.
 | hearing_loss | ENT / Ophthalmology | 2 | Sourced | Internal technical review |
 | heart_failure | Cardiovascular | 1 | Sourced | Internal technical review |
 | hepatitis_c | Infectious disease | 2 | Sourced | Internal technical review |
-| hiv | Infectious disease | 2 | Pending | Internal technical review |
+| hiv | Infectious disease | 2 | Sourced | Internal technical review |
 | hypercholesterolemia | Cardiovascular | 1 | Sourced | Internal technical review |
 | hypertension | Cardiovascular | 1 | Sourced | Internal technical review |
 | hyperthyroidism | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
 | hypothyroidism | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
-| inflammatory_bowel_disease | GI / Hepatology | 2 | Pending | Internal technical review |
-| influenza | Infectious disease | 2 | Pending | Internal technical review |
+| inflammatory_bowel_disease | GI / Hepatology | 2 | Sourced | Internal technical review |
+| influenza | Infectious disease | 2 | Sourced | Internal technical review |
 | insomnia | Mental health / Behavioral | 2 | Sourced | Internal technical review |
 | iron_deficiency_anemia | Oncology / Hematology | 2 | Sourced | Internal technical review |
 | ischemic_heart_disease | Cardiovascular | 1 | Sourced | Internal technical review |
 | low_back_pain | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
-| lung_cancer | Oncology / Hematology | 2 | Pending | Internal technical review |
+| lung_cancer | Oncology / Hematology | 2 | Sourced | Internal technical review |
 | lupus | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
 | maternal_health | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
-| melanoma | Oncology / Hematology | 2 | Pending | Internal technical review |
+| melanoma | Oncology / Hematology | 2 | Sourced | Internal technical review |
 | menopause | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
 | metabolic_syndrome | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
 | migraine | Neurology / Cognition | 2 | Sourced | Internal technical review |
@@ -83,8 +83,8 @@ launch readiness, not clinical importance.
 | opioid_use_disorder | Substance use | 2 | Sourced | Internal technical review |
 | osteoarthritis | Musculoskeletal / Rheumatology | 2 | Pending | Internal technical review |
 | osteoporosis | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
-| osteoporosis_fracture | Musculoskeletal / Rheumatology | 2 | Pending | Internal technical review |
-| otitis_media | ENT / Ophthalmology | 2 | Pending | Internal technical review |
+| osteoporosis_fracture | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
+| otitis_media | ENT / Ophthalmology | 2 | Sourced | Internal technical review |
 | pancreatitis | GI / Hepatology | 2 | Sourced | Internal technical review |
 | parkinsons_disease | Neurology / Cognition | 2 | Sourced | Internal technical review |
 | pcos | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
@@ -92,23 +92,23 @@ launch readiness, not clinical importance.
 | peripheral_artery_disease | Cardiovascular | 2 | Sourced | Internal technical review |
 | peripheral_neuropathy | Neurology / Cognition | 2 | Sourced | Internal technical review |
 | pneumonia | Pulmonary | 2 | Sourced | Internal technical review |
-| postpartum_depression | Mental health / Behavioral | 2 | Pending | Internal technical review |
+| postpartum_depression | Mental health / Behavioral | 2 | Sourced | Internal technical review |
 | prediabetes | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
-| pressure_injury | Pediatric / OB / Prevention | 2 | Pending | Internal technical review |
-| prostate_cancer | Oncology / Hematology | 2 | Pending | Internal technical review |
+| pressure_injury | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
+| prostate_cancer | Oncology / Hematology | 2 | Sourced | Internal technical review |
 | psoriasis | Dermatology / Allergy | 2 | Sourced | Internal technical review |
 | pulmonary_embolism | Pulmonary | 2 | Sourced | Internal technical review |
 | pulmonary_hypertension | Pulmonary | 2 | Pending | Internal technical review |
 | rheumatoid_arthritis | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
-| sepsis_survivorship | Infectious disease | 2 | Pending | Internal technical review |
-| sexual_health_sti | Infectious disease | 2 | Pending | Internal technical review |
+| sepsis_survivorship | Infectious disease | 2 | Sourced | Internal technical review |
+| sexual_health_sti | Infectious disease | 2 | Sourced | Internal technical review |
 | sickle_cell | Oncology / Hematology | 2 | Pending | Internal technical review |
-| sinusitis | ENT / Ophthalmology | 2 | Pending | Internal technical review |
+| sinusitis | ENT / Ophthalmology | 2 | Sourced | Internal technical review |
 | sleep_apnea | Pulmonary | 2 | Sourced | Internal technical review |
 | stroke | Cardiovascular | 1 | Sourced | Internal technical review |
 | thyroid_nodule | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
 | tobacco_use_disorder | Substance use | 2 | Sourced | Internal technical review |
-| traumatic_brain_injury | Neurology / Cognition | 2 | Pending | Internal technical review |
+| traumatic_brain_injury | Neurology / Cognition | 2 | Sourced | Internal technical review |
 | type1_diabetes | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
 | urinary_incontinence | Renal / Urology | 2 | Sourced | Internal technical review |
 | urinary_tract_infection | Renal / Urology | 2 | Sourced | Internal technical review |
