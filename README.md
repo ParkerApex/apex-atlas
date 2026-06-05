@@ -4,10 +4,15 @@
 
 **Synthetic FHIR patient populations for AI training, integration testing, demos, and quality workflows.**
 
+[![Live site](https://img.shields.io/badge/🌐_Live_site-apex--atlas-3ba9a0.svg)](https://parkerapex.github.io/apex-atlas/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![FHIR R4](https://img.shields.io/badge/FHIR-R4-red.svg)](https://hl7.org/fhir/R4/)
 [![FHIR R5](https://img.shields.io/badge/FHIR-R5-red.svg)](https://hl7.org/fhir/R5/)
 [![US Core 6.1](https://img.shields.io/badge/US_Core-6.1-green.svg)](https://hl7.org/fhir/us/core/)
+
+### 🌐 [**Live site & quick start → parkerapex.github.io/apex-atlas**](https://parkerapex.github.io/apex-atlas/)
+
+The landing page leads with the proof artifacts and a copy-paste generator quick start. _(Goes live once the repo is public and GitHub Pages is enabled — Settings → Pages → Source: `main`, folder `/docs`.)_
 
 **Author:** Vincent J. Lopez, Founder & CEO, Parker Health, Inc.
 
