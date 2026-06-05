@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Apex Atlas — synthetic FHIR generator</title>
+<meta name="description" content="Generate synthetic FHIR patients on demand against a running Apex Atlas dev server." />
+<style>
+  :root{
+    --bg:#0b1220; --panel:#111a2e; --panel2:#0e1729; --line:#1f2d49;
+    --ink:#e8eef9; --muted:#9fb0cc; --brand:#3ba9a0; --brand2:#5b8def; --accent:#7ee0d3;
+    --good:#46c08a; --bad:#e06a6a; --warn:#e0b450;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5}
+  a{color:var(--accent)}
+  .wrap{max-width:920px;margin:0 auto;padding:28px 22px 64px}
+  .eyebrow{color:var(--brand);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px}
+  h1{font-size:clamp(26px,4vw,38px);margin:.3em 0 .2em;letter-spacing:-.02em}
+  .lede{color:var(--muted);max-width:680px}
+  .note{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--warn);
+    border-radius:10px;padding:12px 14px;color:var(--muted);font-size:13.5px;margin:18px 0}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:18px}
+  label{display:block;font-size:13px;color:var(--muted);margin:0 0 5px}
+  input[type=text],input[type=number]{width:100%;background:#06101f;border:1px solid var(--line);
+    border-radius:9px;color:var(--ink);padding:9px 11px;font-family:var(--mono);font-size:13px}
+  .row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+  .row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}
+  .flags{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px}
+  .flags label{display:flex;align-items:center;gap:7px;color:var(--ink);font-size:14px;margin:0;cursor:pointer}
+  .actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:18px}
+  button{font-weight:650;border-radius:10px;padding:11px 18px;border:1px solid var(--line);cursor:pointer;
+    background:var(--panel2);color:var(--ink)}
+  button.primary{background:linear-gradient(92deg,var(--brand),var(--brand2));color:#04121a;border:none}
+  button:disabled{opacity:.5;cursor:not-allowed}
+  .status{font-size:13.5px;color:var(--muted)}
+  .status.ok{color:var(--good)} .status.err{color:var(--bad)}
+  .results{margin-top:18px;display:none}
+  .pills{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
+  .pill{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:var(--panel2);
+    color:var(--muted)}
+  .pill b{color:var(--ink)}
+  pre{background:#06101f;border:1px solid var(--line);border-radius:12px;padding:14px;overflow:auto;
+    font-family:var(--mono);font-size:12px;line-height:1.5;color:#cfe0f7;max-height:340px}
+  .hint{font-size:12px;color:var(--muted);margin-top:5px}
+  footer{margin-top:30px;color:var(--muted);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="eyebrow">Apex Atlas</div>
+  <h1>Synthetic FHIR generator</h1>
+  <p class="lede">Generate synthetic FHIR R4 patients on demand against a running Apex Atlas dev server.
+    Everything here is synthetic — no real patient is depicted.</p>
+
+  <div class="note">
+    <b>Requires a running API.</b> Start the dev server locally and point the field below at it:
+    <code>pip install -e ".[dev]" &amp;&amp; atlas serve --port 8080</code>. The browser calls it directly
+    (CORS is enabled). This is a development server, not a hosted service.
+  </div>
+
+  <div class="card">
+    <div class="row3">
+      <div>
+        <label for="api">API base URL</label>
+        <input type="text" id="api" value="http://127.0.0.1:8080" />
+        <div class="hint" id="apistatus">Not checked yet.</div>
+      </div>
+      <div>
+        <label for="patients">Patients (max 5000)</label>
+        <input type="number" id="patients" value="100" min="1" max="5000" />
+      </div>
+      <div>
+        <label for="seed">Seed</label>
+        <input type="number" id="seed" value="42" min="0" />
+      </div>
+    </div>
+    <div style="margin-top:14px">
+      <label for="modules">Modules (comma-separated; blank = default set)</label>
+      <input type="text" id="modules" list="modulelist" placeholder="hypertension,diabetes,depression" />
+      <datalist id="modulelist"></datalist>
+      <div class="hint" id="moduleshint">Connect to the API to load the module list.</div>
+    </div>
+    <div class="flags">
+      <label><input type="checkbox" id="sdoh" checked /> SDoH causal overlay</label>
+      <label><input type="checkbox" id="coverage" /> Payer coverage</label>
+      <label><input type="checkbox" id="measures" /> Quality MeasureReports</label>
+      <label><input type="checkbox" id="notes" /> Clinical notes</label>
+    </div>
+    <div class="actions">
+      <button class="primary" id="gen">Generate</button>
+      <button id="check">Check connection</button>
+      <span class="status" id="status"></span>
+    </div>
+  </div>
+
+  <div class="results card" id="results">
+    <div><b id="summary"></b></div>
+    <div class="pills" id="pills"></div>
+    <div class="actions" style="margin-top:0">
+      <button class="primary" id="download">Download .ndjson</button>
+    </div>
+    <p class="hint">Preview (first 12 resources):</p>
+    <pre id="preview"></pre>
+  </div>
+
+  <footer>
+    Static page; no data leaves your machine beyond the API you point it at.
+    See <a href="https://github.com/ParkerApex/apex-atlas/blob/main/docs/api.md">the API docs</a> ·
+    <a href="./index.html">back to overview</a>.
+  </footer>
+</div>
+
+<script>
+(function () {
+  var $ = function (id) { return document.getElementById(id); };
+  var lastNdjson = "";
+
+  function base() { return $("api").value.replace(/\/+$/, ""); }
+  function setStatus(msg, cls) { var s = $("status"); s.textContent = msg; s.className = "status" + (cls ? " " + cls : ""); }
+
+  function qs() {
+    var p = new URLSearchParams();
+    p.set("patients", $("patients").value || "100");
+    p.set("seed", $("seed").value || "0");
+    var mods = $("modules").value.trim();
+    if (mods) p.set("modules", mods);
+    ["sdoh", "coverage", "measures", "notes"].forEach(function (f) {
+      if ($(f).checked) p.set(f, "1");
+    });
+    return p.toString();
+  }
+
+  async function check() {
+    $("apistatus").textContent = "Checking…";
+    try {
+      var r = await fetch(base() + "/health");
+      var j = await r.json();
+      $("apistatus").innerHTML = "Connected — Atlas v" + (j.version || "?") + " ✓";
+      loadModules();
+    } catch (e) {
+      $("apistatus").textContent = "Cannot reach API. Is `atlas serve` running at this URL?";
+    }
+  }
+
+  async function loadModules() {
+    try {
+      var r = await fetch(base() + "/modules");
+      var j = await r.json();
+      var dl = $("modulelist"); dl.innerHTML = "";
+      (j.modules || []).forEach(function (m) {
+        var o = document.createElement("option"); o.value = m; dl.appendChild(o);
+      });
+      $("moduleshint").textContent = j.count + " modules available (type to autocomplete; blank = default set).";
+    } catch (e) { /* ignore */ }
+  }
+
+  function renderResults(text) {
+    lastNdjson = text;
+    var lines = text.split("\n").filter(function (l) { return l.trim(); });
+    var counts = {};
+    lines.forEach(function (l) {
+      try { var rt = JSON.parse(l).resourceType || "?"; counts[rt] = (counts[rt] || 0) + 1; } catch (e) {}
+    });
+    var patients = counts["Patient"] || 0;
+    $("summary").textContent = patients + " patients · " + lines.length + " FHIR resources";
+    var pills = $("pills"); pills.innerHTML = "";
+    Object.keys(counts).sort(function (a, b) { return counts[b] - counts[a]; }).forEach(function (k) {
+      var s = document.createElement("span"); s.className = "pill";
+      s.innerHTML = k + " <b>" + counts[k] + "</b>"; pills.appendChild(s);
+    });
+    $("preview").textContent = lines.slice(0, 12).map(function (l) {
+      try { return JSON.stringify(JSON.parse(l)); } catch (e) { return l; }
+    }).join("\n");
+    $("results").style.display = "block";
+  }
+
+  async function generate() {
+    $("gen").disabled = true;
+    setStatus("Generating…");
+    var t0 = Date.now();
+    try {
+      var r = await fetch(base() + "/generate?" + qs(), { method: "POST" });
+      if (!r.ok) { var j = await r.json().catch(function(){return {};}); throw new Error(j.error || ("HTTP " + r.status)); }
+      var text = await r.text();
+      renderResults(text);
+      setStatus("Done in " + ((Date.now() - t0) / 1000).toFixed(1) + "s.", "ok");
+    } catch (e) {
+      setStatus("Failed: " + e.message + " — is `atlas serve` running and reachable?", "err");
+    } finally {
+      $("gen").disabled = false;
+    }
+  }
+
+  function download() {
+    var blob = new Blob([lastNdjson], { type: "application/fhir+ndjson" });
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "atlas-cohort.ndjson";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  }
+
+  $("gen").addEventListener("click", generate);
+  $("check").addEventListener("click", check);
+  $("download").addEventListener("click", download);
+  check();
+})();
+</script>
+</body>
+</html>

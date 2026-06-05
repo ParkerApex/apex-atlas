@@ -64,6 +64,18 @@ class TestBasicEndpoints:
             _get(f"{server}/nope")
         assert exc.value.code == 404
 
+    def test_cors_headers_present(self, server):
+        # A browser page on another origin must be allowed to call the API.
+        _, headers, _ = _get(f"{server}/health")
+        assert headers.get("Access-Control-Allow-Origin") == "*"
+
+    def test_cors_preflight(self, server):
+        req = urllib.request.Request(f"{server}/generate", method="OPTIONS")
+        with urllib.request.urlopen(req, timeout=10) as r:
+            assert r.status == 204
+            assert r.headers.get("Access-Control-Allow-Origin") == "*"
+            assert "POST" in r.headers.get("Access-Control-Allow-Methods", "")
+
 
 class TestSyncGenerate:
     def test_generate_returns_ndjson_patients(self, server):

@@ -59,3 +59,7 @@ This first cut is the substrate for the roadmap's on-demand generation milestone
 a hardened, authenticated, fully Bulk-Data-conformant `$export` service plus a
 browser UI that calls it — turning the [landing page](./index.html) "try it"
 experience into live generation. See [`roadmap.md`](./roadmap.md).
+
+## Browser generator UI
+
+[`docs/generator.html`](./generator.html) is a static page that calls this server from the browser (CORS is enabled). Run `atlas serve`, open the page (via GitHub Pages, htmlpreview, or just open the file locally), point the "API base URL" field at your server, and generate cohorts interactively with a download button. It uses only `GET /health`, `GET /modules`, and `POST /generate`.
