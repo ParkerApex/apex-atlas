@@ -63,3 +63,7 @@ experience into live generation. See [`roadmap.md`](./roadmap.md).
 ## Browser generator UI
 
 [`docs/generator.html`](./generator.html) is a static page that calls this server from the browser (CORS is enabled). Run `atlas serve`, open the page (via GitHub Pages, htmlpreview, or just open the file locally), point the "API base URL" field at your server, and generate cohorts interactively with a download button. It uses only `GET /health`, `GET /modules`, and `POST /generate`.
+
+## Deploying it
+
+To host the API behind the web generator (Docker / Fly / Render / Cloud Run), see [`deploy.md`](./deploy.md). `atlas serve` honors `$PORT` and binds `0.0.0.0` in a container; CORS is enabled so a static page can call it.

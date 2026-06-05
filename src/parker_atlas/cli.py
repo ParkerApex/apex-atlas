@@ -1941,8 +1941,8 @@ def author_research_cmd(
 
 @app.command()
 def serve(
-    host: Annotated[str, typer.Option("--host", help="Interface to bind.")] = "127.0.0.1",
-    port: Annotated[int, typer.Option("--port", "-p", help="Port to listen on.")] = 8080,
+    host: Annotated[str, typer.Option("--host", help="Interface to bind (use 0.0.0.0 in a container).")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port", "-p", help="Port to listen on. Defaults to $PORT if set, else 8080.")] = 0,
 ) -> None:
     """Run the Apex Atlas dev API server (HTTP generation + FHIR Bulk Data $export).
 
@@ -1950,9 +1950,16 @@ def serve(
     GET /health, GET /modules, GET /fhir/metadata, POST /generate (synchronous
     NDJSON), GET /fhir/$export (async kickoff) → poll GET /jobs/<id> → download
     GET /jobs/<id>/<Type>.ndjson. Patient count is capped per request.
+
+    For container/PaaS deploys, bind `--host 0.0.0.0`; the port defaults to the
+    platform-injected `$PORT` when `--port` is not given.
     """
+    import os as _os
+
     from parker_atlas.server import serve as _serve
 
+    if port == 0:
+        port = int(_os.environ.get("PORT", "8080"))
     httpd = _serve(host, port)
     bound = httpd.server_address
     console.print(

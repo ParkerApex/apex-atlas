@@ -1,0 +1,14 @@
+# Render deploy (Blueprint) for the Apex Atlas generator API.
+# New → Blueprint → point at this repo. Render builds the Dockerfile and routes
+# HTTPS traffic to the service; it injects $PORT, which `atlas serve` honors.
+services:
+  - type: web
+    name: apex-atlas-generator
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    healthCheckPath: /health
+    autoDeploy: false
+    envVars:
+      - key: ATLAS_GEN_TIMEOUT
+        value: "180"

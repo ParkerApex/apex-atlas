@@ -30,6 +30,7 @@ sdoh / coverage / measures / notes (bool: "1"/"true").
 from __future__ import annotations
 
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -46,6 +47,9 @@ from parker_atlas.modules.runtime import list_bundled_modules
 
 MAX_PATIENTS = 5000
 DEFAULT_PATIENTS = 100
+# Per-request generation timeout (seconds) so one request can't hang a hosted
+# instance. Overridable via ATLAS_GEN_TIMEOUT.
+GEN_TIMEOUT = int(os.environ.get("ATLAS_GEN_TIMEOUT", "180"))
 
 # job_id -> {"status": "in-progress"|"complete"|"error", "dir": Path|None,
 #            "manifest": dict|None, "error": str|None, "request": str}
@@ -78,7 +82,10 @@ def _generate_args(qs: dict, out: Path) -> tuple[list[str], str]:
 
 def _run_generate(qs: dict, out: Path) -> None:
     argv, _ = _generate_args(qs, out)
-    res = subprocess.run(argv, capture_output=True, text=True)
+    try:
+        res = subprocess.run(argv, capture_output=True, text=True, timeout=GEN_TIMEOUT)
+    except subprocess.TimeoutExpired as exc:
+        raise RuntimeError(f"generation timed out after {GEN_TIMEOUT}s") from exc
     if res.returncode != 0:
         raise RuntimeError(res.stderr[-500:] or "generation failed")
 
