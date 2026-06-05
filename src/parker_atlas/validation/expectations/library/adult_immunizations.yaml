@@ -1,0 +1,113 @@
+module: adult_immunizations
+version: 0.1.0
+source:
+  name: 'CDC National Immunization Survey — Adult (NIS-Adult) 2023 and Flu Vaccination Coverage 2022-23
+    Season.
+
+    '
+  provenance: sourced
+  url: https://www.cdc.gov/vaccines/imz-managers/coverage/adultvaxview/index.html
+  note: 'Coverage/visit/episode rates mirror the module''s declared, sourced prevalence (one metric per
+    ungated condition; gated sub-conditions are conditional and excluded). Zero strata omitted; Wilson
+    99.9%. 2022-23 flu coverage: adults 18-64 ~47%, adults 65+ ~75%. Pneumococcal coverage (65+): ~72%.
+    Shingles (65+): ~40% ≥1 dose, ~36% series. Tdap (adults 19-64): ~32% in past 10 years. COVID-19 updated
+    booster uptake (65+): ~47% as of early 2024.
+
+    '
+  citations:
+  - source: 'CDC National Immunization Survey — Adult (NIS-Adult) 2023 and Flu Vaccination Coverage 2022-23
+      Season.
+
+      '
+    url: https://www.cdc.gov/vaccines/imz-managers/coverage/adultvaxview/index.html
+    accessed: '2026-06-04'
+metrics:
+- id: adult_flu_standard_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '170427009'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    18-64: 0.47
+- id: adult_flu_highdose_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '170427009'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    65-99: 0.75
+- id: pneumococcal_vaccine_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '394678003'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    50-64: 0.12
+    65-99: 0.72
+- id: shingles_vaccine_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '428191000124101'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    50-64: 0.3
+    65-99: 0.4
+- id: tdap_adult_booster_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '312868008'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    19-64: 0.32
+    65-99: 0.15
+- id: rsv_adult_vaccine_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '170425001'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    60-99: 0.24
+- id: covid19_adult_booster_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '1119349007'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    18-64: 0.25
+    65-99: 0.47
+- id: hpv_adult_series_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '761841000'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      18-26: 0.58
+      27-45: 0.15
+    male:
+      18-26: 0.5
+      27-45: 0.1

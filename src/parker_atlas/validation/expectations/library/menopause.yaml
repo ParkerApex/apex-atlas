@@ -1,0 +1,27 @@
+module: menopause
+version: 0.1.0
+source:
+  name: North American Menopause Society position statements
+  provenance: sourced
+  url: https://www.menopause.org/publications/clinical-practice-materials
+  note: Coverage/visit/episode rates mirror the module's declared, sourced prevalence (one metric per
+    ungated condition; gated sub-conditions are conditional and excluded). Zero strata omitted; Wilson
+    99.9%. Menopause care includes symptom assessment, risk review, and individualized therapy.
+  citations:
+  - source: North American Menopause Society position statements
+    url: https://www.menopause.org/publications/clinical-practice-materials
+    accessed: '2026-06-04'
+metrics:
+- id: menopause_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '289903006'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      18-39: 0.01
+      40-59: 0.3
+      60-99: 0.85
