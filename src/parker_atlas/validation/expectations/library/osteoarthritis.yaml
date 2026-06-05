@@ -1,0 +1,38 @@
+module: osteoarthritis
+version: 0.1.0
+source:
+  name: 'CDC Osteoarthritis Fact Sheet — National Statistics, 2021.
+
+    '
+  provenance: sourced
+  url: https://www.cdc.gov/arthritis/basics/osteoarthritis.htm
+  note: 'Targets mirror the module''s declared, sourced prevalence. Zero strata omitted; Wilson 99.9%.
+    32.5 million US adults have OA (2021). Prevalence: ~2% ages 18-44, ~18% ages 45-64, ~40% ages 65+.
+    Women slightly more affected overall, particularly knee OA. OA is the leading cause of disability
+    among US adults.
+
+    '
+  citations:
+  - source: 'CDC Osteoarthritis Fact Sheet — National Statistics, 2021.
+
+      '
+    url: https://www.cdc.gov/arthritis/basics/osteoarthritis.htm
+    accessed: '2026-06-04'
+metrics:
+- id: osteoarthritis_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '396275006'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      18-44: 0.02
+      45-64: 0.195
+      65-99: 0.43
+    male:
+      18-44: 0.018
+      45-64: 0.165
+      65-99: 0.38
