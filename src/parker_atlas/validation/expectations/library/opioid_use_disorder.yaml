@@ -1,0 +1,42 @@
+module: opioid_use_disorder
+version: 0.1.0
+source:
+  name: 'SAMHSA. Key Substance Use and Mental Health Indicators in the United States: Results from the
+    2022 National Survey on Drug Use and Health. HHS Publication No. PEP23-07-01-006. Rockville, MD: SAMHSA,
+    2023.
+
+    '
+  provenance: sourced
+  url: https://www.samhsa.gov/data/sites/default/files/reports/rpt42731/2022-nsduh-nnr.pdf
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. 6.1 million
+    US adults had past-year OUD in 2022 (2.2%). Male ~2.5%, female ~1.9%. Treatment gap: ~4.8 million
+    received no OUD treatment. Heroin use declining; illicit fentanyl now primary OUD driver.
+
+    '
+  citations:
+  - source: 'SAMHSA. Key Substance Use and Mental Health Indicators in the United States: Results from
+      the 2022 National Survey on Drug Use and Health. HHS Publication No. PEP23-07-01-006. Rockville,
+      MD: SAMHSA, 2023.
+
+      '
+    url: https://www.samhsa.gov/data/sites/default/files/reports/rpt42731/2022-nsduh-nnr.pdf
+    accessed: '2026-06-04'
+metrics:
+- id: opioid_use_disorder_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '75544000'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      18-39: 0.019
+      40-59: 0.018
+      60-99: 0.005
+    male:
+      18-39: 0.025
+      40-59: 0.024
+      60-99: 0.007

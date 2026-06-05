@@ -1,0 +1,41 @@
+module: tobacco_use_disorder
+version: 0.1.0
+source:
+  name: 'Cornelius ME, Loretan CG, Jamal A, et al. Tobacco Product Use Among Adults — United States, 2021.
+    MMWR Morb Mortal Wkly Rep. 2023;72(18):475-483.
+
+    '
+  provenance: sourced
+  url: https://www.cdc.gov/mmwr/volumes/72/wr/mm7218a1.htm
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. 11.5%
+    of US adults (~28.3 million) were current cigarette smokers in 2021. Prevalence by age: 18-24 ~7.3%,
+    25-44 ~15.7%, 45-64 ~15.6%, 65+ ~8.9%. Male ~13.1%, female ~10.1%. Rates highest in adults with serious
+    psychological distress (34.2%).
+
+    '
+  citations:
+  - source: 'Cornelius ME, Loretan CG, Jamal A, et al. Tobacco Product Use Among Adults — United States,
+      2021. MMWR Morb Mortal Wkly Rep. 2023;72(18):475-483.
+
+      '
+    url: https://www.cdc.gov/mmwr/volumes/72/wr/mm7218a1.htm
+    accessed: '2026-06-04'
+metrics:
+- id: current_tobacco_smoker_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '56294008'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      18-39: 0.115
+      40-59: 0.14
+      60-99: 0.08
+    male:
+      18-39: 0.15
+      40-59: 0.175
+      60-99: 0.1

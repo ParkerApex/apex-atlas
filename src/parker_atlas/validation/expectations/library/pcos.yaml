@@ -1,0 +1,28 @@
+module: pcos
+version: 0.1.0
+source:
+  name: Endocrine Society PCOS clinical practice guideline
+  provenance: sourced
+  url: https://academic.oup.com/jcem/article/98/12/4565/2833703
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check).
+    Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. PCOS care includes
+    reproductive, hyperandrogenic, and metabolic risk assessment.
+  citations:
+  - source: Endocrine Society PCOS clinical practice guideline
+    url: https://academic.oup.com/jcem/article/98/12/4565/2833703
+    accessed: '2026-06-04'
+metrics:
+- id: polycystic_ovary_syndrome_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '69878008'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      0-17: 0.015
+      18-39: 0.08
+      40-59: 0.035
+      60-99: 0.002

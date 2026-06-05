@@ -65,7 +65,7 @@ Apex Atlas is not trained on, derived from, or in any way informed by restricted
 | `atlas modules`              | ✅ Implemented        | List and inspect bundled modules |
 | Module runtime               | ✅ Implemented        | Time-aware emits, onset dating, cross-module `requires`, progressions |
 | Module library               | ✅ 101 modules        | 100-module launch library + `glaucoma` (first `atlas author`-drafted, Tier 3). CV · metabolic/endocrine · pulmonary · GI/hepatology · renal/urology · MSK/rheum · mental health · SUD · neuro/cognition · oncology/heme · ID · pediatric/OB/prevention · derm/allergy · ENT/ophthalmology |
-| Fidelity expectations        | ✅ 49 modules         | 18 launch-hardened sourced expectations available through `atlas validate --gtm` |
+| Fidelity expectations        | ✅ 68 modules         | 18 launch-hardened sourced expectations available through `atlas validate --gtm` |
 | Cross-module dependencies    | ✅ Implemented        | `requires: module:cond_id` gates cross-module comorbidity chains |
 | State-machine progressions   | ✅ One-hop            | 13+ chains live: HTN→CKD/HF/stroke, DM→CKD/retinopathy, AFib→stroke, CKD→ESRD, NAFLD→cirrhosis, pregnancy→GDM/preeclampsia/PPD, SCD→VOC, T1D→DKA |
 | SDoH causal overlay          | ✅ Implemented        | `--with-sdoh`: BRFSS-grounded sampling; encounter + medication adherence modifiers; Gravity Project SDOHCC Observations |

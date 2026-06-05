@@ -1,0 +1,35 @@
+module: fibromyalgia
+version: 0.1.0
+source:
+  name: CDC Fibromyalgia
+  provenance: sourced
+  url: https://www.cdc.gov/arthritis/basics/fibromyalgia.htm
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. Fibromyalgia
+    is a chronic pain condition associated with fatigue, sleep disturbance, and functional impairment.
+
+    '
+  citations:
+  - source: CDC Fibromyalgia
+    url: https://www.cdc.gov/arthritis/basics/fibromyalgia.htm
+    accessed: '2026-06-04'
+metrics:
+- id: fibromyalgia_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '203082005'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      0-17: 0.005
+      18-39: 0.03
+      40-59: 0.045
+      60-99: 0.035
+    male:
+      0-17: 0.003
+      18-39: 0.01
+      40-59: 0.018
+      60-99: 0.015

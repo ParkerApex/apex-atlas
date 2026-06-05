@@ -1,0 +1,27 @@
+module: pancreatitis
+version: 0.1.0
+source:
+  name: American College of Gastroenterology acute pancreatitis guideline
+  provenance: sourced
+  url: https://gi.org/guideline/acute-pancreatitis/
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check).
+    Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. Acute pancreatitis
+    diagnosis and management includes abdominal pain assessment, enzymes, imaging, and supportive care.
+  citations:
+  - source: American College of Gastroenterology acute pancreatitis guideline
+    url: https://gi.org/guideline/acute-pancreatitis/
+    accessed: '2026-06-04'
+metrics:
+- id: acute_pancreatitis_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '75694006'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.001
+    18-39: 0.004
+    40-59: 0.01
+    60-99: 0.015
