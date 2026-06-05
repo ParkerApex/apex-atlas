@@ -1,0 +1,36 @@
+module: lupus
+version: 0.1.0
+source:
+  name: CDC Lupus
+  provenance: sourced
+  url: https://www.cdc.gov/lupus/
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. Lupus
+    is an autoimmune disease more common among women and certain racial/ethnic groups; rheumatology management
+    includes laboratory monitoring and immunomodulatory therapy.
+
+    '
+  citations:
+  - source: CDC Lupus
+    url: https://www.cdc.gov/lupus/
+    accessed: '2026-06-04'
+metrics:
+- id: systemic_lupus_erythematosus_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '55464009'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      0-17: 0.001
+      18-39: 0.006
+      40-59: 0.008
+      60-99: 0.005
+    male:
+      0-17: 0.0003
+      18-39: 0.001
+      40-59: 0.002
+      60-99: 0.001

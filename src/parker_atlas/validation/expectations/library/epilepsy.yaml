@@ -1,0 +1,29 @@
+module: epilepsy
+version: 0.1.0
+source:
+  name: CDC Epilepsy Data and Statistics
+  provenance: sourced
+  url: https://www.cdc.gov/epilepsy/data-research/index.html
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. CDC reports
+    epilepsy affects millions of people in the United States, including both adults and children.
+
+    '
+  citations:
+  - source: CDC Epilepsy Data and Statistics
+    url: https://www.cdc.gov/epilepsy/data-research/index.html
+    accessed: '2026-06-04'
+metrics:
+- id: epilepsy_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '84757009'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.008
+    18-39: 0.01
+    40-59: 0.011
+    60-99: 0.015

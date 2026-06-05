@@ -1,0 +1,42 @@
+module: rheumatoid_arthritis
+version: 0.1.0
+source:
+  name: 'Helmick CG, Felson DT, Lawrence RC, et al. Estimates of the prevalence of arthritis and other
+    rheumatic conditions in the United States. Arthritis Rheum. 2008;58(1):15-25. (CDC 2021 update applies
+    similar estimates; RA prevalence ~0.5-1.0% US adults.)
+
+    '
+  provenance: sourced
+  url: https://onlinelibrary.wiley.com/doi/10.1002/art.23177
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. RA prevalence
+    ~0.6% US adults (1.3-1.5 million). Female:male ~2.5:1. Peak incidence 40-60 years. Excess mortality
+    ~1.5-2x vs general population, primarily cardiovascular.
+
+    '
+  citations:
+  - source: 'Helmick CG, Felson DT, Lawrence RC, et al. Estimates of the prevalence of arthritis and other
+      rheumatic conditions in the United States. Arthritis Rheum. 2008;58(1):15-25. (CDC 2021 update applies
+      similar estimates; RA prevalence ~0.5-1.0% US adults.)
+
+      '
+    url: https://onlinelibrary.wiley.com/doi/10.1002/art.23177
+    accessed: '2026-06-04'
+metrics:
+- id: rheumatoid_arthritis_prevalence_by_sex_and_age
+  kind: conditional_prevalence
+  condition_code: '69896004'
+  condition_system: http://snomed.info/sct
+  stratify_by: sex_and_age
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    female:
+      18-39: 0.003
+      40-59: 0.011
+      60-99: 0.016
+    male:
+      18-39: 0.001
+      40-59: 0.004
+      60-99: 0.006

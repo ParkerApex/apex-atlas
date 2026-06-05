@@ -1,0 +1,30 @@
+module: valvular_heart_disease
+version: 0.1.0
+source:
+  name: 2020 ACC/AHA Guideline for the Management of Patients With Valvular Heart Disease
+  provenance: sourced
+  url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000000923
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. Guideline
+    covers evaluation and management of adult valvular disease, including echocardiographic assessment
+    and symptom-driven care.
+
+    '
+  citations:
+  - source: 2020 ACC/AHA Guideline for the Management of Patients With Valvular Heart Disease
+    url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000000923
+    accessed: '2026-06-04'
+metrics:
+- id: valvular_heart_disease_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '368009'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.002
+    18-39: 0.006
+    40-59: 0.025
+    60-99: 0.11

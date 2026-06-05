@@ -1,0 +1,29 @@
+module: parkinsons_disease
+version: 0.1.0
+source:
+  name: Parkinson's Foundation statistics
+  provenance: sourced
+  url: https://www.parkinson.org/understanding-parkinsons/statistics
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. Parkinson''s
+    disease prevalence increases strongly with age and is a major neurodegenerative condition in older
+    adults.
+
+    '
+  citations:
+  - source: Parkinson's Foundation statistics
+    url: https://www.parkinson.org/understanding-parkinsons/statistics
+    accessed: '2026-06-04'
+metrics:
+- id: parkinsons_disease_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '49049000'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    18-39: 0.001
+    40-59: 0.005
+    60-99: 0.025

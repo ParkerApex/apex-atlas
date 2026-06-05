@@ -1,0 +1,29 @@
+module: venous_thromboembolism
+version: 0.1.0
+source:
+  name: CDC Venous Thromboembolism
+  provenance: sourced
+  url: https://www.cdc.gov/ncbddd/dvt/
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. CDC describes
+    VTE as common and potentially life-threatening, with hundreds of thousands of US cases annually.
+
+    '
+  citations:
+  - source: CDC Venous Thromboembolism
+    url: https://www.cdc.gov/ncbddd/dvt/
+    accessed: '2026-06-04'
+metrics:
+- id: venous_thromboembolism_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '111293003'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.001
+    18-39: 0.003
+    40-59: 0.008
+    60-99: 0.02

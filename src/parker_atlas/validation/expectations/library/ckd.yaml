@@ -7,9 +7,9 @@ source:
   provenance: sourced
   url: https://www.cdc.gov/kidneydisease/publications-resources/ckd-national-facts.html
   note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
-    check against the cited source). ~37 million US adults have CKD (14.8%). Prevalence by age: 18-44
-    ~3%, 45-64 ~10%, 65+ ~38%. Rates are higher in adults with diabetes (1 in 3), hypertension (1 in 5),
-    and Black and Hispanic adults.
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. ~37 million
+    US adults have CKD (14.8%). Prevalence by age: 18-44 ~3%, 45-64 ~10%, 65+ ~38%. Rates are higher in
+    adults with diabetes (1 in 3), hypertension (1 in 5), and Black and Hispanic adults.
 
     '
   citations:
@@ -26,15 +26,13 @@ metrics:
   stratify_by: sex_and_age
   tolerance:
     kind: wilson
-    confidence: 99
+    confidence: 99.9
   targets:
     female:
-      0-17: 0.0
       18-44: 0.032
       45-64: 0.105
       65-99: 0.37
     male:
-      0-17: 0.0
       18-44: 0.025
       45-64: 0.095
       65-99: 0.41

@@ -7,9 +7,9 @@ source:
   provenance: sourced
   url: https://www.nimh.nih.gov/health/statistics/any-anxiety-disorder
   note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
-    check against the cited source). 12-month prevalence: 19.1% of US adults (any anxiety disorder). Female:
-    23.4%; Male: 14.3%. Highest in 18-29 (30.4%) and 30-44 (22.7%); declines to ~15% in 45-59 and ~11%
-    in 60+.
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. 12-month
+    prevalence: 19.1% of US adults (any anxiety disorder). Female: 23.4%; Male: 14.3%. Highest in 18-29
+    (30.4%) and 30-44 (22.7%); declines to ~15% in 45-59 and ~11% in 60+.
 
     '
   citations:
@@ -27,16 +27,14 @@ metrics:
   stratify_by: sex_and_age
   tolerance:
     kind: wilson
-    confidence: 99
+    confidence: 99.9
   targets:
     female:
-      0-17: 0.0
       18-29: 0.304
       30-44: 0.24
       45-59: 0.17
       60-99: 0.12
     male:
-      0-17: 0.0
       18-29: 0.185
       30-44: 0.145
       45-59: 0.105

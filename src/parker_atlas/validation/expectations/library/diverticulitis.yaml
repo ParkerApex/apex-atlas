@@ -1,0 +1,27 @@
+module: diverticulitis
+version: 0.1.0
+source:
+  name: American Gastroenterological Association clinical practice update on diverticulitis
+  provenance: sourced
+  url: https://www.gastrojournal.org/article/S0016-5085(20)35512-8/fulltext
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check).
+    Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. Diverticulitis
+    care includes diagnosis, selective antibiotics, and follow-up colon evaluation when indicated.
+  citations:
+  - source: American Gastroenterological Association clinical practice update on diverticulitis
+    url: https://www.gastrojournal.org/article/S0016-5085(20)35512-8/fulltext
+    accessed: '2026-06-04'
+metrics:
+- id: diverticulitis_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '307496006'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.001
+    18-39: 0.01
+    40-59: 0.035
+    60-99: 0.06
