@@ -95,13 +95,36 @@ class AtlasHandler(BaseHTTPRequestHandler):
     server_version = f"AtlasDevServer/{__version__}"
 
     # -- helpers --------------------------------------------------------------
+    def _cors_headers(self) -> None:
+        # Permissive CORS so a static page (landing page / generator UI) served
+        # from any origin can call this dev server. Dev-only convenience.
+        self.send_header("Access-Control-Allow-Origin", "*")
+        self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+        self.send_header("Access-Control-Allow-Headers", "Content-Type")
+        self.send_header("Access-Control-Expose-Headers", "Content-Location")
+
+    def do_OPTIONS(self) -> None:  # noqa: N802 - CORS preflight
+        self.send_response(204)
+        self._cors_headers()
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
     def _send_json(self, code: int, payload: dict, extra_headers: dict | None = None) -> None:
         body = json.dumps(payload, indent=2).encode("utf-8")
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
+        self._cors_headers()
         for k, v in (extra_headers or {}).items():
             self.send_header(k, v)
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _send_ndjson(self, body: bytes) -> None:
+        self.send_response(200)
+        self.send_header("Content-Type", "application/fhir+ndjson")
+        self.send_header("Content-Length", str(len(body)))
+        self._cors_headers()
         self.end_headers()
         self.wfile.write(body)
 
@@ -155,11 +178,7 @@ class AtlasHandler(BaseHTTPRequestHandler):
             for f in _ndjson_files(tmp):
                 lines.extend(f.read_text(encoding="utf-8").splitlines())
             body = ("\n".join(lines) + "\n").encode("utf-8")
-            self.send_response(200)
-            self.send_header("Content-Type", "application/fhir+ndjson")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            self._send_ndjson(body)
         except (RuntimeError, ValueError) as exc:
             self._send_json(400, {"error": str(exc)})
         finally:
@@ -212,12 +231,7 @@ class AtlasHandler(BaseHTTPRequestHandler):
             target = (Path(job["dir"]) / parts[3]).resolve()
             if Path(job["dir"]).resolve() not in target.parents or not target.is_file():
                 return self._send_json(404, {"error": "no such file"})
-            body = target.read_bytes()
-            self.send_response(200)
-            self.send_header("Content-Type", "application/fhir+ndjson")
-            self.send_header("Content-Length", str(len(body)))
-            self.end_headers()
-            self.wfile.write(body)
+            self._send_ndjson(target.read_bytes())
             return
 
         # Status / manifest

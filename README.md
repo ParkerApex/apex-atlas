@@ -14,6 +14,10 @@
 
 The landing page leads with the proof artifacts and a copy-paste generator quick start. _(Goes live once the repo is public and GitHub Pages is enabled — Settings → Pages → Source: `main`, folder `/docs`.)_
 
+**Interim preview (once the repo is public, no setup needed):**
+[landing page](https://htmlpreview.github.io/?https://github.com/ParkerApex/apex-atlas/blob/main/docs/index.html) ·
+[🧪 generator UI](https://htmlpreview.github.io/?https://github.com/ParkerApex/apex-atlas/blob/main/docs/generator.html) — point it at a local `atlas serve`.
+
 **Author:** Vincent J. Lopez, Founder & CEO, Parker Health, Inc.
 
 </div>
