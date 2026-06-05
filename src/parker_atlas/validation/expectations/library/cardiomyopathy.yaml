@@ -1,0 +1,30 @@
+module: cardiomyopathy
+version: 0.1.0
+source:
+  name: 2022 AHA/ACC/HFSA Guideline for the Management of Heart Failure
+  provenance: sourced
+  url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001063
+  note: 'Targets mirror the module''s declared, sourced prevalence (pipeline-correctness + calibration
+    check). Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. Cardiomyopathy
+    evaluation commonly includes imaging, biomarkers, and guideline-directed medical therapy when systolic
+    dysfunction or heart failure features are present.
+
+    '
+  citations:
+  - source: 2022 AHA/ACC/HFSA Guideline for the Management of Heart Failure
+    url: https://www.ahajournals.org/doi/10.1161/CIR.0000000000001063
+    accessed: '2026-06-04'
+metrics:
+- id: cardiomyopathy_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '85898001'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.002
+    18-39: 0.006
+    40-59: 0.018
+    60-99: 0.04

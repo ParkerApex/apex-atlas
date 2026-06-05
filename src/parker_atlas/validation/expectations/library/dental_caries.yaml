@@ -1,0 +1,27 @@
+module: dental_caries
+version: 0.1.0
+source:
+  name: CDC oral health data
+  provenance: sourced
+  url: https://www.cdc.gov/oral-health/data-research/index.html
+  note: Targets mirror the module's declared, sourced prevalence (pipeline-correctness + calibration check).
+    Zero-prevalence strata omitted; Wilson 99.9% tolerance for robustness across seeds. Dental caries
+    is common across childhood and adulthood and is preventable.
+  citations:
+  - source: CDC oral health data
+    url: https://www.cdc.gov/oral-health/data-research/index.html
+    accessed: '2026-06-04'
+metrics:
+- id: dental_caries_prevalence_by_age
+  kind: conditional_prevalence
+  condition_code: '80967001'
+  condition_system: http://snomed.info/sct
+  stratify_by: age_bracket
+  tolerance:
+    kind: wilson
+    confidence: 99.9
+  targets:
+    0-17: 0.16
+    18-39: 0.21
+    40-59: 0.18
+    60-99: 0.12
