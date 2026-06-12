@@ -35,7 +35,7 @@ Dates are indicative; actual delivery depends on team capacity and clinical revi
 - SDoH causal overlay (`--with-sdoh`): BRFSS-grounded SDoH sampling; encounter- and medication-adherence causal modifiers; Gravity Project SDOHCC Screening Response Observations for 5 domains
 - Quality measure output (`--with-measures`): DEQM-profiled Individual + Summary MeasureReport; 5 HEDIS-analog measures (DM-HbA1c, HTN-BPControl, PreventiveCare, FluVaccine, PedWellChild)
 - Clinical notes — template (`--with-notes`): DocumentReference + markdown progress note per condition
-- Clinical notes — LLM (`--notes-strategy llm`): Claude-authored Subjective + A&P grounded in structured patient record
+- Clinical notes — LLM (`--notes-strategy llm`): LLM-authored Subjective + A&P grounded in structured patient record
 - HTML cohort report (`atlas report`): demographics + fidelity table; self-contained single-file output
 - Cohort fidelity harness: aggregate metrics vs. sourced expectations, Wilson-interval tolerance, Markdown + JSON scorecard
 
@@ -91,14 +91,14 @@ Dates are indicative; actual delivery depends on team capacity and clinical revi
 
 **Delivered:**
 
-- LLM-to-DSL authoring pipeline: ✅ Working (100 modules authored via Claude Code integration)
+- LLM-to-DSL authoring pipeline: ✅ Working (100 modules authored via LLM-assisted workflow)
 - Epidemiology citation embedding: ✅ Every module carries `cites:` with source, URL, and summary
 - Automated validation loop: ✅ smoke-test + full test suite on every authoring batch
 - Launch-demo cohort preset: ✅ `atlas launch-demo`
 - GTM validation preset: ✅ `atlas validate --gtm` across 18 sourced launch expectations
 - Authoring workflow documentation: ✅ Module authoring guide written ([`docs/authoring/module_dsl.md`](./authoring/module_dsl.md))
 - Research-grounded authoring (`atlas author`): ✅ Dossier → draft module **+ sourced fidelity expectation** in one pass, both validated through the runtime loaders; clinician sign-off gate + `atlas author promote`. Each draft ships its own sourced expectation, so new modules arrive validation-ready rather than adding to the unsourced backlog. ([`docs/authoring/research_authoring.md`](./authoring/research_authoring.md))
-- Autonomous research backend (`atlas author research`): ✅ Claude + the web_search server tool researches a condition against public US sources and emits a dossier validated against the same contract; `--draft-out` chains research → synthesis so a condition name yields a reviewable draft in one command.
+- Autonomous research backend (`atlas author research`): ✅ LLM + the web_search server tool researches a condition against public US sources and emits a dossier validated against the same contract; `--draft-out` chains research → synthesis so a condition name yields a reviewable draft in one command.
 
 **Remaining:**
 

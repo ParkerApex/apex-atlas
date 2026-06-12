@@ -1,7 +1,7 @@
 """
-Autonomous dossier research via Claude + the web_search server tool.
+Autonomous dossier research via an LLM + the web_search server tool.
 
-`research_condition` asks Claude to research one clinical condition against
+`research_condition` asks the configured research model to research one clinical condition against
 public, authoritative US sources (NHANES/CDC/SEER/published meta-analyses,
 ICD-10/SNOMED/LOINC/RxNorm terminologies) using the server-side web_search
 tool, and to emit a dossier YAML matching the schema enforced by

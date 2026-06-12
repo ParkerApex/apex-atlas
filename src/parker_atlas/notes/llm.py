@@ -3,7 +3,7 @@ LLM-backed clinical note rendering (Milestone 4, first cut).
 
 The LLM renderer takes the same `NoteContext` that drives the template
 path, projects its structured data into a strict JSON payload, and asks
-Claude to author the *narrative* sections (Subjective; Assessment &
+the configured LLM provider to author the *narrative* sections (Subjective; Assessment &
 Plan) only. The Objective / Medications / Active Problems sections come
 straight from the structured data — those are not negotiable and not
 re-stated by the model — so we never let the LLM fabricate vitals,
@@ -38,12 +38,11 @@ from parker_atlas.notes.progress import (
 
 
 DEFAULT_LLM_MODEL = "claude-haiku-4-5-20251001"
-"""Claude Haiku 4.5 — the speed/cost sweet spot for one-off narrative.
+"""Default fast model for one-off narrative (Anthropic Haiku tier).
 
-A 100-patient cohort with Haiku 4.5 + prompt caching costs roughly a few
-cents at current pricing. Switch to Sonnet 4.6 for higher narrative
-quality when authoring reference cohorts or demos. Opus 4.7 is overkill
-for a progress note.
+A 100-patient cohort with the default model + prompt caching costs roughly a few
+cents at current pricing. Override with --llm-model for higher narrative
+quality when authoring reference cohorts or demos.
 """
 
 
@@ -55,7 +54,7 @@ class LLMNotesUnavailable(RuntimeError):
 class LLMNoteResult:
     """Full provenance for an LLM-authored note.
 
-    `text` is the rendered markdown. `model` records which Claude model
+    `text` is the rendered markdown. `model` records which LLM model
     produced the narrative. `cache_read_input_tokens` lets cohort runs
     surface cache hit rate in the summary.
     """

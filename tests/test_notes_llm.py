@@ -1,6 +1,6 @@
 """Unit tests for the LLM note renderer.
 
-The Claude call is monkeypatched so the suite stays hermetic — no
+The LLM provider call is monkeypatched so the suite stays hermetic — no
 ANTHROPIC_API_KEY required, no network.
 """
 

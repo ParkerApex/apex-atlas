@@ -6,7 +6,7 @@ Two strategies are exposed via NoteStrategy:
 - TEMPLATE — deterministic, structured-data-grounded fill-ins. Always
   available, no API keys, no external calls. The first-cut shape used
   by every Atlas note today.
-- LLM — Claude-authored narrative sections (Subjective, Assessment &
+- LLM — provider-authored narrative sections (Subjective, Assessment &
   Plan) grounded in structured data. Available when ANTHROPIC_API_KEY
   is set and the `[llm]` extra is installed; raises LLMNotesUnavailable
   otherwise so callers can decide whether to fall back to TEMPLATE.

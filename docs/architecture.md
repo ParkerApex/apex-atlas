@@ -78,7 +78,7 @@ parker-atlas/
 │   │   └── progression.py      # CSV + metadata → <module>.progressions.yaml overlay
 │   ├── notes/              # Clinical note generation
 │   │   ├── progress.py         # Template-based markdown progress note
-│   │   └── llm.py              # LLM-authored Subjective + A&P (Claude API)
+│   │   └── llm.py              # LLM-authored Subjective + A&P (provider API)
 │   ├── validation/         # Statistical validation harness
 │   │   ├── cohort.py           # Aggregate metric comparison vs. sourced expectations
 │   │   ├── structural.py       # Schema + US Core Patient/Condition minimums
@@ -228,7 +228,7 @@ Module authoring is the differentiator. The flow:
 5. The clinician reviews, edits, and signs off
 6. The module is submitted as a pull request with provenance metadata
 
-The LLM provider is abstracted; Parker's reference implementation supports Anthropic Claude and OpenAI, with an option for self-hosted open models.
+The LLM provider is abstracted; Parker's reference implementation supports Anthropic and OpenAI, with an option for self-hosted open models.
 
 ## Non-goals
 

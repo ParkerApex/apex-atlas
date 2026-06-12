@@ -89,7 +89,7 @@ condition: glaucoma                  # module name (snake_case)
 version: 0.1.0
 generated:                           # provenance of the research pass itself
   method: deep-research-skill        # deep-research-skill | web_search | manual
-  model: claude-opus-4-8             # optional
+  model: <provider-model-id>         # optional
   accessed: "2026-06-03"
 codes:
   snomed: {system: http://snomed.info/sct, code: "23986001", display: "Glaucoma (disorder)"}
@@ -166,7 +166,7 @@ banner that promotion strips.
 ## Autonomous research (`atlas author research`)
 
 `atlas author research --condition <name>` generates the dossier for you:
-Claude uses the `web_search` server tool to find authoritative public US
+The research model uses the `web_search` server tool to find authoritative public US
 sources (NHANES/CDC/SEER/published meta-analyses, plus SNOMED/ICD-10/LOINC/
 RxNorm terminologies), then returns a dossier matching the schema above. The
 result is validated through the dossier loader before anything is written, so

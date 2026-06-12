@@ -156,7 +156,7 @@ class TestNoteRendererDispatch:
         assert render_note(ctx, NoteStrategy.TEMPLATE) == build_progress_note_text(ctx)
 
     def test_llm_strategy_unavailable_without_api_key(self, monkeypatch):
-        # M4 wires NoteStrategy.LLM to the Claude renderer. Without an API
+        # M4 wires NoteStrategy.LLM to the LLM renderer. Without an API
         # key the renderer raises LLMNotesUnavailable so callers can fall
         # back to TEMPLATE rather than crashing the run.
         from parker_atlas.notes import LLMNotesUnavailable

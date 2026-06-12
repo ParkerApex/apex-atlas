@@ -738,7 +738,7 @@ def generate(
     with_notes: Annotated[bool, typer.Option("--with-notes", help="Emit clinical notes as DocumentReference resources.")] = False,
     note_types: Annotated[str | None, typer.Option("--note-types", help="Comma-separated note types when --with-notes is set: progress, discharge, radiology. Default: progress.")] = None,
     notes_strategy: Annotated[NoteStrategy, typer.Option("--notes-strategy", help="Strategy for progress notes: 'template' (deterministic, no API) or 'llm' (narrative via ATLAS_LLM_PROVIDER; requires API key).")] = NoteStrategy.TEMPLATE,
-    llm_model: Annotated[str | None, typer.Option("--llm-model", help="Claude model id for --notes-strategy=llm (e.g. claude-haiku-4-5-20251001, claude-sonnet-4-6, claude-opus-4-7). Defaults to Haiku 4.5.")] = None,
+    llm_model: Annotated[str | None, typer.Option("--llm-model", help="LLM model id for --notes-strategy=llm (provider-specific; defaults to the fast tier for the selected ATLAS_LLM_PROVIDER).")] = None,
     with_coverage: Annotated[bool, typer.Option("--with-coverage", help="Sample a payer per patient and emit Coverage + payer Organization + InsurancePlan resources.")] = False,
     with_providers: Annotated[bool, typer.Option("--with-providers", help="Sample a Practitioner + facility Organization + Location per encounter; attach as Encounter.participant / .location / .serviceProvider.")] = False,
     with_claims: Annotated[bool, typer.Option("--with-claims", help="Emit one Claim + ExplanationOfBenefit per Encounter. Requires --with-coverage; uninsured patients receive no claims.")] = False,
@@ -1846,7 +1846,7 @@ def author_research_cmd(
     draft_out: Annotated[Path | None, typer.Option("--draft-out", help="If set, also synthesize a draft bundle into this staging dir.")] = None,
     overwrite: Annotated[bool, typer.Option("--overwrite", help="Allow overwriting an existing --output / draft file.")] = False,
 ) -> None:
-    """Research a condition with Claude + web_search and emit a validated dossier.
+    """Research a condition with an LLM + web_search and emit a validated dossier.
 
     The model searches authoritative public US sources, then returns a dossier
     matching the schema in docs/authoring/research_authoring.md; it is validated

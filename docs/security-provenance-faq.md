@@ -28,7 +28,7 @@ Each module declares `cites:` blocks pointing to CDC, NHANES, ACS, SEER, AHA, AC
 | --- | --- |
 | `atlas generate` (default) | **No** — fully local and deterministic with a fixed seed. |
 | `--notes-strategy llm` | **Yes** — Anthropic or OpenAI API (your key). |
-| `atlas author research` | **Yes** — Claude + web search (your key). |
+| `atlas author research` | **Yes** — LLM + web search (your key). |
 | `atlas serve` (hosted demo) | **No AI** for `/generate`; optional author CLI is separate. |
 
 No telemetry or phone-home is built into the generator.
