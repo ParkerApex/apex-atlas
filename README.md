@@ -5,12 +5,13 @@
 **Enterprise-grade synthetic FHIR patient populations for healthcare AI, interoperability, and quality reporting.**
 
 [![Documentation](https://img.shields.io/badge/docs-parkerapex.github.io%2Fapex--atlas-3ba9a0.svg)](https://parkerapex.github.io/apex-atlas/)
+[![Generator](https://img.shields.io/badge/🧪_Generator-open_in_browser-3ba9a0.svg)](https://parkerapex.github.io/apex-atlas/generator.html)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
 [![Version](https://img.shields.io/badge/release-v1.0.0-blue.svg)](https://github.com/ParkerApex/apex-atlas/releases/tag/v1.0.0)
 [![FHIR R4](https://img.shields.io/badge/FHIR-R4-red.svg)](https://hl7.org/fhir/R4/)
 [![US Core 6.1](https://img.shields.io/badge/US_Core-6.1-green.svg)](https://hl7.org/fhir/us/core/)
 
-[Documentation](https://parkerapex.github.io/apex-atlas/) · [Quick start](#installation--quick-start) · [Integration cookbooks](./docs/integration-cookbooks.md) · [Commercial licensing](./COMMERCIAL.md)
+[Documentation](https://parkerapex.github.io/apex-atlas/) · [**Web generator**](https://parkerapex.github.io/apex-atlas/generator.html) · [Quick start](#installation--quick-start) · [Integration cookbooks](./docs/integration-cookbooks.md) · [Commercial licensing](./COMMERCIAL.md)
 
 **Parker Health, Inc.** · Maintained by [Parker](https://parkerapex.com)
 
@@ -124,6 +125,62 @@ atlas validate ./atlas-launch-demo --gtm
 
 Pre-built sample manifest (10,000 patients): [`samples/launch-demo-10000-patients/MANIFEST.json`](./samples/launch-demo-10000-patients/MANIFEST.json). Build instructions: [`samples/README.md`](./samples/README.md).
 
+### Web generator
+
+**UI:** [https://parkerapex.github.io/apex-atlas/generator.html](https://parkerapex.github.io/apex-atlas/generator.html)
+
+The generator is a static web page that calls a running `atlas serve` API. Launch it in one of three ways:
+
+#### Option 1 — Local (fastest)
+
+```bash
+git clone https://github.com/ParkerApex/apex-atlas.git
+cd apex-atlas
+python -m venv .venv && source .venv/bin/activate
+pip install -e ".[dev]"
+
+# Start the API (default http://127.0.0.1:8080)
+atlas serve --port 8080
+```
+
+In a browser, open either:
+
+- [GitHub Pages generator](https://parkerapex.github.io/apex-atlas/generator.html?api=http://127.0.0.1:8080) (API URL prefilled), or
+- The local file: `docs/generator.html` (set **API base URL** to `http://127.0.0.1:8080`)
+
+Verify the API: `curl http://127.0.0.1:8080/health`
+
+#### Option 2 — Docker
+
+```bash
+docker build -t apex-atlas .
+docker run --rm -p 8080:8080 apex-atlas
+```
+
+Open [generator.html?api=http://127.0.0.1:8080](https://parkerapex.github.io/apex-atlas/generator.html?api=http://127.0.0.1:8080).
+
+#### Option 3 — Hosted (public demo)
+
+Deploy `atlas serve` to your cloud account (Fly.io, Render, Cloud Run). Full steps: [`docs/deploy.md`](./docs/deploy.md).
+
+After deploy, open the generator with your API URL prefilled:
+
+```text
+https://parkerapex.github.io/apex-atlas/generator.html?api=https://YOUR-APP.fly.dev
+```
+
+Replace `YOUR-APP.fly.dev` with your deployment hostname.
+
+#### GitHub Pages (documentation site)
+
+To publish the landing page and generator from this repo:
+
+1. GitHub → **Settings** → **Pages**
+2. **Source:** Deploy from branch `main`, folder `/docs`
+3. Site URL: `https://parkerapex.github.io/apex-atlas/`
+
+API reference: [`docs/api.md`](./docs/api.md). The dev server has no authentication — use rate limiting and a reverse proxy for public endpoints. See [`docs/deploy.md`](./docs/deploy.md).
+
 ## Common workflows
 
 **Multi-condition chronic panel**
@@ -186,6 +243,7 @@ Full design: [`docs/architecture.md`](./docs/architecture.md). Rationale: [`docs
 
 | Document | Purpose |
 | --- | --- |
+| [Web generator](https://parkerapex.github.io/apex-atlas/generator.html) | Browser UI for cohort generation and download |
 | [Integration cookbooks](./docs/integration-cookbooks.md) | QHIN, HIE, payer, and Blue Button-shaped workflows |
 | [Known limitations](./docs/known-limitations.md) | Capability boundaries and tier definitions |
 | [Security & provenance FAQ](./docs/security-provenance-faq.md) | PHI, licensing, API keys, deployment |
