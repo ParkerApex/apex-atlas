@@ -1,6 +1,6 @@
 # Apex Atlas Module Catalog
 
-*Last updated: 2026-05-22*
+*Last updated: 2026-06-12*
 
 This catalog is the source of truth for GTM module counts. Tiers describe
 launch readiness, not clinical importance.
@@ -31,13 +31,13 @@ launch readiness, not clinical importance.
 | bipolar_disorder | Mental health / Behavioral | 2 | Sourced | Internal technical review |
 | breast_cancer | Oncology / Hematology | 2 | Sourced | Internal technical review |
 | cardiomyopathy | Cardiovascular | 2 | Sourced | Internal technical review |
-| cataract | ENT / Ophthalmology | 2 | Sourced | Internal technical review |
+| cataract | ENT / Ophthalmology | 2 | Sourced | Pending licensed clinician sign-off |
 | cellulitis | Infectious disease | 2 | Sourced | Internal technical review |
 | chronic_liver_disease | GI / Hepatology | 2 | Sourced | Internal technical review |
 | chronic_pain | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
-| ckd | Renal / Urology | 2 | Sourced | Internal technical review |
+| ckd | Renal / Urology | 1 | Sourced | Internal technical review |
 | colorectal_cancer | Oncology / Hematology | 2 | Sourced | Internal technical review |
-| complications | Pediatric / OB / Prevention | 1 | Sourced | Internal technical review |
+| complications | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 | conjunctivitis | ENT / Ophthalmology | 2 | Sourced | Internal technical review |
 | constipation | GI / Hepatology | 2 | Sourced | Internal technical review |
 | copd | Pulmonary | 1 | Sourced | Internal technical review |
@@ -54,13 +54,13 @@ launch readiness, not clinical importance.
 | frailty | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 | gallbladder_disease | GI / Hepatology | 2 | Sourced | Internal technical review |
 | gerd | GI / Hepatology | 2 | Sourced | Internal technical review |
-| glaucoma | ENT / Ophthalmology | 3 | Sourced | Auto-drafted via `atlas author`; pending clinical review |
+| glaucoma | ENT / Ophthalmology | 3 | Sourced | Pending licensed clinician sign-off |
 | gout | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
 | hearing_loss | ENT / Ophthalmology | 2 | Sourced | Internal technical review |
 | heart_failure | Cardiovascular | 1 | Sourced | Internal technical review |
 | hepatitis_c | Infectious disease | 2 | Sourced | Internal technical review |
 | hiv | Infectious disease | 2 | Sourced | Internal technical review |
-| hypercholesterolemia | Cardiovascular | 1 | Sourced | Internal technical review |
+| hypercholesterolemia | Cardiovascular | 2 | Sourced | Pending licensed clinician sign-off |
 | hypertension | Cardiovascular | 1 | Sourced | Internal technical review |
 | hyperthyroidism | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
 | hypothyroidism | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
@@ -72,7 +72,7 @@ launch readiness, not clinical importance.
 | low_back_pain | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
 | lung_cancer | Oncology / Hematology | 2 | Sourced | Internal technical review |
 | lupus | Musculoskeletal / Rheumatology | 2 | Sourced | Internal technical review |
-| maternal_health | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
+| maternal_health | Pediatric / OB / Prevention | 1 | Sourced | Internal technical review |
 | melanoma | Oncology / Hematology | 2 | Sourced | Internal technical review |
 | menopause | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 | metabolic_syndrome | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
@@ -88,12 +88,12 @@ launch readiness, not clinical importance.
 | pancreatitis | GI / Hepatology | 2 | Sourced | Internal technical review |
 | parkinsons_disease | Neurology / Cognition | 2 | Sourced | Internal technical review |
 | pcos | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
-| pediatric_wellness | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
+| pediatric_wellness | Pediatric / OB / Prevention | 1 | Sourced | Internal technical review |
 | peripheral_artery_disease | Cardiovascular | 2 | Sourced | Internal technical review |
 | peripheral_neuropathy | Neurology / Cognition | 2 | Sourced | Internal technical review |
 | pneumonia | Pulmonary | 2 | Sourced | Internal technical review |
 | postpartum_depression | Mental health / Behavioral | 2 | Sourced | Internal technical review |
-| prediabetes | Metabolic / Endocrine | 2 | Sourced | Internal technical review |
+| prediabetes | Metabolic / Endocrine | 1 | Sourced | Internal technical review |
 | pressure_injury | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 | prostate_cancer | Oncology / Hematology | 2 | Sourced | Internal technical review |
 | psoriasis | Dermatology / Allergy | 2 | Sourced | Internal technical review |
@@ -115,7 +115,7 @@ launch readiness, not clinical importance.
 | uterine_fibroids | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
 | valvular_heart_disease | Cardiovascular | 2 | Sourced | Internal technical review |
 | venous_thromboembolism | Cardiovascular | 2 | Sourced | Internal technical review |
-| wellness | Pediatric / OB / Prevention | 2 | Sourced | Internal technical review |
+| wellness | Pediatric / OB / Prevention | 1 | Sourced | Internal technical review |
 
 ## Count Summary
 

@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Clinical review — Apex Atlas</title>
+<link rel="stylesheet" href="index.html" disabled />
+<style>
+  :root{--bg:#0b1220;--panel:#111a2e;--line:#1f2d49;--ink:#e8eef9;--muted:#9fb0cc;--brand:#3ba9a0;--accent:#7ee0d3;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--mono:ui-monospace,Menlo,Consolas,monospace}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.55}
+  a{color:var(--accent)} .wrap{max-width:960px;margin:0 auto;padding:32px 22px}
+  h1{font-size:32px;margin:0 0 8px} .sub{color:var(--muted);margin-bottom:24px}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:20px;margin:16px 0}
+  label{display:block;font-size:13px;color:var(--muted);margin:12px 0 6px}
+  input,select,textarea{width:100%;box-sizing:border-box;background:#06101f;border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:10px;font-family:inherit}
+  textarea{min-height:120px;font-family:var(--mono);font-size:13px}
+  button{background:linear-gradient(92deg,var(--brand),#5b8def);color:#04121a;border:none;border-radius:10px;padding:12px 18px;font-weight:650;cursor:pointer;margin-top:12px}
+  pre{background:#06101f;border:1px solid var(--line);border-radius:10px;padding:14px;overflow:auto;font-size:12px}
+  .tier{font-size:12px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p><a href="index.html">← Apex Atlas</a></p>
+  <h1>Clinical module review</h1>
+  <p class="sub">Track licensed clinician sign-off for Atlas modules. Promotion still runs through
+    <code>atlas author promote</code> and <code>SIGNOFF.md</code> in the draft directory.</p>
+
+  <div class="panel">
+    <label for="module">Module</label>
+    <select id="module"></select>
+    <label for="reviewer">Signed off by (name, credentials)</label>
+    <input id="reviewer" placeholder="Jane Doe, MD" />
+    <label for="notes">Review notes (optional)</label>
+    <textarea id="notes" placeholder="Prevalence sources verified; FHIR emits clinically plausible."></textarea>
+    <button type="button" id="gen">Generate SIGNOFF.md</button>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-top:0">Generated SIGNOFF.md</h3>
+    <pre id="out">Select a module and enter reviewer details.</pre>
+    <p class="tier">Tier 1 modules require this sign-off before headline GTM claims. Tier 3 modules (e.g. glaucoma) remain experimental until promoted.</p>
+  </div>
+
+  <div class="panel">
+    <h3 style="margin-top:0">CLI promotion</h3>
+<pre>atlas author promote --draft ./atlas-drafts/&lt;module&gt;
+# SIGNOFF.md must include Signed-off-by: &lt;reviewer&gt;</pre>
+  </div>
+</div>
+<script>
+const MODULES = [
+  "hypertension","diabetes","asthma","copd","heart_failure","stroke","glaucoma",
+  "pediatric_wellness","maternal_health","wellness","depression","ckd"
+];
+const sel = document.getElementById("module");
+MODULES.forEach(m => { const o = document.createElement("option"); o.value = o.textContent = m; sel.appendChild(o); });
+function render() {
+  const mod = sel.value;
+  const who = document.getElementById("reviewer").value.trim() || "(reviewer name)";
+  const notes = document.getElementById("notes").value.trim();
+  const lines = [
+    `# Clinical sign-off — ${mod}`,
+    "",
+    `Signed-off-by: ${who}`,
+    `Date: ${new Date().toISOString().slice(0, 10)}`,
+    "",
+    "## Scope",
+    `- Module: \`${mod}\``,
+    "- Prevalence citations reviewed against module `cites:` blocks",
+    "- Representative FHIR emits reviewed for clinical plausibility",
+    "",
+  ];
+  if (notes) lines.push("## Reviewer notes", notes, "");
+  lines.push(
+    "## Attestation",
+    "I attest that this synthetic module is suitable for inclusion in the Apex Atlas",
+    "library at the stated tier, for use as license-clean synthetic test data — not",
+    "as real-world evidence or clinical validation of individual patient charts."
+  );
+  document.getElementById("out").textContent = lines.join("\n");
+}
+document.getElementById("gen").addEventListener("click", render);
+sel.addEventListener("change", render);
+</script>
+</body>
+</html>

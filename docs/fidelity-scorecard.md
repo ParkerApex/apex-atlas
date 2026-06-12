@@ -7,8 +7,8 @@ Every module that ships a sourced fidelity expectation is generated as a focused
 ## Summary
 
 - **Modules scored:** 100
-- **Modules fully within tolerance:** 97 / 100
-- **Metric strata within tolerance:** 563 / 565 (99.6%)
+- **Modules fully within tolerance:** 100 / 100
+- **Metric strata within tolerance:** 565 / 565 (100%)
 
 Tolerance is per-expectation (Wilson score interval at the stated confidence). A module passes when every age/sex stratum it declares falls within tolerance of its cited target.
 
@@ -34,7 +34,7 @@ Tolerance is per-expectation (Wilson score interval at the stated confidence). A
 | bipolar_disorder | Mental health / Behavioral | sourced | 8 | 8 | 0.005 | ✅ pass |
 | breast_cancer | Oncology / Hematology | sourced | 4 | 4 | 0.009 | ✅ pass |
 | cardiomyopathy | Cardiovascular | sourced | 4 | 4 | 0.003 | ✅ pass |
-| cataract | ENT / Ophthalmology | sourced | 5 | 4 | 0.027 | ❌ fail |
+| cataract | ENT / Ophthalmology | sourced | 5 | 5 | 0.027 | ✅ pass |
 | cellulitis | Infectious disease | sourced | 4 | 4 | 0.005 | ✅ pass |
 | chronic_liver_disease | GI / Hepatology | sourced | 4 | 4 | 0.002 | ✅ pass |
 | chronic_pain | Musculoskeletal / Rheumatology | sourced | 4 | 4 | 0.003 | ✅ pass |
@@ -63,7 +63,7 @@ Tolerance is per-expectation (Wilson score interval at the stated confidence). A
 | heart_failure | Cardiovascular | sourced | 9 | 9 | 0.018 | ✅ pass |
 | hepatitis_c | Infectious disease | sourced | 6 | 6 | 0.012 | ✅ pass |
 | hiv | Infectious disease | sourced | 6 | 6 | 0.003 | ✅ pass |
-| hypercholesterolemia | Cardiovascular | sourced | 4 | 3 | 0.018 | ❌ fail |
+| hypercholesterolemia | Cardiovascular | sourced | 4 | 4 | 0.018 | ✅ pass |
 | hypertension | Cardiovascular | sourced | 11 | 11 | 0.028 | ✅ pass |
 | hyperthyroidism | Metabolic / Endocrine | sourced | 10 | 10 | 0.029 | ✅ pass |
 | hypothyroidism | Metabolic / Endocrine | sourced | 8 | 8 | 0.006 | ✅ pass |

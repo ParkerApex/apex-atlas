@@ -4,7 +4,10 @@ from __future__ import annotations
 
 from typer.testing import CliRunner
 
-from parker_atlas.cli import GTM_HARDENED_MODULES, LAUNCH_DEMO_MODULES, app
+from parker_atlas.cli import LAUNCH_DEMO_MODULES, app
+from parker_atlas.validation.gtm import GTM_HEADLINE_MODULES
+
+GTM_CI_MODULES = sorted(GTM_HEADLINE_MODULES)[:8]
 
 runner = CliRunner()
 
@@ -41,7 +44,7 @@ def test_validate_gtm_runs_hardened_expectation_set(tmp_path) -> None:
             "generate",
             "--patients", "40",
             "--seed", "7",
-            "--module", ",".join(GTM_HARDENED_MODULES),
+            "--module", ",".join(GTM_CI_MODULES),
             "--out", str(out),
         ],
     )

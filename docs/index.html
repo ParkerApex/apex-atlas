@@ -80,8 +80,9 @@
     <div class="eyebrow">Parker · Apex Atlas</div>
     <h1>Synthetic FHIR patients that are<br><span class="grad">current, causal, and auditable.</span></h1>
     <p class="lede">Apex Atlas generates large-scale, fully synthetic patient populations in FHIR R4/R5,
-      grounded in public epidemiological data — for training healthcare AI, validating FHIR integrations,
-      demos, and quality-measure testing. No real patient is ever depicted.</p>
+      grounded in public epidemiological data. Cohorts <b>mirror real US care patterns</b> and
+      <b>map to production FHIR</b> from QHINs, HIEs, payer APIs, and CMS Blue Button-style feeds —
+      for AI training, end-to-end integration, demos, and quality-measure testing. No real patient is ever depicted.</p>
     <div class="badges">
       <span class="badge">FHIR R4 · R5</span>
       <span class="badge">US Core 6.1</span>
@@ -110,6 +111,27 @@
 
 <section>
   <div class="wrap">
+    <div class="eyebrow">Production mapping</div>
+    <h2>Not just conformance — data that maps to what you ingest in the field</h2>
+    <p class="sub">Atlas output uses the same FHIR resource graph as clinical and payer channels. Population
+      statistics mirror public US epidemiology; individual records are fully synthetic.</p>
+    <table>
+      <thead><tr><th>Channel</th><th>Atlas mirrors</th></tr></thead>
+      <tbody>
+        <tr><td>QHIN / TEFCA</td><td>US Core clinical summaries — problems, meds, encounters, vitals/labs</td></tr>
+        <tr><td>HIE</td><td>Longitudinal multi-condition charts, notes (DocumentReference), cross-org care patterns</td></tr>
+        <tr><td>Stedi / claims APIs</td><td>Coverage, Claim, ExplanationOfBenefit (<code class="inline">--with-coverage --with-claims</code>)</td></tr>
+        <tr><td>CMS Blue Button 2.0</td><td>Medicare-shaped Coverage + EOB, age-stratified chronic care</td></tr>
+        <tr><td>Bulk <code class="inline">$export</code></td><td>NDJSON + Parquet at scale</td></tr>
+      </tbody>
+    </table>
+    <p class="sub" style="margin-top:14px">Atlas does not ingest from these systems. It produces license-clean cohorts
+      your pipelines can treat like production FHIR — without PHI.</p>
+  </div>
+</section>
+
+<section>
+  <div class="wrap">
     <div class="eyebrow">Proof, not promises</div>
     <h2>Three things you can open right now</h2>
     <p class="sub">Most synthetic-data claims are unverifiable. Atlas ships the evidence.</p>
@@ -119,7 +141,7 @@
         <h3>Fidelity scorecard</h3>
         <p>Every sourced module is generated as a focused cohort and checked against its cited public
           target (NHANES, CDC, SEER, AHA) by the cohort harness.</p>
-        <div class="metric">563 / 565<small>metric strata within tolerance · 97/100 modules fully pass</small></div>
+        <div class="metric">565 / 565<small>metric strata within tolerance · 100/100 modules pass</small></div>
         <p style="flex:0;margin:14px 0 0"><a href="https://github.com/ParkerApex/apex-atlas/blob/main/docs/fidelity-scorecard.md">Open the scorecard →</a></p>
       </div>
       <div class="card">

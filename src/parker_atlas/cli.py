@@ -38,7 +38,6 @@ from parker_atlas.fhir.coverage import build_coverage_resource
 from parker_atlas.fhir.diagnostic_report import build_diagnostic_report_resource
 from parker_atlas.fhir.insurance_plan import build_insurance_plan_resource
 from parker_atlas.fhir.organization import build_payer_organization_resource
-from parker_atlas.fhir.document_reference import build_document_reference_resource
 from parker_atlas.core.provider import sample_care_team
 from parker_atlas.fhir.encounter import build_encounter_resource
 from parker_atlas.fhir.location import build_location_resource
@@ -66,11 +65,10 @@ from parker_atlas.measures import (
     MeasureTally,
     evaluate_measures,
 )
-from parker_atlas.notes import (
-    NoteContext,
-    NoteStrategy,
-    build_progress_note_text,
-)
+from parker_atlas.notes import NoteStrategy
+from parker_atlas.notes.emit import build_note_document_references
+from parker_atlas.notes.types import parse_note_types
+from parker_atlas.export.parquet_schema import PARQUET_SCHEMA_SPEC, PARQUET_SCHEMA_VERSION
 from parker_atlas.gpx import Allocator, Category
 from parker_atlas.modules import (
     ModuleError,
@@ -91,6 +89,7 @@ from parker_atlas.validation.expectations import (
     ExpectationError,
     load_bundled_expectation,
 )
+from parker_atlas.validation.gtm import gtm_hardened_modules
 from parker_atlas.validation.report import write_report
 from parker_atlas.validation.structural import validate_path
 
@@ -132,26 +131,8 @@ class Profile(str, Enum):
     BASE = "base"
 
 
-GTM_HARDENED_MODULES = [
-    "allergic_rhinitis",
-    "benign_prostatic_hyperplasia",
-    "cataract",
-    "covid19",
-    "gout",
-    "hepatitis_c",
-    "hyperthyroidism",
-    "iron_deficiency_anemia",
-    "metabolic_syndrome",
-    "migraine",
-    "nephrolithiasis",
-    "osteoporosis",
-    "peripheral_artery_disease",
-    "pneumonia",
-    "prediabetes",
-    "psoriasis",
-    "pulmonary_embolism",
-    "urinary_tract_infection",
-]
+# Backwards-compatible alias — full launch-hardened set (see validation/gtm.py).
+GTM_HARDENED_MODULES = gtm_hardened_modules()
 
 
 LAUNCH_DEMO_MODULES = [
@@ -195,6 +176,7 @@ def _write_generation_metadata(
     profile: Profile,
     seed: int | None,
     with_notes: bool,
+    note_types: str | None,
     notes_strategy: NoteStrategy,
     llm_model: str | None,
     with_coverage: bool,
@@ -217,6 +199,7 @@ def _write_generation_metadata(
         "profile": profile.value,
         "seed": seed,
         "with_notes": with_notes,
+        "note_types": note_types,
         "notes_strategy": notes_strategy.value,
         "llm_model": llm_model,
         "with_coverage": with_coverage,
@@ -227,6 +210,8 @@ def _write_generation_metadata(
     }
     if summary_counts is not None:
         metadata["summary"] = summary_counts
+    if format is OutputFormat.PARQUET:
+        metadata["parquet_schema_version"] = PARQUET_SCHEMA_VERSION
 
     out.mkdir(parents=True, exist_ok=True)
     (out / "generation-metadata.json").write_text(
@@ -750,8 +735,9 @@ def generate(
     profile: Annotated[Profile, typer.Option(help="FHIR profile to conform to.")] = Profile.US_CORE_6_1,
     seed: Annotated[int | None, typer.Option(help="RNG seed for reproducibility.")] = None,
     summary: Annotated[bool, typer.Option("--summary", help="Print cohort demographics and condition summary after generation.")] = False,
-    with_notes: Annotated[bool, typer.Option("--with-notes", help="Emit one DocumentReference (progress note) per fired condition.")] = False,
-    notes_strategy: Annotated[NoteStrategy, typer.Option("--notes-strategy", help="Strategy for --with-notes: 'template' (deterministic, no API) or 'llm' (Claude-authored narrative; requires ANTHROPIC_API_KEY).")] = NoteStrategy.TEMPLATE,
+    with_notes: Annotated[bool, typer.Option("--with-notes", help="Emit clinical notes as DocumentReference resources.")] = False,
+    note_types: Annotated[str | None, typer.Option("--note-types", help="Comma-separated note types when --with-notes is set: progress, discharge, radiology. Default: progress.")] = None,
+    notes_strategy: Annotated[NoteStrategy, typer.Option("--notes-strategy", help="Strategy for progress notes: 'template' (deterministic, no API) or 'llm' (narrative via ATLAS_LLM_PROVIDER; requires API key).")] = NoteStrategy.TEMPLATE,
     llm_model: Annotated[str | None, typer.Option("--llm-model", help="Claude model id for --notes-strategy=llm (e.g. claude-haiku-4-5-20251001, claude-sonnet-4-6, claude-opus-4-7). Defaults to Haiku 4.5.")] = None,
     with_coverage: Annotated[bool, typer.Option("--with-coverage", help="Sample a payer per patient and emit Coverage + payer Organization + InsurancePlan resources.")] = False,
     with_providers: Annotated[bool, typer.Option("--with-providers", help="Sample a Practitioner + facility Organization + Location per encounter; attach as Encounter.participant / .location / .serviceProvider.")] = False,
@@ -789,6 +775,12 @@ def generate(
     if with_claims and not with_coverage:
         err_console.print("[red]--with-claims requires --with-coverage[/red]")
         raise typer.Exit(code=1)
+    try:
+        parsed_note_types = parse_note_types(note_types)
+    except ValueError as exc:
+        err_console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=1) from exc
+    note_types_label = note_types if note_types else "progress"
     active_modules = []
     if module is not None:
         for name in [m.strip() for m in module.split(",") if m.strip()]:
@@ -1008,51 +1000,35 @@ def generate(
                     dx_emits = filtered
                 extras.extend(dx_emits)
                 if with_notes:
-                    # Anchor the note to the first Encounter emitted for
-                    # this diagnosis (typically the diagnosis or follow-up
-                    # visit). If the module emits no Encounter, the note
-                    # is patient-scoped only.
-                    encounter_url: str | None = None
-                    for r in dx_emits:
-                        if r["resourceType"] == "Encounter":
-                            encounter_url = fullurl_for_resource(gpx, r)
-                            break
-                    ctx = NoteContext(
-                        patient_display_name=(
-                            f"{demo.family_name}, {demo.given_name}"
-                        ),
-                        age_years=age_years,
-                        sex=demo.gender.value,
-                        today=today,
-                        diagnoses=all_diagnoses,
-                        primary_diagnosis=dx,
-                    )
-                    if notes_strategy is NoteStrategy.LLM:
-                        from parker_atlas.notes import (
-                            LLMNotesUnavailable,
-                            render_llm_note,
+                    try:
+                        extras.extend(
+                            build_note_document_references(
+                                gpx=gpx,
+                                patient_url=patient_url,
+                                mod_name=mod_name,
+                                patient_display_name=(
+                                    f"{demo.family_name}, {demo.given_name}"
+                                ),
+                                age_years=age_years,
+                                sex=demo.gender.value,
+                                today=today,
+                                all_diagnoses=all_diagnoses,
+                                dx=dx,
+                                dx_emits=dx_emits,
+                                note_types=parsed_note_types,
+                                notes_strategy=notes_strategy,
+                                llm_model=llm_model,
+                            )
                         )
+                    except Exception as exc:
+                        from parker_atlas.notes import LLMNotesUnavailable
 
-                        try:
-                            llm_kwargs = {"model": llm_model} if llm_model else {}
-                            note_text = render_llm_note(ctx, **llm_kwargs).text
-                        except LLMNotesUnavailable as exc:
+                        if isinstance(exc, LLMNotesUnavailable):
                             err_console.print(
                                 f"[red]LLM note authoring failed:[/red] {exc}"
                             )
                             raise typer.Exit(code=1) from exc
-                    else:
-                        note_text = build_progress_note_text(ctx)
-                    extras.append(
-                        build_document_reference_resource(
-                            gpx=gpx,
-                            patient_fullurl=patient_url,
-                            doc_spec_id=f"progress_{mod_name}_{dx.condition.id}",
-                            note_text=note_text,
-                            authored_on=today,
-                            encounter_fullurl=encounter_url,
-                        )
-                    )
+                        raise
 
             if death_event is not None:
                 death_date, mod_name, dx = death_event
@@ -1295,6 +1271,10 @@ def generate(
         for rtype, rows in sorted(parquet_rows.items()):
             table = pa.Table.from_pylist(rows, schema=schema)
             pq.write_table(table, out / f"{rtype}.parquet")
+        (out / "parquet-schema.json").write_text(
+            json.dumps(PARQUET_SCHEMA_SPEC, indent=2) + "\n",
+            encoding="utf-8",
+        )
         rtypes = sorted(parquet_rows.keys())
         console.print(
             f"[green]✓[/green] Wrote {patients} patient"
@@ -1328,6 +1308,7 @@ def generate(
         profile=profile,
         seed=seed,
         with_notes=with_notes,
+        note_types=note_types_label,
         notes_strategy=notes_strategy,
         llm_model=llm_model,
         with_coverage=with_coverage,

@@ -14,7 +14,7 @@ from parker_atlas.gpx import (
     compute_check_digit,
 )
 
-__version__ = "0.1.0"
+__version__ = "1.0.0"
 
 __all__ = [
     "GPX",

@@ -23,15 +23,11 @@ graceful fallback can catch `LLMNotesUnavailable` and re-dispatch to
 
 from __future__ import annotations
 
-import json
 import os
 from dataclasses import dataclass
 from typing import Any
 
-from parker_atlas.modules.runtime import (
-    SampledMedicationRequest,
-    SampledObservation,
-)
+from parker_atlas.modules.runtime import SampledObservation
 from parker_atlas.notes.progress import (
     NoteContext,
     _collect_active_medications,
@@ -166,81 +162,19 @@ def _author_narrative(
     api_key: str | None,
     max_tokens: int,
     temperature: float,
+    provider: str | None = None,
 ) -> tuple[dict[str, str], dict[str, int], str]:
-    """Call Claude. Returns (parsed_json, usage_dict, model_id).
+    """Call the configured LLM provider. Returns (parsed_json, usage_dict, model_id)."""
+    from parker_atlas.notes.providers import resolve_provider
 
-    Isolated so tests can monkeypatch this with a fake.
-    """
-    try:
-        import anthropic  # type: ignore[import-not-found]
-    except ImportError as exc:
-        raise LLMNotesUnavailable(
-            "LLM note authoring requires the 'anthropic' package. "
-            'Install with: pip install -e ".[llm]"'
-        ) from exc
-
-    client = anthropic.Anthropic(api_key=api_key) if api_key else anthropic.Anthropic()
-    response = client.messages.create(
+    resolved = resolve_provider(provider)
+    return resolved.complete_json(
+        system_prompt=_SYSTEM_PROMPT,
+        user_payload=payload,
         model=model,
         max_tokens=max_tokens,
         temperature=temperature,
-        system=[
-            {
-                "type": "text",
-                "text": _SYSTEM_PROMPT,
-                "cache_control": {"type": "ephemeral"},
-            }
-        ],
-        messages=[
-            {
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": json.dumps(payload, indent=2),
-                    }
-                ],
-            }
-        ],
     )
-
-    text_blocks = [b.text for b in response.content if getattr(b, "type", "") == "text"]
-    raw = "".join(text_blocks).strip()
-    if raw.startswith("```"):
-        # Strip ``` ... ``` fences defensively; Claude usually obeys
-        # "JSON only" but we don't want a fence to break parsing.
-        raw = raw.strip("`")
-        if raw.startswith("json\n"):
-            raw = raw[len("json\n") :]
-    try:
-        parsed = json.loads(raw)
-    except json.JSONDecodeError as exc:
-        raise LLMNotesUnavailable(
-            f"LLM returned non-JSON narrative; refusing to write a note. "
-            f"First 200 chars: {raw[:200]!r}"
-        ) from exc
-
-    if not isinstance(parsed, dict) or not {
-        "subjective",
-        "assessment_and_plan",
-    }.issubset(parsed):
-        raise LLMNotesUnavailable(
-            "LLM JSON missing required keys 'subjective' / 'assessment_and_plan'."
-        )
-
-    usage = {
-        "input_tokens": getattr(response.usage, "input_tokens", 0) or 0,
-        "output_tokens": getattr(response.usage, "output_tokens", 0) or 0,
-        "cache_read_input_tokens": getattr(
-            response.usage, "cache_read_input_tokens", 0
-        )
-        or 0,
-        "cache_creation_input_tokens": getattr(
-            response.usage, "cache_creation_input_tokens", 0
-        )
-        or 0,
-    }
-    return parsed, usage, response.model
 
 
 def _assemble_note_markdown(
@@ -310,23 +244,44 @@ def _assemble_note_markdown(
 def render_llm_note(
     ctx: NoteContext,
     *,
-    model: str = DEFAULT_LLM_MODEL,
+    model: str | None = None,
     api_key: str | None = None,
     max_tokens: int = 800,
     temperature: float = 0.0,
+    provider: str | None = None,
 ) -> LLMNoteResult:
     """Render a progress note with LLM-authored narrative sections.
 
     Raises `LLMNotesUnavailable` if the SDK is missing or the API call
     cannot be completed cleanly. Callers should catch this and decide
     whether to fall back to the template renderer or fail the run.
+
+    Provider selection: `provider=` argument, else `ATLAS_LLM_PROVIDER`
+    env var (`anthropic` default, `openai` optional).
     """
-    key = api_key or os.environ.get("ANTHROPIC_API_KEY")
-    if not key:
-        raise LLMNotesUnavailable(
-            "LLM note authoring requires ANTHROPIC_API_KEY in the environment "
-            "(or pass api_key= explicitly)."
-        )
+    from parker_atlas.notes.providers import DEFAULT_OPENAI_MODEL, resolve_provider
+
+    chosen = (provider or os.environ.get("ATLAS_LLM_PROVIDER", "anthropic")).strip().lower()
+    if model is None:
+        model = DEFAULT_LLM_MODEL if chosen == "anthropic" else DEFAULT_OPENAI_MODEL
+
+    if chosen == "anthropic":
+        key = api_key or os.environ.get("ANTHROPIC_API_KEY")
+        if not key:
+            raise LLMNotesUnavailable(
+                "LLM note authoring requires ANTHROPIC_API_KEY in the environment "
+                "(or pass api_key= explicitly)."
+            )
+    elif chosen == "openai":
+        key = api_key or os.environ.get("OPENAI_API_KEY")
+        if not key:
+            raise LLMNotesUnavailable(
+                "OpenAI note authoring requires OPENAI_API_KEY in the environment "
+                "(or pass api_key= explicitly)."
+            )
+    else:
+        resolve_provider(chosen)  # raises with clear message
+        key = api_key
 
     payload = _structured_payload(ctx)
     narrative, usage, model_id = _author_narrative(
@@ -335,6 +290,7 @@ def render_llm_note(
         api_key=key,
         max_tokens=max_tokens,
         temperature=temperature,
+        provider=chosen,
     )
     text = _assemble_note_markdown(ctx, narrative, model=model_id)
     return LLMNoteResult(

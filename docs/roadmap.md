@@ -102,13 +102,13 @@ Dates are indicative; actual delivery depends on team capacity and clinical revi
 
 **Remaining:**
 
-- Formal clinician review UI (web-based) for sign-off workflow (the `atlas author` SIGNOFF.md gate is the CLI-level interim)
-- Automated prevalence validation for all 100 modules against sourced expectations (currently 28 modules have sourced fidelity expectations; 18 are included in the GTM validation preset). New `atlas author`-drafted modules close this gap by construction.
-- LLM provider abstraction for non-Claude backends
+- Licensed clinician sign-offs documented per Tier 1 module (web UI at [`docs/clinical-review.html`](./clinical-review.html); CLI `SIGNOFF.md` gate)
+- Formal blinded clinician fidelity audit for notes (≥80% acceptance target)
+- Automated structured ↔ unstructured consistency validation
 
-**Exit criteria (revised):** 100 total modules in the library, all with sourced citations; clinician review workflow established with at least one licensed clinician sign-off per module.
+**Exit criteria (revised):** 100 total modules in the library, all with sourced citations; clinician review workflow established with at least one licensed clinician sign-off per headline module.
 
-Current status: module-count and citation requirements are complete; clinician sign-off workflow remains open.
+Current status: module-count, citation, and fidelity-expectation requirements are complete; licensed clinician sign-offs remain the binding constraint.
 
 ### 100-module launch plan
 
@@ -156,16 +156,16 @@ The v1.0 library target is now complete at 100 modules. The count matters for GT
 
 **Delivered:**
 
-- Template-based progress notes: ✅ `--with-notes` emits DocumentReference per condition, structured data → markdown note
-- LLM-authored notes: ✅ `--notes-strategy llm` generates Claude-authored Subjective + Assessment & Plan sections grounded in the patient's generated resources
-- DocumentReference FHIR resource with `type`, `category`, `context.encounter` linkage: ✅
+- Template-based progress notes: ✅ `--with-notes` emits DocumentReference per condition
+- Discharge summaries: ✅ `--note-types discharge` for IMP/EMER encounters
+- Radiology reports: ✅ `--note-types radiology` linked to imaging Procedures
+- LLM-authored notes: ✅ `--notes-strategy llm` with Anthropic or OpenAI (`ATLAS_LLM_PROVIDER`)
+- DocumentReference FHIR resource with LOINC type codes and encounter linkage: ✅
 
 **Remaining:**
 
-- Discharge summary generator
-- Radiology report generator (linked to imaging Procedures)
 - Formal clinician fidelity audit (target: ≥80% acceptance by blinded reviewers)
-- Structured/unstructured consistency validation
+- Structured/unstructured consistency validation automation
 
 **Exit criteria:** generated notes pass a blinded clinician fidelity audit with ≥80% acceptance rate across three note types (progress note, discharge summary, radiology report).
 

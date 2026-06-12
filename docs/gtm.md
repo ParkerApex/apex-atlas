@@ -6,14 +6,14 @@ This document converts the roadmap into the practical work needed to make Apex A
 
 ## Positioning
 
-**Apex Atlas is the synthetic FHIR data layer for healthcare AI and interoperability teams that need realistic, license-clean patient populations without waiting on restricted real-world datasets.**
+**Apex Atlas is the synthetic FHIR data layer for healthcare AI and interoperability teams that need cohorts mirroring real US care patterns — not just profile-conformant fixtures — without PHI or credentialed dataset delays.**
 
 The GTM message should stay concrete:
 
-- Generate FHIR-native patient populations with GPX identifiers.
-- Cover common clinical, payer, SDoH, pediatric, maternal, and quality-measure workflows.
+- Generate FHIR-native patient populations with GPX identifiers that **map to production ingestion paths** (QHIN/TEFCA, HIE, payer FHIR, Bulk `$export`).
+- Mirror common clinical, payer, SDoH, pediatric, maternal, and quality-measure **distributions** sourced from public epidemiology.
 - Trace rates to public sources and validate cohort output against those targets.
-- Produce records that are useful for AI training, FHIR integration testing, demo environments, and quality reporting pipelines.
+- Produce records useful for **AI training, end-to-end integration testing, demo environments, and quality reporting pipelines** — not schema-only conformance checks.
 
 Avoid overclaiming clinical validation. The strongest accurate claim is that Atlas is publicly sourced, auditable, FHIR-first, and validation-oriented.
 
@@ -29,22 +29,26 @@ Apex Atlas is prime-time when a prospect can do three things without Parker engi
 
 | Asset | Owner | Status | Exit bar |
 | --- | --- | --- | --- |
-| README quick start | Product/Engineering | Strong, needs v1 polish | A new developer can install, generate, validate, and inspect modules without asking for help |
-| Module catalog | Clinical/Engineering | Started | 100-module table with domain, source status, fidelity status, and reviewer status |
-| Validation scorecard | Engineering/Clinical | Partial | Published scorecard for at least the launch sample cohorts |
-| Sample cohorts | Engineering | Needed | 10k, 100k, and 1M patient downloads with metadata and validation reports |
-| Demo scripts | GTM/Product | Needed | Three repeatable scripts: AI training, FHIR integration, quality measures |
-| Commercial one-pager | GTM/Legal | Needed | Clear boundary between Apache 2.0 use and commercial support/license |
-| Security and data provenance FAQ | Legal/Clinical | Needed | Answers PHI, MIMIC/UK Biobank, licensing, UMLS, and re-identification questions |
-| Launch announcement | Founder/GTM | Needed | Publishable post tied to a release tag and validation artifacts |
+| README quick start | Product/Engineering | ✅ v1 | Install, generate, validate, inspect modules |
+| Module catalog | Clinical/Engineering | ✅ | 101-module table with tier, fidelity, review status |
+| Validation scorecard | Engineering/Clinical | ✅ | [fidelity-scorecard.md](./fidelity-scorecard.md) — 100 modules |
+| Sample cohorts | Engineering | Script ready | `scripts/build_sample_cohorts.sh` — run locally for 10k/100k/1M |
+| Demo scripts | GTM/Product | ✅ | `scripts/demo_ai_training.sh`, `demo_fhir_integration.sh`, `demo_quality_measures.sh` |
+| Commercial one-pager | GTM/Legal | ✅ | [commercial-one-pager.md](./commercial-one-pager.md) |
+| Security and data provenance FAQ | Legal/Clinical | ✅ | [security-provenance-faq.md](./security-provenance-faq.md) |
+| Known limitations | Product/Clinical | ✅ | [known-limitations.md](./known-limitations.md) |
+| Clinical review UI | Clinical | ✅ | [clinical-review.html](./clinical-review.html) |
+| Launch announcement | Founder/GTM | Needed | Publishable post tied to release tag |
 
 ## Buyer Motions
 
 | Buyer | Primary pain | Demo path |
 | --- | --- | --- |
 | Healthcare AI startups | Need realistic training/evaluation data without PHI friction | Generate chronic + notes cohort, show structured/unstructured consistency |
-| Health system integration teams | Need realistic FHIR test panels | Generate US Core Bundle + NDJSON output with providers, coverage, SDoH |
-| Payers and quality vendors | Need measure and claims-like test data | Generate quality-measure cohort with Coverage, Claim, EOB, MeasureReport |
+| Health system integration teams | Need realistic FHIR test panels matching HIE/QHIN ingestion | Generate US Core bundles + NDJSON; show same resource graph as exchanged clinical data |
+| Payers, clearinghouses, and API vendors | Need claims, eligibility, and remittance test data | Generate Coverage, Claim, EOB cohorts (`--with-coverage --with-claims`); comparable to Stedi-style workflows |
+| Payers and quality vendors | Need measure and HEDIS-analog test data | Generate `--with-measures` cohort with DEQM MeasureReport + claims-like resources |
+| Medicare / Blue Button integrators | Need beneficiary-shaped FHIR without CMS sandbox limits | Age-stratified payer mix, Coverage + EOB, chronic-care modules |
 | Academic researchers | Need license-clean synthetic datasets | Show citations, metadata, validation scorecard, reproducible seeds |
 | Platform teams | Need embedded synthetic data infrastructure | Show CLI, module DSL, provenance, Parquet, and commercial support path |
 

@@ -20,18 +20,28 @@ from parker_atlas.notes.progress import (
 )
 
 __all__ = [
+    "DEFAULT_LLM_MODEL",
+    "LLMNoteResult",
+    "LLMNotesUnavailable",
     "NoteContext",
     "NoteStrategy",
+    "build_discharge_summary_text",
     "build_progress_note_text",
-    "render_note",
-    "LLMNotesUnavailable",
-    "LLMNoteResult",
+    "build_radiology_report_text",
     "render_llm_note",
-    "DEFAULT_LLM_MODEL",
+    "render_note",
 ]
 
 
 def __getattr__(name: str):
+    if name == "build_discharge_summary_text":
+        from parker_atlas.notes.discharge import build_discharge_summary_text
+
+        return build_discharge_summary_text
+    if name == "build_radiology_report_text":
+        from parker_atlas.notes.radiology import build_radiology_report_text
+
+        return build_radiology_report_text
     # Lazy import so `from parker_atlas.notes import NoteStrategy` doesn't
     # require the anthropic SDK to be installed.
     if name in {

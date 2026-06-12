@@ -87,7 +87,7 @@ def test_render_llm_note_assembles_markdown(
 ) -> None:
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
-    def fake_author(payload, *, model, api_key, max_tokens, temperature):
+    def fake_author(payload, *, model, api_key, max_tokens, temperature, provider=None):
         # Sanity-check what we hand to the model: the structured payload must
         # contain the medication and BP observation, not raw FHIR.
         assert payload["patient"]["age_years"] == 62
@@ -126,7 +126,7 @@ def test_render_llm_note_assembles_markdown(
 def test_render_note_dispatches_to_llm(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
 
-    def fake_author(payload, *, model, api_key, max_tokens, temperature):
+    def fake_author(payload, *, model, api_key, max_tokens, temperature, provider=None):
         return (
             {"subjective": "stable.", "assessment_and_plan": "1. continue care."},
             {
