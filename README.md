@@ -2,148 +2,108 @@
 
 # Apex Atlas
 
-**Synthetic FHIR patient populations that mirror real-world care — for AI training, production-style integration, demos, and quality workflows.**
+**Enterprise-grade synthetic FHIR patient populations for healthcare AI, interoperability, and quality reporting.**
 
-[![Live site](https://img.shields.io/badge/🌐_Live_site-apex--atlas-3ba9a0.svg)](https://parkerapex.github.io/apex-atlas/)
+[![Documentation](https://img.shields.io/badge/docs-parkerapex.github.io%2Fapex--atlas-3ba9a0.svg)](https://parkerapex.github.io/apex-atlas/)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
+[![Version](https://img.shields.io/badge/release-v1.0.0-blue.svg)](https://github.com/ParkerApex/apex-atlas/releases/tag/v1.0.0)
 [![FHIR R4](https://img.shields.io/badge/FHIR-R4-red.svg)](https://hl7.org/fhir/R4/)
-[![FHIR R5](https://img.shields.io/badge/FHIR-R5-red.svg)](https://hl7.org/fhir/R5/)
 [![US Core 6.1](https://img.shields.io/badge/US_Core-6.1-green.svg)](https://hl7.org/fhir/us/core/)
 
-### 🌐 [**Live site & quick start → parkerapex.github.io/apex-atlas**](https://parkerapex.github.io/apex-atlas/)
+[Documentation](https://parkerapex.github.io/apex-atlas/) · [Quick start](#installation--quick-start) · [Integration cookbooks](./docs/integration-cookbooks.md) · [Commercial licensing](./COMMERCIAL.md)
 
-The landing page leads with the proof artifacts and a copy-paste generator quick start. _(Goes live once the repo is public and GitHub Pages is enabled — Settings → Pages → Source: `main`, folder `/docs`.)_
-
-**Interim preview (once the repo is public, no setup needed):**
-[landing page](https://htmlpreview.github.io/?https://github.com/ParkerApex/apex-atlas/blob/main/docs/index.html) ·
-[🧪 generator UI](https://htmlpreview.github.io/?https://github.com/ParkerApex/apex-atlas/blob/main/docs/generator.html) — point it at a local `atlas serve`.
-
-**Author:** Vincent J. Lopez, Founder & CEO, Parker Health, Inc.
+**Parker Health, Inc.** · Maintained by [Parker](https://parkerapex.com)
 
 </div>
 
 ---
 
-Apex Atlas generates large-scale, fully synthetic patient populations in FHIR-native format, grounded in public epidemiological data. Cohorts **mirror** how real US patients present in the wild — prevalence, comorbidity, utilization, payer mix, SDoH-driven gaps in care, and quality-measure numerators — without copying any individual record from production systems.
+## Executive summary
 
-It is built by [Parker](https://parkerapex.com) to support training healthcare AI models, exercising pipelines that ingest data from **QHINs**, **HIEs**, **payer/claims APIs** (e.g. Stedi), and **CMS Blue Button**-style FHIR, populating demo environments, quality-measure testing, and shared data infrastructure across the APEX platform.
+Apex Atlas is a synthetic patient population generator that produces FHIR-native clinical records at scale. Cohorts are grounded in publicly sourced US epidemiology and designed to mirror aggregate care patterns—prevalence, comorbidity, utilization, payer mix, social-risk effects, and quality-measure numerators—without replicating individual production records or using restricted datasets.
 
-Every synthetic patient receives a Parker Global Patient Identifier (GPX) under the synthetic prefix namespace, making Atlas-generated data fully interoperable with the broader APEX ecosystem while remaining clearly distinguishable from production clinical data.
+Each synthetic patient receives a [Parker Global Patient Identifier (GPX)](https://parkerapex.com/gpx) under the synthetic namespace, enabling interoperability across the APEX platform while remaining clearly distinguishable from production PHI.
 
-## Mirrors real care — maps to production FHIR
+**Primary applications:** AI model development and evaluation · FHIR integration and regression testing · payer and quality-measure workflows · demonstration and sandbox environments · reproducible research cohorts.
 
-Atlas is **not** a conformance-only fixture generator. It is built to stand in for the **shape and statistics** of data you would receive from live interoperability and payer channels — so teams can develop and test against realistic panels before (or without) production PHI.
+## Production FHIR alignment
 
-| Production channel | What Atlas mirrors | Atlas output |
+Atlas output is structured for the same ingestion paths used in live interoperability and payer programs—not schema validation alone.
+
+| Channel | Representative use case | Atlas output |
 | --- | --- | --- |
-| **QHIN / TEFCA** | Network-exchanged clinical summaries: demographics, problems, meds, encounters | US Core Patient, Condition, Observation, Encounter, MedicationRequest, Procedure bundles |
-| **HIE** | Longitudinal charts queried across organizations; continuity-of-care documents | Multi-condition panels, cross-module progressions, DocumentReference clinical notes |
-| **Stedi / claims & eligibility** | Payer coverage, professional claims, remittance | `--with-coverage` (Coverage, Organization, InsurancePlan), `--with-claims` (Claim + ExplanationOfBenefit) |
-| **CMS Blue Button 2.0** | Medicare beneficiary FHIR: patient, coverage, claims-like EOBs | Age-stratified payer mix, Coverage + EOB resources, ambulatory and chronic-care patterns |
-| **Bulk Data / `$export`** | Flat-file ingestion at scale | NDJSON (one file per resourceType) and Parquet with versioned schema |
+| QHIN / TEFCA | Clinical summary exchange | US Core Patient, Condition, Observation, Encounter, MedicationRequest, Procedure |
+| HIE | Longitudinal, multi-source charts | Multi-condition panels, progressions, DocumentReference notes |
+| Payer / clearinghouse APIs | Eligibility, claims, remittance | Coverage, Organization, InsurancePlan, Claim, ExplanationOfBenefit |
+| CMS Blue Button 2.0 | Medicare beneficiary FHIR | Age-stratified payer mix, Coverage, EOB, chronic-care modules |
+| Bulk Data (`$export`) | Large-scale ingestion | NDJSON and versioned Parquet exports |
 
-**What “mirrors” means:** aggregate rates and care patterns calibrated to NHANES, CDC, ACS, SEER, AHA, BRFSS, and module-cited literature — validated in the [fidelity scorecard](./docs/fidelity-scorecard.md). **What it does not mean:** Atlas does not ingest, replay, or reconstruct records from QHIN participants, HIEs, Stedi, Blue Button, or any credentialed clinical database. No synthetic patient corresponds to any real person.
+Atlas does not connect to, ingest from, or replay data from these production systems. Population statistics are calibrated to cited public sources and validated in the [fidelity scorecard](./docs/fidelity-scorecard.md). See [known limitations](./docs/known-limitations.md) and the [security & provenance FAQ](./docs/security-provenance-faq.md).
 
-Use Atlas when you need **production-mappable FHIR** — the same resource types, profiles, and workflow triggers your app sees in the field — with **license-clean, reproducible** cohorts you control.
+Detailed generation recipes: [`docs/integration-cookbooks.md`](./docs/integration-cookbooks.md).
 
-> **Why did Parker build this?** See [`docs/why-atlas.md`](./docs/why-atlas.md) for the full rationale — the problem with existing tools, the design decisions that set Atlas apart, and where it fits in the Parker mission.
+## Platform capabilities
 
-## Proof, not promises
+- **Clinical module library** — 101 modules across 14 domains, each with public-source citations and representative FHIR emits.
+- **Statistical fidelity** — Cohort validation against sourced expectations; [scorecard](./docs/fidelity-scorecard.md) reports 100/100 modules and 565/565 strata within tolerance.
+- **SDoH causal modeling** — Social determinants modify encounter completion and medication adherence, not metadata alone. [Benchmark](./docs/sdoh-causal-benchmark.md): −39% ambulatory encounters and −32% medication fills at high burden.
+- **Quality reporting** — DEQM-profiled MeasureReport resources; five HEDIS-analog measures with individual and population summaries.
+- **Payer and provider context** — Coverage, claims, NPI-keyed practitioners, and facility organizations.
+- **Clinical documentation** — Template and optional LLM-authored notes (progress, discharge, radiology) grounded in structured data.
+- **Extensible authoring** — `atlas author` pipeline for citation-grounded module development with clinician sign-off. See [research authoring](./docs/authoring/research_authoring.md).
+- **Output formats** — FHIR R4/R5 transaction bundles, Bulk Data-style NDJSON, and Parquet with schema versioning.
 
-Three things you can open right now:
+## Validation and governance
 
-- 📊 **[Fidelity scorecard](./docs/fidelity-scorecard.md)** — **100/100 modules** within tolerance; **565/565 strata** match cited public targets.
-- 📉 **[SDoH causal benchmark](./docs/sdoh-causal-benchmark.md)** — ambulatory encounters fall **−39%** and medication fills **−32%** as social-risk burden rises. A tag-only generator can't reproduce this; it's the relationship a model needs to learn.
-- 🧬 **[`atlas author`](./docs/authoring/research_authoring.md)** — go from a condition name to a citation-grounded draft module **and its sourced fidelity expectation** in one command, gated by clinician sign-off. The library extends itself instead of plateauing.
+| Artifact | Description |
+| --- | --- |
+| [Fidelity scorecard](./docs/fidelity-scorecard.md) | Per-module comparison to cited public targets |
+| [SDoH causal benchmark](./docs/sdoh-causal-benchmark.md) | End-to-end utilization gradient by social-risk burden |
+| `generation-metadata.json` | Run manifest: seed, modules, feature flags, cohort provenance |
+| [Module catalog](./docs/module-catalog.md) | Tier, fidelity, and review status by module |
+| [GTM readiness](./docs/gtm.md) | Launch gates and buyer evaluation checklist |
 
-## What sets Apex Atlas apart
+## Data provenance
 
-Existing synthetic patient generators share a common set of limitations: disease module libraries that plateau in the dozens, clinical notes that read as obviously templated, and social determinants of health treated as metadata rather than causal variables. Apex Atlas addresses all three — and adds capabilities no other open generator offers:
+Apex Atlas is built exclusively from public, license-clean statistical distributions (CDC, NIH, NHANES, ACS, SEER, AHA, ACOG, BRFSS, and peer-reviewed literature cited per module).
 
-- **Research-grounded module authoring** — `atlas author` turns a cited research dossier into a draft module *and* its sourced fidelity expectation in a single pass, both validated through the runtime loaders, then gated behind clinician sign-off before promotion. `atlas author research` produces that dossier autonomously — Claude with the web_search tool pulls current prevalence and codes from authoritative public sources (NHANES, CDC, SEER, peer-reviewed epidemiology). This is the antidote to the plateau problem: the library stays current and auditable because every new module arrives validation-ready, with no uncited numbers. No other open generator can extend itself this way.
-- **SDoH as a causal simulation variable** — food insecurity, housing instability, transportation barriers, financial strain, and social isolation are sampled from BRFSS-grounded distributions and causally reduce outpatient encounter completion and medication adherence rates. Patients with barriers miss appointments and don't fill prescriptions — not as a tag, but as a change in what resources get generated. The [**SDoH causal-signal benchmark**](./docs/sdoh-causal-benchmark.md) measures the effect end-to-end: ambulatory encounters fall ~39% and medication fills ~32% from zero to high SDoH burden — a gradient a tag-only generator cannot produce.
-- **Quality MeasureReport output** — Apex Atlas is the only open generator that emits DEQM-profiled MeasureReport resources alongside patient records. Five HEDIS-analog measures (HbA1c testing in diabetics, BP control in hypertensives, preventive care, flu immunization, pediatric well-child) are evaluated per patient and summarized for the cohort.
-- **Full lifecycle coverage** — pediatric well-child visits with the ACIP 2024 immunization schedule, maternal health and obstetric complications, and 101 clinical modules spanning 14 domains (cardiovascular, metabolic, pulmonary, GI, renal/urology, musculoskeletal/rheumatology, mental health, substance use, neurology, oncology/hematology, infectious disease, pediatric/OB/prevention, dermatology/allergy, and ENT/ophthalmology).
-- **Grounded clinical notes** — progress notes, H&Ps, and discharge summaries generated with structured-data grounding. LLM-authored notes (Claude, configurable) are available today via `--notes-strategy llm`.
-- **Statistical validation against public norms** — every module declares its prevalence sources (NHANES, CDC, SEER, AHA) and the cohort fidelity harness checks aggregate distributions against those targets. The live [**fidelity scorecard**](./docs/fidelity-scorecard.md) reports **100/100 modules** and **565/565 strata** within tolerance.
-- **FHIR-first, always** — R4 and R5 output shaped for the same ingestion paths as QHIN, HIE, and payer FHIR (not just schema validation): US Core 6.1, Bulk Data NDJSON, Gravity SDOHCC, DEQM MeasureReport, Claim/EOB/Coverage.
+Atlas is **not** trained on, derived from, or informed by MIMIC, UK Biobank, QHIN payloads, HIE extracts, or other credentialed or production clinical datasets. No synthetic patient corresponds to any real individual.
 
-## What Apex Atlas is not
+## Module library
 
-Apex Atlas is not trained on, derived from, or in any way informed by restricted datasets such as MIMIC, UK Biobank, QHIN payloads, HIE extracts, or similar credentialed or production sources. The generator is built exclusively from public, license-clean statistical distributions published by the CDC, NIH, AHA, and ACOG. No synthetic patient in Atlas corresponds to any real person — but cohort-level distributions are designed to **map** to what those production channels deliver.
+101 bundled clinical modules span cardiovascular, metabolic/endocrine, pulmonary, GI/hepatology, renal/urology, musculoskeletal/rheumatology, mental health, substance use, neurology, oncology/hematology, infectious disease, pediatric/OB/prevention, dermatology/allergy, and ENT/ophthalmology.
 
-## Implementation status
-
-| Component                    | Status                | Notes |
-| ---------------------------- | --------------------- | ----- |
-| Parker GPX identifier        | ✅ Implemented        | `gpx.py` — spec v1.0, fully tested |
-| Demographic sampling         | ✅ ACS-sourced        | age/sex/race/ethnicity from ACS 2024 1-year estimates (B01001/B02001/B03003) |
-| `atlas ingest prevalence`    | ✅ Implemented        | CSV + metadata → sourced fidelity expectation YAML with provenance |
-| `atlas ingest demographics`  | ✅ Implemented        | CSV + metadata → `references/tables/*.csv` + provenance sidecar |
-| `atlas ingest progression`   | ✅ Implemented        | CSV + metadata → `<module>.progressions.yaml` overlay with sourced rates |
-| FHIR Patient                 | ✅ Implemented        | US Core 6.1 with race/ethnicity/birthsex extensions + HTEST tag |
-| FHIR Condition               | ✅ Implemented        | US Core Problems & Health Concerns |
-| FHIR Observation             | ✅ Implemented        | Vital signs, labs, blood pressure (multi-component), SDOHCC |
-| FHIR Encounter               | ✅ Implemented        | US Core: outpatient / inpatient / emergency / home / virtual |
-| FHIR MedicationRequest       | ✅ Implemented        | US Core MedicationRequest with inline medicationCodeableConcept |
-| FHIR Procedure               | ✅ Implemented        | US Core Procedure 6.1 |
-| FHIR AllergyIntolerance      | ✅ Implemented        | US Core AllergyIntolerance |
-| FHIR Immunization            | ✅ Implemented        | US Core Immunization; ACIP 2024 schedule in pediatric module |
-| FHIR DiagnosticReport        | ✅ Implemented        | Groups Observations (lipid panel, CBC, BMP) |
-| FHIR Claim + EOB             | ✅ First cut          | `--with-claims`: one Claim + ExplanationOfBenefit per covered Encounter |
-| FHIR MeasureReport           | ✅ Implemented        | `--with-measures`: DEQM Individual + Summary MeasureReport; 5 HEDIS-analog measures |
-| FHIR Bundle assembly         | ✅ Implemented        | Transaction Bundle, one file per patient |
-| `atlas generate`             | ✅ Implemented        | `--format fhir-r4 / ndjson / parquet` |
-| `atlas validate`             | ✅ Structural         | Schema + US Core Patient/Condition minimums |
-| `atlas validate --cohort`    | ✅ Implemented        | Fidelity harness: aggregate metrics vs. sourced expectations with tolerance |
-| `atlas report`               | ✅ Implemented        | Self-contained HTML cohort report (demographics + fidelity) |
-| `atlas modules`              | ✅ Implemented        | List and inspect bundled modules |
-| `atlas serve` (dev API)     | ✅ First cut          | Stdlib HTTP server: /health, /modules, POST /generate (NDJSON), and async FHIR Bulk Data `$export` kickoff/poll/download. Dev server (CORS, $PORT-aware); deployable via Docker/Fly/Render/Cloud Run — see [`docs/api.md`](./docs/api.md), [`docs/deploy.md`](./docs/deploy.md) |
-| Module runtime               | ✅ Implemented        | Time-aware emits, onset dating, cross-module `requires`, progressions |
-| Module library               | ✅ 101 modules        | 100-module launch library + `glaucoma` (first `atlas author`-drafted, Tier 3). CV · metabolic/endocrine · pulmonary · GI/hepatology · renal/urology · MSK/rheum · mental health · SUD · neuro/cognition · oncology/heme · ID · pediatric/OB/prevention · derm/allergy · ENT/ophthalmology |
-| Fidelity expectations        | ✅ 100 modules         | Sourced expectations for all bundled modules; `atlas validate --gtm` runs ~98 sourced modules |
-| Cross-module dependencies    | ✅ Implemented        | `requires: module:cond_id` gates cross-module comorbidity chains |
-| State-machine progressions   | ✅ One-hop            | 13+ chains live: HTN→CKD/HF/stroke, DM→CKD/retinopathy, AFib→stroke, CKD→ESRD, NAFLD→cirrhosis, pregnancy→GDM/preeclampsia/PPD, SCD→VOC, T1D→DKA |
-| SDoH causal overlay          | ✅ Implemented        | `--with-sdoh`: BRFSS-grounded sampling; encounter + medication adherence modifiers; Gravity Project SDOHCC Observations |
-| Payer & coverage             | ✅ Implemented        | `--with-coverage`: age-stratified payer mix → Coverage + Organization + InsurancePlan |
-| Providers & locations        | ✅ Implemented        | `--with-providers`: NPI-keyed Practitioner + PractitionerRole + Location + facility Organization |
-| Clinical notes (template)    | ✅ Implemented        | `--with-notes`: progress, discharge (`--note-types`), and radiology reports |
-| Clinical notes (LLM)         | ✅ Implemented        | `--notes-strategy llm`: narrative via `ATLAS_LLM_PROVIDER` (Anthropic or OpenAI) |
-| Pediatric well-child         | ✅ Implemented        | 4 age cohorts (0-2, 3-5, 6-11, 12-17); ACIP 2024 schedule; NIS-Child/Teen rates |
-| Maternal health / OB         | ✅ Implemented        | Pregnancy + prenatal cascade + GDM + preeclampsia + postpartum depression |
-| LLM-assisted module authoring| ✅ Implemented        | `atlas author research` / `synthesize` / `promote` with clinician sign-off gate |
-| `atlas author` (dossier→draft)| ✅ Implemented        | Research dossier → draft module + sourced expectation ([`docs/authoring/research_authoring.md`](./docs/authoring/research_authoring.md)) |
-| `atlas author research`       | ✅ Implemented        | Claude + web_search; `--draft-out` chains research → synthesis |
-| FHIR IPS conformance         | ⏳ Post-v1            | International Patient Summary for non-US use cases |
-| Production Bulk $export      | ⏳ Post-v1            | Dev async `$export` in `atlas serve`; production SMART on FHIR deferred |
-
-See [`docs/integration-cookbooks.md`](./docs/integration-cookbooks.md) for QHIN, HIE, Stedi, and CMS Blue Button-shaped generation recipes.
-
-See [`docs/roadmap.md`](./docs/roadmap.md) for milestone timeline and exit criteria.
-
-## Launch Library
-
-Apex Atlas currently ships **101 bundled modules** across 14 clinical domains — the 100-module launch library plus `glaucoma`, the first module drafted by the `atlas author` research pipeline (Tier 3, sourced prevalence, pending clinical review). Every module carries public-source citations and representative FHIR emits; high-priority GTM modules are backed by sourced fidelity expectations and can be checked together with `atlas validate --gtm`.
-
-The launch library is deliberately balanced across GTM use cases:
-
-| Track | Modules | Why it matters |
+| Domain focus | Modules | Typical enterprise use |
 | --- | ---: | --- |
-| Chronic disease and cardiometabolic care | 20 | Primary-care panels, care management, risk adjustment |
-| Pulmonary, GI, renal, and MSK | 29 | Specialty workflows and high-volume outpatient testing |
-| Mental health, SUD, and neurology | 16 | Whole-person care, utilization variance, longitudinal complexity |
-| Oncology, hematology, and infectious disease | 14 | Specialty demos, procedures, diagnostics, staging, survivorship |
-| Pediatric, OB, prevention, and immunizations | 12 | Full lifecycle coverage and payer quality programs |
-| Dermatology, allergy, ENT, and ophthalmology | 9 | Common ambulatory use cases that make demos feel complete |
+| Cardiometabolic and chronic disease | 20 | Primary care, care management, risk adjustment |
+| Pulmonary, GI, renal, MSK | 29 | Specialty workflows, high-volume outpatient testing |
+| Behavioral health and neurology | 16 | Whole-person care, utilization modeling |
+| Oncology, hematology, infectious disease | 14 | Specialty integration and diagnostics |
+| Pediatric, OB, prevention | 12 | Lifecycle coverage, quality programs |
+| Dermatology, allergy, ENT, ophthalmology | 9 | Ambulatory completeness |
 
-Module growth is not just a count. A module is v1-ready when it has public-source citations, deterministic smoke tests, representative FHIR emits, cohort fidelity expectations where prevalence is clinically material, and a documented review status.
+Full catalog: [`docs/module-catalog.md`](./docs/module-catalog.md). Roadmap: [`docs/roadmap.md`](./docs/roadmap.md).
 
-See [`docs/module-catalog.md`](./docs/module-catalog.md) for the current module catalog, [`docs/roadmap.md`](./docs/roadmap.md) for the launch-readiness plan, and [`docs/gtm.md`](./docs/gtm.md) for the prime-time checklist.
+## Platform status
 
-## Quick start
+| Component | Status | Notes |
+| --- | --- | --- |
+| GPX identifier (v1.0) | Available | Synthetic namespace; fully tested |
+| Demographics (ACS 2024) | Available | Age, sex, race, ethnicity |
+| FHIR US Core 6.1 builders | Available | Patient through MeasureReport |
+| `atlas generate` | Available | FHIR R4 bundles, NDJSON, Parquet |
+| `atlas validate` / `--cohort` / `--gtm` | Available | Structural and statistical validation |
+| SDoH overlay (`--with-sdoh`) | Available | Gravity SDOHCC; causal utilization modifiers |
+| Payer & claims | Available | `--with-coverage`, `--with-claims` |
+| Clinical notes | Available | Template and LLM (`--notes-strategy`) |
+| Module authoring (`atlas author`) | Available | Research → draft → clinician promote |
+| Dev API (`atlas serve`) | Available | Docker-deployable; see [`docs/deploy.md`](./docs/deploy.md) |
+| IPS 2.0 conformance | Planned | Post-v1 international profiles |
+| Production SMART / Bulk `$export` | Planned | Dev `$export` available today |
 
-> **v1.0** — install from source (`pip install -e ".[dev]"`) or PyPI once published:
-> `pip install apex-atlas[data,llm]`
+## Installation & quick start
+
+**Requirements:** Python 3.11+
 
 ```bash
 git clone https://github.com/ParkerApex/apex-atlas.git
@@ -151,254 +111,129 @@ cd apex-atlas
 python -m venv .venv && source .venv/bin/activate
 pip install -e ".[dev]"
 
-# Generate 10 synthetic FHIR R4 Patient bundles (US Core 6.1)
-atlas generate --patients 10 --seed 42 --out ./out
-ls ./out
-# GPX-SYN-0000000001-8.json  GPX-SYN-0000000002-6.json  …
-# generation-metadata.json  # cohort provenance, patient count, and feature flags
+# Generate a synthetic cohort
+atlas generate --patients 100 --seed 42 --out ./out
 
-# Structurally validate the output
+# Validate structure
 atlas validate ./out
 
-# Generate the curated launch-demo cohort with notes, SDoH, coverage,
-# claims, providers, and quality MeasureReports
-atlas launch-demo --patients 2500 --out ./atlas-launch-demo
+# Launch-ready demo cohort (notes, SDoH, coverage, claims, providers, measures)
+atlas launch-demo --patients 2500 --seed 42 --out ./atlas-launch-demo
 atlas validate ./atlas-launch-demo --gtm
-
-# See what's built
-atlas status
-
-# Run the test suite
-pytest
 ```
 
-### Chronic disease modules
+Pre-built sample manifest (10,000 patients): [`samples/launch-demo-10000-patients/MANIFEST.json`](./samples/launch-demo-10000-patients/MANIFEST.json). Build instructions: [`samples/README.md`](./samples/README.md).
+
+## Common workflows
+
+**Multi-condition chronic panel**
 
 ```bash
-# Run multiple modules together — cross-module progressions fire automatically
 atlas generate --patients 500 --seed 42 \
-    --module hypertension,diabetes,ischemic_heart_disease \
-    --summary --out ./chronic-cohort
-
-# Inspect any module's prevalence sources and conditions
-atlas modules --show diabetes
+  --module hypertension,diabetes,ischemic_heart_disease \
+  --summary --out ./chronic-cohort
 ```
 
-### Full clinical record
+**Full clinical and payer record**
 
 ```bash
-# Everything: payer, providers, claims, SDoH, notes, quality measures
 atlas generate --patients 200 --seed 42 \
-    --module hypertension,diabetes,wellness \
-    --with-coverage \
-    --with-providers \
-    --with-claims \
-    --with-sdoh \
-    --with-notes \
-    --with-measures \
-    --summary \
-    --out ./full-cohort
+  --module hypertension,diabetes,wellness \
+  --with-coverage --with-providers --with-claims \
+  --with-sdoh --with-notes --with-measures \
+  --summary --out ./full-cohort
 ```
 
-### Social determinants
+**Bulk Data export**
 
 ```bash
-# Sample SDoH risk factors per patient (BRFSS-grounded rates).
-# Patients with transport or cost barriers miss outpatient visits and
-# don't fill prescriptions — causally, not as a metadata tag.
-# Emits Gravity Project SDOHCC Observations for all 5 domains.
-atlas generate --patients 500 --seed 42 \
-    --module hypertension,diabetes \
-    --with-sdoh --summary --out ./sdoh-cohort
+atlas generate --patients 5000 --seed 42 \
+  --module hypertension,diabetes \
+  --format ndjson --out ./bulk-export
 ```
 
-### Quality measures
+**Cohort fidelity report**
 
 ```bash
-# Emit DEQM MeasureReport resources per patient + population summaries.
-# Measures: DM HbA1c testing, HTN BP control, preventive care,
-# flu immunization, pediatric well-child visits.
-atlas generate --patients 1000 --seed 42 \
-    --module hypertension,diabetes,wellness,pediatric_wellness \
-    --with-measures --summary --out ./measures-cohort
-
-# Population-level summary reports appear alongside patient bundles:
-ls ./measures-cohort/MeasureReport-*.json
-```
-
-### Pediatric and maternal health
-
-```bash
-# Well-child visits + ACIP 2024 immunization schedule (ages 0-17)
-atlas generate --patients 500 --seed 42 \
-    --module pediatric_wellness --summary --out ./peds
-
-# Prenatal care + delivery + obstetric complications (females 15-49)
-atlas generate --patients 500 --seed 42 \
-    --module maternal_health --summary --out ./ob
-```
-
-### Output formats
-
-```bash
-# FHIR Bulk Data-style NDJSON — one file per resourceType
-atlas generate --patients 500 --seed 42 \
-    --module hypertension --format ndjson --out ./bulk
-ls ./bulk
-# Condition.ndjson  Encounter.ndjson  MedicationRequest.ndjson  Patient.ndjson …
-
-# Columnar Parquet for analytics / DataFrame pipelines
-pip install -e ".[data]"
-atlas generate --patients 500 --seed 42 \
-    --module hypertension --format parquet --out ./parquet
-# generation-metadata.json is written into every output directory for audit and cohort tracking
-```
-
-### Generation metadata
-
-Every `atlas generate` run writes a `generation-metadata.json` file into the output directory. This artifact is a run manifest, not a FHIR resource. It captures synthetic patient count, active modules / illness types, output format, feature flags, and cohort-level audit breadcrumbs for governance and marketing. `atlas validate` ignores this manifest during FHIR structural validation.
-
-Example fields:
-
-- `cohort_id`: generated run identifier
-- `generated_at`: UTC timestamp when the cohort was produced
-- `output_path`: target output directory
-- `requested_patients`: requested synthetic patient count
-- `actual_patients`: actual synthetic patient count produced
-- `module_names`: list of active clinical modules
-- `format`: output format (`fhir-r4`, `ndjson`, `parquet`)
-- `profile`: FHIR profile used
-- `seed`: RNG seed
-- `with_notes`, `with_coverage`, `with_providers`, `with_claims`, `with_sdoh`, `with_measures`: enabled feature flags
-- `summary`: optional demographic counts when `--summary` is used
-
-This file makes cohort generation auditable and easy to aggregate over time.
-
-### LLM-authored clinical notes
-
-```bash
-# Template-based notes (no API key required)
-atlas generate --patients 50 --seed 42 \
-    --module hypertension --with-notes --out ./notes-template
-
-# Claude-authored narrative notes (requires ANTHROPIC_API_KEY)
-export ANTHROPIC_API_KEY=sk-ant-...
-atlas generate --patients 50 --seed 42 \
-    --module hypertension \
-    --with-notes --notes-strategy llm \
-    --out ./notes-llm
-```
-
-### Cohort fidelity validation
-
-```bash
-# Check that a cohort's prevalence matches CDC/NHANES published rates
 atlas generate --patients 20000 --seed 42 --module hypertension --out ./cohort
 atlas validate ./cohort --cohort --module hypertension
-
-# HTML report with demographics + fidelity bars (no JS, safe to email)
 atlas report ./cohort --module hypertension --out cohort-report.html
-# generation-metadata.json captured at generation time provides an audit trail for internal governance
 ```
 
-### Authoring a new module from research
-
-```bash
-# Autonomous: research a condition, draft module + sourced expectation in one step
-# (requires the `anthropic` extra and ANTHROPIC_API_KEY)
-atlas author research --condition glaucoma --draft-out ./atlas-drafts
-
-# Or synthesize from a dossier you authored by hand / via the deep-research workflow
-atlas author synthesize --dossier ./glaucoma.dossier.yaml --out ./atlas-drafts
-
-# A clinician reviews the draft and fills the Signed-off-by: line in SIGNOFF.md,
-# then promote installs the validated module + expectation into the library
-atlas author promote --draft ./atlas-drafts/glaucoma
-
-# Verify the loop closes: the new module validates against its own sourced expectation
-atlas generate --patients 8000 --seed 7 --module glaucoma --out ./g && \
-  atlas validate ./g --cohort --module glaucoma
-```
-
-See [`docs/authoring/research_authoring.md`](./docs/authoring/research_authoring.md) for the dossier contract and the full workflow.
+Additional examples: social determinants, quality measures, pediatric/OB modules, Parquet export, and module authoring — see [`docs/integration-cookbooks.md`](./docs/integration-cookbooks.md) and the CLI reference via `atlas --help`.
 
 ## Architecture
-
-Apex Atlas is organized as a single Python package with cleanly separated subsystems.
 
 ```
 apex-atlas/
 ├── src/parker_atlas/
-│   ├── gpx.py              # Parker GPX identifier — spec v1.0
-│   ├── cli.py              # atlas command-line interface
-│   ├── core/
-│   │   ├── demographics.py # ACS-sourced demographic sampling
-│   │   ├── payer.py        # Age-stratified payer mix
-│   │   ├── provider.py     # NPI-keyed provider / location sampling
-│   │   └── sdoh.py         # BRFSS-grounded SDoH profile + causal modifiers
-│   ├── modules/
-│   │   ├── runtime.py      # Module DSL parser and probability runtime
-│   │   └── library/        # 100 bundled YAML clinical modules
-│   ├── fhir/               # FHIR resource builders (US Core 6.1)
-│   │   ├── measure_report.py   # DEQM MeasureReport (individual + summary)
-│   │   └── sdoh_observation.py # Gravity Project SDOHCC Observations
-│   ├── measures/           # Quality measure definitions and evaluation
-│   ├── notes/              # Clinical note generation (template + LLM)
-│   ├── validation/         # Structural validation + cohort fidelity harness
-│   ├── ingest/             # Prevalence / demographics / progression ingestion
-│   └── references/         # ACS reference tables (age, sex, race, payer mix)
-├── tests/
-└── docs/                   # Architecture, roadmap, module catalog, rationale
+│   ├── gpx.py                 # Parker GPX identifier
+│   ├── cli.py                 # Command-line interface
+│   ├── core/                  # Demographics, payer, provider, SDoH
+│   ├── modules/library/       # 101 clinical module definitions
+│   ├── fhir/                  # US Core 6.1 resource builders
+│   ├── measures/              # Quality measure evaluation
+│   ├── notes/                 # Clinical note generation
+│   ├── validation/            # Structural and cohort fidelity
+│   └── references/            # ACS and epidemiological tables
+├── docs/                      # Architecture, catalog, compliance
+└── tests/
 ```
 
-See [`docs/architecture.md`](./docs/architecture.md) for the full design.
+Full design: [`docs/architecture.md`](./docs/architecture.md). Rationale: [`docs/why-atlas.md`](./docs/why-atlas.md).
+
+## Documentation
+
+| Document | Purpose |
+| --- | --- |
+| [Integration cookbooks](./docs/integration-cookbooks.md) | QHIN, HIE, payer, and Blue Button-shaped workflows |
+| [Known limitations](./docs/known-limitations.md) | Capability boundaries and tier definitions |
+| [Security & provenance FAQ](./docs/security-provenance-faq.md) | PHI, licensing, API keys, deployment |
+| [Commercial one-pager](./docs/commercial-one-pager.md) | Apache 2.0 vs enterprise license |
+| [API reference](./docs/api.md) | `atlas serve` endpoints |
+| [Deploy guide](./docs/deploy.md) | Docker, Fly, Render, Cloud Run |
 
 ## Licensing
 
-Apex Atlas is **dual-licensed**:
+Apex Atlas is dual-licensed:
 
-- **Apache License 2.0** for the generator code, FHIR tooling, and module runtime — suitable for research, education, open-source integration, and non-competing commercial use
-- **Apex Atlas Commercial License** for enterprise deployments requiring validated releases, SLAs, indemnification, custom module development, or embedding within a competing healthcare data platform
+- **Apache License 2.0** — generator code, FHIR tooling, and module runtime for research, education, and non-competing commercial use.
+- **Apex Atlas Commercial License** — enterprise deployments requiring validated releases, SLAs, indemnification, custom modules, or embedding in competing synthetic-data platforms.
 
-See [`LICENSE`](./LICENSE) and [`COMMERCIAL.md`](./COMMERCIAL.md) for details. Contact [licensing@parkerapex.com](mailto:licensing@parkerapex.com) for commercial inquiries.
+See [`LICENSE`](./LICENSE) and [`COMMERCIAL.md`](./COMMERCIAL.md). Enterprise inquiries: [licensing@parkerapex.com](mailto:licensing@parkerapex.com).
 
 ## Contributing
 
-Apex Atlas welcomes contributions — particularly clinical module authorship from licensed healthcare professionals. See [`CONTRIBUTING.md`](./CONTRIBUTING.md). All contributors sign a Contributor License Agreement (CLA) that permits dual-licensing of their contributions.
+Contributions are welcome, particularly clinical module authorship from licensed healthcare professionals. See [`CONTRIBUTING.md`](./CONTRIBUTING.md). All contributors sign a Contributor License Agreement (CLA) supporting dual licensing.
 
 ## Governance
 
-Apex Atlas is maintained by Parker Health, Inc. Specifications referenced by this project — including the [Parker GPX Identifier Specification](https://parkerapex.com/gpx) — are published independently and may be implemented outside the APEX ecosystem under their respective terms.
+Apex Atlas is maintained by **Parker Health, Inc.** Specifications referenced by this project—including the [Parker GPX Identifier Specification](https://parkerapex.com/gpx)—are published independently and may be implemented outside the APEX ecosystem under their respective terms.
 
-## Citing Apex Atlas
-
-If Apex Atlas supports your research, please cite:
+## Citation
 
 ```bibtex
 @software{lopez2026apexatlas,
   author       = {Lopez, Vincent J.},
   title        = {{Apex Atlas: A Synthetic FHIR Patient Population Generator}},
   year         = {2026},
-  version      = {0.9},
+  version      = {1.0.0},
   publisher    = {Parker Health, Inc.},
   url          = {https://github.com/ParkerApex/apex-atlas},
-  note         = {Generates FHIR R4/R5 patient populations grounded in CDC,
-                  NHANES, ACS, SEER, AHA, and ACOG public epidemiological data.
-                  Implements US Core 6.1, Gravity Project SDOHCC, and DEQM
-                  MeasureReport profiles. Apache 2.0 / commercial dual-license.}
+  note         = {Generates FHIR R4/R5 patient populations grounded in public
+                  US epidemiological data. Implements US Core 6.1, Gravity
+                  Project SDOHCC, and DEQM MeasureReport profiles.}
 }
 ```
 
-Plain-text format:
+Plain text:
 
-> Lopez, V. J. (2026). *Apex Atlas: A Synthetic FHIR Patient Population Generator* (v0.9). Parker Health, Inc. https://github.com/ParkerApex/apex-atlas
-
-If your work specifically uses the SDoH causal modeling, quality measure output, or pediatric/maternal health modules introduced in the v0.9 release, please note the specific capabilities used so reviewers can evaluate the fitness of the synthetic data for your application.
+> Lopez, V. J. (2026). *Apex Atlas: A Synthetic FHIR Patient Population Generator* (v1.0.0). Parker Health, Inc. https://github.com/ParkerApex/apex-atlas
 
 ---
 
 <div align="center">
 
-Built by [Parker](https://parkerapex.com) · Parker Health, Inc.
+Copyright © 2026 Parker Health, Inc. · [parkerapex.com](https://parkerapex.com)
 
 </div>
