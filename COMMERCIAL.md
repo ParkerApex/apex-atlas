@@ -35,6 +35,6 @@ Commercial licensing is offered in three tiers, negotiated based on deployment s
 
 Email `licensing@parkerapex.com` with a brief description of your intended use. We typically respond within two business days with a term sheet.
 
-Parker Health, Inc.
-Washington, DC | Dallas, TX
+Parker Health, Inc. DBA Parker
+Washington, DC | London UK
 https://parkerapex.com
