@@ -1,0 +1,1343 @@
+{
+  "resourceType": "Bundle",
+  "type": "transaction",
+  "entry": [
+    {
+      "fullUrl": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc",
+      "resource": {
+        "resourceType": "Patient",
+        "id": "GPX-SYN-0000000025-7",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "extension": [
+          {
+            "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-race",
+            "extension": [
+              {
+                "url": "ombCategory",
+                "valueCoding": {
+                  "system": "urn:oid:2.16.840.1.113883.6.238",
+                  "code": "2106-3",
+                  "display": "White"
+                }
+              },
+              {
+                "url": "text",
+                "valueString": "White"
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-ethnicity",
+            "extension": [
+              {
+                "url": "ombCategory",
+                "valueCoding": {
+                  "system": "urn:oid:2.16.840.1.113883.6.238",
+                  "code": "2186-5",
+                  "display": "Not Hispanic or Latino"
+                }
+              },
+              {
+                "url": "text",
+                "valueString": "Not Hispanic or Latino"
+              }
+            ]
+          },
+          {
+            "url": "http://hl7.org/fhir/us/core/StructureDefinition/us-core-birthsex",
+            "valueCode": "F"
+          }
+        ],
+        "identifier": [
+          {
+            "use": "official",
+            "system": "https://parkerapex.com/gpx",
+            "value": "GPX-SYN-0000000025-7",
+            "assigner": {
+              "display": "APEX Atlas Synthetic Population"
+            }
+          }
+        ],
+        "name": [
+          {
+            "use": "official",
+            "family": "Jones",
+            "given": [
+              "Donna"
+            ]
+          }
+        ],
+        "gender": "female",
+        "birthDate": "2026-06-07"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Patient"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:6dc68300-af67-5fc9-9028-31dd030b98d7",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "76c966c9-dd1f-5bc6-aaf6-e6e84e76a256",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-organization|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/payer",
+            "value": "medicaid-state-syn"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+                "code": "pay",
+                "display": "Payer"
+              }
+            ]
+          }
+        ],
+        "name": "State Medicaid (Synthetic)"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:be576626-a7fa-51ae-a5dd-6ee5f0fb6e15",
+      "resource": {
+        "resourceType": "InsurancePlan",
+        "id": "8c58c136-442e-5329-b1aa-24f62d0d0494",
+        "meta": {
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/insurance-plan",
+            "value": "medicaid-state-syn"
+          }
+        ],
+        "status": "active",
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/insurance-plan-type",
+                "code": "medical",
+                "display": "Medical"
+              }
+            ]
+          }
+        ],
+        "name": "State Medicaid (Synthetic)",
+        "ownedBy": {
+          "reference": "urn:uuid:6dc68300-af67-5fc9-9028-31dd030b98d7"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "InsurancePlan"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:5cee86eb-8e57-5861-94c0-6bc111481925",
+      "resource": {
+        "resourceType": "Coverage",
+        "id": "82c46228-7633-5d82-8020-6a58d6e432ec",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-coverage|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/coverage",
+            "value": "82c46228-7633-5d82-8020-6a58d6e432ec"
+          }
+        ],
+        "status": "active",
+        "type": {
+          "coding": [
+            {
+              "system": "https://nahdo.org/sopt",
+              "code": "2",
+              "display": "Medicaid"
+            }
+          ],
+          "text": "Medicaid"
+        },
+        "subscriber": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "subscriberId": "SYN-4C326D9ECC",
+        "beneficiary": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "relationship": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/subscriber-relationship",
+              "code": "self",
+              "display": "Self"
+            }
+          ]
+        },
+        "payor": [
+          {
+            "reference": "urn:uuid:6dc68300-af67-5fc9-9028-31dd030b98d7"
+          }
+        ],
+        "order": 1,
+        "class": [
+          {
+            "type": {
+              "coding": [
+                {
+                  "system": "http://terminology.hl7.org/CodeSystem/coverage-class",
+                  "code": "plan",
+                  "display": "Plan"
+                }
+              ]
+            },
+            "value": "medicaid-state-syn",
+            "name": "medicaid-state-syn"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Coverage"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:10cee4e5-3c8f-57f7-8a7a-8ccafd968c00",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "46dca6c6-8077-5af7-bd2b-26c86fa48961",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "170149006",
+              "display": "Child examination (procedure)"
+            }
+          ],
+          "text": "Child examination (procedure)"
+        },
+        "subject": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "onsetDateTime": "2026-06-21"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Condition"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:be9a682d-61e1-5d75-9cef-aaacc2bd409c",
+      "resource": {
+        "resourceType": "Organization",
+        "id": "958813c1-7c25-555c-82e0-78b9fcabc4db",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-organization|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "2000000028"
+          }
+        ],
+        "active": true,
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+                "code": "prov",
+                "display": "Healthcare Provider"
+              }
+            ]
+          }
+        ],
+        "name": "APEX Atlas Cardiology Clinic"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Organization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:a88b4e40-fe37-5765-aba0-8b94f22f58fb",
+      "resource": {
+        "resourceType": "Practitioner",
+        "id": "43b62388-25af-53f1-ac9c-fe52d4c92292",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-practitioner|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "http://hl7.org/fhir/sid/us-npi",
+            "value": "1000000053"
+          }
+        ],
+        "active": true,
+        "name": [
+          {
+            "family": "Hughes",
+            "given": [
+              "Marcus"
+            ],
+            "prefix": [
+              "Dr."
+            ]
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Practitioner"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:8f71ecd8-2125-52aa-acc2-b86e38c93e19",
+      "resource": {
+        "resourceType": "Location",
+        "id": "dfcd7fce-e993-551a-84bc-1a335208e4f9",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-location|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "active",
+        "name": "Outpatient Cardiology",
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/v3-RoleCode",
+                "code": "OF",
+                "display": "Outpatient Facility"
+              }
+            ],
+            "text": "Outpatient Facility"
+          }
+        ],
+        "address": {
+          "use": "work",
+          "line": [
+            "250 Beacon St"
+          ],
+          "city": "Boston",
+          "state": "MA",
+          "postalCode": "02116",
+          "country": "US"
+        },
+        "managingOrganization": {
+          "reference": "urn:uuid:be9a682d-61e1-5d75-9cef-aaacc2bd409c"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Location"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:c29cf0af-8280-5c7e-beb9-6d1b355a0b49",
+      "resource": {
+        "resourceType": "PractitionerRole",
+        "id": "deec7891-6085-50c2-bfeb-f6fe395c5c1c",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-practitionerrole|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "active": true,
+        "practitioner": {
+          "reference": "urn:uuid:a88b4e40-fe37-5765-aba0-8b94f22f58fb"
+        },
+        "organization": {
+          "reference": "urn:uuid:be9a682d-61e1-5d75-9cef-aaacc2bd409c"
+        },
+        "specialty": [
+          {
+            "coding": [
+              {
+                "system": "http://nucc.org/provider-taxonomy",
+                "code": "207RC0000X",
+                "display": "Cardiovascular Disease"
+              }
+            ],
+            "text": "Cardiovascular Disease"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "PractitionerRole"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:545464c1-f3b7-5682-a6dc-9e01fb8f7ed0",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "089ea4a6-cdb2-5f20-8dea-366dd6119fab",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-encounter|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/encounter",
+            "value": "089ea4a6-cdb2-5f20-8dea-366dd6119fab"
+          }
+        ],
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "ambulatory"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "410620009",
+                "display": "Well child visit (procedure)"
+              }
+            ],
+            "text": "Well child visit (procedure)"
+          }
+        ],
+        "subject": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "period": {
+          "start": "2026-06-21",
+          "end": "2026-06-21"
+        },
+        "participant": [
+          {
+            "type": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "ATND",
+                    "display": "attender"
+                  }
+                ]
+              }
+            ],
+            "individual": {
+              "reference": "urn:uuid:a88b4e40-fe37-5765-aba0-8b94f22f58fb"
+            }
+          }
+        ],
+        "location": [
+          {
+            "location": {
+              "reference": "urn:uuid:8f71ecd8-2125-52aa-acc2-b86e38c93e19"
+            },
+            "status": "completed"
+          }
+        ],
+        "serviceProvider": {
+          "reference": "urn:uuid:be9a682d-61e1-5d75-9cef-aaacc2bd409c"
+        },
+        "reasonCode": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "170149006",
+                "display": "Child examination"
+              }
+            ],
+            "text": "Child examination"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Encounter"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:0c9fc24c-37ef-5d96-b00f-fecd7e064eca",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "bbc8dc22-974b-5eab-9f85-4a51fdb50fad",
+        "meta": {
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ],
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-vital-signs|6.1.0"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "29463-7",
+              "display": "Body weight"
+            }
+          ],
+          "text": "Body weight"
+        },
+        "subject": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "effectiveDateTime": "2026-06-21",
+        "valueQuantity": {
+          "value": 7.9,
+          "unit": "kg",
+          "system": "http://unitsofmeasure.org",
+          "code": "kg"
+        },
+        "encounter": {
+          "reference": "urn:uuid:545464c1-f3b7-5682-a6dc-9e01fb8f7ed0"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:aec0fd5b-44b8-5784-8c73-10fbe0af330f",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "8ff7b08d-3f2a-5161-b7ca-937e48312d5a",
+        "meta": {
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ],
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-vital-signs|6.1.0"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "8302-2",
+              "display": "Body height"
+            }
+          ],
+          "text": "Body height"
+        },
+        "subject": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "effectiveDateTime": "2026-06-21",
+        "valueQuantity": {
+          "value": 86.0,
+          "unit": "cm",
+          "system": "http://unitsofmeasure.org",
+          "code": "cm"
+        },
+        "encounter": {
+          "reference": "urn:uuid:545464c1-f3b7-5682-a6dc-9e01fb8f7ed0"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:1a08994d-04e6-5e7c-bcc1-fa207ee57b90",
+      "resource": {
+        "resourceType": "Observation",
+        "id": "12472214-915a-5903-8f8c-6eec714a1ea8",
+        "meta": {
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ],
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-vital-signs|6.1.0"
+          ]
+        },
+        "status": "final",
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/observation-category",
+                "code": "vital-signs",
+                "display": "Vital Signs"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "9843-4",
+              "display": "Head Occipital-frontal circumference"
+            }
+          ],
+          "text": "Head Occipital-frontal circumference"
+        },
+        "subject": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "effectiveDateTime": "2026-06-21",
+        "valueQuantity": {
+          "value": 36.9,
+          "unit": "cm",
+          "system": "http://unitsofmeasure.org",
+          "code": "cm"
+        },
+        "encounter": {
+          "reference": "urn:uuid:545464c1-f3b7-5682-a6dc-9e01fb8f7ed0"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Observation"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:94f4a2f5-3aba-557d-b099-739fe8812191",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "6bddc9d8-e299-54cd-8542-2fbc54eac7a4",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/immunization",
+            "value": "6bddc9d8-e299-54cd-8542-2fbc54eac7a4"
+          }
+        ],
+        "status": "completed",
+        "vaccineCode": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/cvx",
+              "code": "08",
+              "display": "Hep B, adolescent or pediatric"
+            }
+          ],
+          "text": "Hep B, adolescent or pediatric"
+        },
+        "patient": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "occurrenceDateTime": "2026-06-21",
+        "primarySource": false,
+        "encounter": {
+          "reference": "urn:uuid:545464c1-f3b7-5682-a6dc-9e01fb8f7ed0"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Immunization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:7fec2376-fc90-51b6-bce1-cf0dce1a1c54",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "d0314bd8-ed33-5d12-90d7-121e001e9afb",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/immunization",
+            "value": "d0314bd8-ed33-5d12-90d7-121e001e9afb"
+          }
+        ],
+        "status": "completed",
+        "vaccineCode": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/cvx",
+              "code": "20",
+              "display": "DTaP (diphtheria, tetanus, acellular pertussis)"
+            }
+          ],
+          "text": "DTaP (diphtheria, tetanus, acellular pertussis)"
+        },
+        "patient": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "occurrenceDateTime": "2026-06-21",
+        "primarySource": false,
+        "encounter": {
+          "reference": "urn:uuid:545464c1-f3b7-5682-a6dc-9e01fb8f7ed0"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Immunization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3e75eb57-76f9-5c71-808a-17500a141505",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "37b2d948-e96a-50c6-bab2-64440d8fe1bd",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/immunization",
+            "value": "37b2d948-e96a-50c6-bab2-64440d8fe1bd"
+          }
+        ],
+        "status": "completed",
+        "vaccineCode": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/cvx",
+              "code": "17",
+              "display": "Hib, PRP-OMP (PedvaxHIB, COMVAX)"
+            }
+          ],
+          "text": "Hib, PRP-OMP (PedvaxHIB, COMVAX)"
+        },
+        "patient": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "occurrenceDateTime": "2026-06-21",
+        "primarySource": false,
+        "encounter": {
+          "reference": "urn:uuid:545464c1-f3b7-5682-a6dc-9e01fb8f7ed0"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Immunization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:9ae7b9db-9d48-58b0-b05a-8fabb55fa8b2",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "a851d41c-1a9d-550b-ad92-200ca6947475",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/immunization",
+            "value": "a851d41c-1a9d-550b-ad92-200ca6947475"
+          }
+        ],
+        "status": "completed",
+        "vaccineCode": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/cvx",
+              "code": "10",
+              "display": "IPV (inactivated poliovirus vaccine)"
+            }
+          ],
+          "text": "IPV (inactivated poliovirus vaccine)"
+        },
+        "patient": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "occurrenceDateTime": "2026-06-21",
+        "primarySource": false,
+        "encounter": {
+          "reference": "urn:uuid:545464c1-f3b7-5682-a6dc-9e01fb8f7ed0"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Immunization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:107b9347-f329-5b9b-b714-1d7bd7cc8740",
+      "resource": {
+        "resourceType": "Immunization",
+        "id": "af409d46-370d-5a64-82d0-3ca8c949bccc",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-immunization|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/immunization",
+            "value": "af409d46-370d-5a64-82d0-3ca8c949bccc"
+          }
+        ],
+        "status": "completed",
+        "vaccineCode": {
+          "coding": [
+            {
+              "system": "http://hl7.org/fhir/sid/cvx",
+              "code": "119",
+              "display": "Rotavirus, monovalent"
+            }
+          ],
+          "text": "Rotavirus, monovalent"
+        },
+        "patient": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "occurrenceDateTime": "2026-06-21",
+        "primarySource": false,
+        "encounter": {
+          "reference": "urn:uuid:545464c1-f3b7-5682-a6dc-9e01fb8f7ed0"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Immunization"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:10c7aaeb-312c-5cec-9e40-7a5f5278a489",
+      "resource": {
+        "resourceType": "DocumentReference",
+        "id": "60854bce-3487-50d4-ad90-c64a37436596",
+        "meta": {
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "current",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "11506-3",
+              "display": "Progress note"
+            }
+          ],
+          "text": "Progress note"
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "47039-3",
+                "display": "Hospital Admission history and physical note"
+              }
+            ]
+          }
+        ],
+        "subject": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "date": "2026-06-21T12:00:00+00:00",
+        "content": [
+          {
+            "attachment": {
+              "contentType": "text/markdown",
+              "data": "IyBQcm9ncmVzcyBOb3RlCgoqKlBhdGllbnQ6KiogSm9uZXMsIERvbm5hCioqQWdlIC8gU2V4OioqIDAgLyBmZW1hbGUKKipEYXRlOioqIDIwMjYtMDYtMjEKCiMjIEFjdGl2ZSBQcm9ibGVtcwotIENoaWxkIGV4YW1pbmF0aW9uIChwcm9jZWR1cmUpIChodHRwOi8vc25vbWVkLmluZm8vc2N0IDE3MDE0OTAwNikgKG9uc2V0IDIwMjYtMDYtMjEpCi0gQXV0aXNtIHNwZWN0cnVtIGRpc29yZGVyIChodHRwOi8vc25vbWVkLmluZm8vc2N0IDM1OTE5MDA1KSAob25zZXQgMjAyNi0wNi0yMSkKCiMjIFN1YmplY3RpdmUKUGF0aWVudCBzZWVuIHRvZGF5IGZvciBmb2xsb3ctdXAgb2YgQ2hpbGQgZXhhbWluYXRpb24gKHByb2NlZHVyZSkuCk5vIG5ldyBhY3V0ZSBjb21wbGFpbnRzIGRvY3VtZW50ZWQgaW4gdGhpcyBzeW50aGV0aWMgcmVjb3JkLgoKIyMgT2JqZWN0aXZlCgojIyMgVml0YWxzICYgbGFicyAobW9zdCByZWNlbnQpCi0gQm9keSBoZWlnaHQ6IDg2IGNtICgyMDI2LTA2LTIxKQotIEJvZHkgd2VpZ2h0OiA3Ljkga2cgKDIwMjYtMDYtMjEpCi0gSGVhZCBPY2NpcGl0YWwtZnJvbnRhbCBjaXJjdW1mZXJlbmNlOiAzNi45IGNtICgyMDI2LTA2LTIxKQoKIyMjIEFjdGl2ZSBtZWRpY2F0aW9ucwpfTm9uZSBvbiBmaWxlLl8KCiMjIEFzc2Vzc21lbnQgJiBQbGFuCkNvbnRpbnVlIGN1cnJlbnQgbWFuYWdlbWVudCBvZiBDaGlsZCBleGFtaW5hdGlvbiAocHJvY2VkdXJlKS4gUmVhc3Nlc3MgYXQgbmV4dCByb3V0aW5lIGZvbGxvdy11cC4KCi0tLQpfR2VuZXJhdGVkIGJ5IEFQRVggQXRsYXMgKHRlbXBsYXRlIG1vZGUpLiBUaGlzIGlzIHN5bnRoZXRpYyBkYXRhOyBubyByZWFsIHBhdGllbnQgaXMgZGVwaWN0ZWQuXw=="
+            }
+          }
+        ],
+        "context": {
+          "encounter": [
+            {
+              "reference": "urn:uuid:545464c1-f3b7-5682-a6dc-9e01fb8f7ed0"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "DocumentReference"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:26b70706-1bbc-5436-87df-0012f42e4470",
+      "resource": {
+        "resourceType": "Condition",
+        "id": "bd18f541-2032-5bd1-bf21-69122e63afb6",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-condition-problems-health-concerns|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "clinicalStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-clinical",
+              "code": "active",
+              "display": "Active"
+            }
+          ]
+        },
+        "verificationStatus": {
+          "coding": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/condition-ver-status",
+              "code": "confirmed",
+              "display": "Confirmed"
+            }
+          ]
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://terminology.hl7.org/CodeSystem/condition-category",
+                "code": "problem-list-item",
+                "display": "Problem List Item"
+              }
+            ]
+          }
+        ],
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "35919005",
+              "display": "Autism spectrum disorder"
+            }
+          ],
+          "text": "Autism spectrum disorder"
+        },
+        "subject": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "onsetDateTime": "2026-06-21"
+      },
+      "request": {
+        "method": "POST",
+        "url": "Condition"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:3df7ddd4-8328-5943-8da0-06d50a0a7206",
+      "resource": {
+        "resourceType": "Encounter",
+        "id": "d300cbea-4b1e-5068-b305-28d769803993",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-encounter|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/encounter",
+            "value": "d300cbea-4b1e-5068-b305-28d769803993"
+          }
+        ],
+        "status": "finished",
+        "class": {
+          "system": "http://terminology.hl7.org/CodeSystem/v3-ActCode",
+          "code": "AMB",
+          "display": "ambulatory"
+        },
+        "type": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "390906007",
+                "display": "Follow-up encounter"
+              }
+            ],
+            "text": "Follow-up encounter"
+          }
+        ],
+        "subject": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "period": {
+          "start": "2026-06-21",
+          "end": "2026-06-21"
+        },
+        "participant": [
+          {
+            "type": [
+              {
+                "coding": [
+                  {
+                    "system": "http://terminology.hl7.org/CodeSystem/v3-ParticipationType",
+                    "code": "ATND",
+                    "display": "attender"
+                  }
+                ]
+              }
+            ],
+            "individual": {
+              "reference": "urn:uuid:a88b4e40-fe37-5765-aba0-8b94f22f58fb"
+            }
+          }
+        ],
+        "location": [
+          {
+            "location": {
+              "reference": "urn:uuid:8f71ecd8-2125-52aa-acc2-b86e38c93e19"
+            },
+            "status": "completed"
+          }
+        ],
+        "serviceProvider": {
+          "reference": "urn:uuid:be9a682d-61e1-5d75-9cef-aaacc2bd409c"
+        },
+        "reasonCode": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "35919005",
+                "display": "Autism spectrum disorder"
+              }
+            ],
+            "text": "Autism spectrum disorder"
+          }
+        ]
+      },
+      "request": {
+        "method": "POST",
+        "url": "Encounter"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:54eb62b9-38ce-5a55-ab52-d61e674d730f",
+      "resource": {
+        "resourceType": "Procedure",
+        "id": "44e2fa0e-a8a4-55d6-8542-3160171fc99b",
+        "meta": {
+          "profile": [
+            "http://hl7.org/fhir/us/core/StructureDefinition/us-core-procedure|6.1.0"
+          ],
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "identifier": [
+          {
+            "system": "https://parkerapex.com/atlas/procedure",
+            "value": "44e2fa0e-a8a4-55d6-8542-3160171fc99b"
+          }
+        ],
+        "status": "completed",
+        "code": {
+          "coding": [
+            {
+              "system": "http://snomed.info/sct",
+              "code": "410620009",
+              "display": "Developmental assessment"
+            }
+          ],
+          "text": "Developmental assessment"
+        },
+        "subject": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "performedDateTime": "2026-06-21",
+        "reasonCode": [
+          {
+            "coding": [
+              {
+                "system": "http://snomed.info/sct",
+                "code": "35919005",
+                "display": "Autism spectrum disorder"
+              }
+            ],
+            "text": "Autism spectrum disorder"
+          }
+        ],
+        "encounter": {
+          "reference": "urn:uuid:3df7ddd4-8328-5943-8da0-06d50a0a7206"
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "Procedure"
+      }
+    },
+    {
+      "fullUrl": "urn:uuid:82cdadd6-de57-5381-9c66-442bb20d5aed",
+      "resource": {
+        "resourceType": "DocumentReference",
+        "id": "be5cffe8-0e5c-53a8-824e-728c79b830ff",
+        "meta": {
+          "tag": [
+            {
+              "system": "http://terminology.hl7.org/CodeSystem/v3-ActReason",
+              "code": "HTEST",
+              "display": "test health data"
+            }
+          ]
+        },
+        "status": "current",
+        "type": {
+          "coding": [
+            {
+              "system": "http://loinc.org",
+              "code": "11506-3",
+              "display": "Progress note"
+            }
+          ],
+          "text": "Progress note"
+        },
+        "category": [
+          {
+            "coding": [
+              {
+                "system": "http://loinc.org",
+                "code": "47039-3",
+                "display": "Hospital Admission history and physical note"
+              }
+            ]
+          }
+        ],
+        "subject": {
+          "reference": "urn:uuid:85899107-a37c-5f27-b1df-57320b858cdc"
+        },
+        "date": "2026-06-21T12:00:00+00:00",
+        "content": [
+          {
+            "attachment": {
+              "contentType": "text/markdown",
+              "data": "IyBQcm9ncmVzcyBOb3RlCgoqKlBhdGllbnQ6KiogSm9uZXMsIERvbm5hCioqQWdlIC8gU2V4OioqIDAgLyBmZW1hbGUKKipEYXRlOioqIDIwMjYtMDYtMjEKCiMjIEFjdGl2ZSBQcm9ibGVtcwotIENoaWxkIGV4YW1pbmF0aW9uIChwcm9jZWR1cmUpIChodHRwOi8vc25vbWVkLmluZm8vc2N0IDE3MDE0OTAwNikgKG9uc2V0IDIwMjYtMDYtMjEpCi0gQXV0aXNtIHNwZWN0cnVtIGRpc29yZGVyIChodHRwOi8vc25vbWVkLmluZm8vc2N0IDM1OTE5MDA1KSAob25zZXQgMjAyNi0wNi0yMSkKCiMjIFN1YmplY3RpdmUKUGF0aWVudCBzZWVuIHRvZGF5IGZvciBmb2xsb3ctdXAgb2YgQXV0aXNtIHNwZWN0cnVtIGRpc29yZGVyLgpObyBuZXcgYWN1dGUgY29tcGxhaW50cyBkb2N1bWVudGVkIGluIHRoaXMgc3ludGhldGljIHJlY29yZC4KCiMjIE9iamVjdGl2ZQoKIyMjIFZpdGFscyAmIGxhYnMgKG1vc3QgcmVjZW50KQotIEJvZHkgaGVpZ2h0OiA4NiBjbSAoMjAyNi0wNi0yMSkKLSBCb2R5IHdlaWdodDogNy45IGtnICgyMDI2LTA2LTIxKQotIEhlYWQgT2NjaXBpdGFsLWZyb250YWwgY2lyY3VtZmVyZW5jZTogMzYuOSBjbSAoMjAyNi0wNi0yMSkKCiMjIyBBY3RpdmUgbWVkaWNhdGlvbnMKX05vbmUgb24gZmlsZS5fCgojIyBBc3Nlc3NtZW50ICYgUGxhbgpDb250aW51ZSBjdXJyZW50IG1hbmFnZW1lbnQgb2YgQXV0aXNtIHNwZWN0cnVtIGRpc29yZGVyLiBSZWFzc2VzcyBhdCBuZXh0IHJvdXRpbmUgZm9sbG93LXVwLgoKLS0tCl9HZW5lcmF0ZWQgYnkgQVBFWCBBdGxhcyAodGVtcGxhdGUgbW9kZSkuIFRoaXMgaXMgc3ludGhldGljIGRhdGE7IG5vIHJlYWwgcGF0aWVudCBpcyBkZXBpY3RlZC5f"
+            }
+          }
+        ],
+        "context": {
+          "encounter": [
+            {
+              "reference": "urn:uuid:3df7ddd4-8328-5943-8da0-06d50a0a7206"
+            }
+          ]
+        }
+      },
+      "request": {
+        "method": "POST",
+        "url": "DocumentReference"
+      }
+    }
+  ]
+}

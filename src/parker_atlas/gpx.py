@@ -23,7 +23,11 @@ Example:
 
 from __future__ import annotations
 
-import fcntl
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
+
 import os
 import re
 import threading
@@ -327,6 +331,9 @@ class FileAllocator(Allocator):
 
     @contextmanager
     def _file_lock(self) -> Iterator[None]:
+        if fcntl is None:
+            yield
+            return
         fd = os.open(self._lock_path, os.O_WRONLY | os.O_CREAT, 0o644)
         try:
             fcntl.flock(fd, fcntl.LOCK_EX)
