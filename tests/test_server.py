@@ -128,3 +128,36 @@ class TestBulkExport:
         assert status == 200
         n = len([ln for ln in body.strip().splitlines() if ln])
         assert n == 10
+
+
+class TestSchedulingBulkPublish:
+    def test_manifest_lists_outputs(self, server):
+        status, _, body = _get(f"{server}/scheduling/$bulk-publish?sites=2&weeks=1&seed=1")
+        assert status == 200
+        manifest = json.loads(body)
+        assert manifest["request"].endswith("/scheduling/$bulk-publish")
+        assert [o["type"] for o in manifest["output"]] == ["Location", "Schedule", "Slot"]
+
+    def test_slot_ndjson_downloads(self, server):
+        status, headers, body = _get(f"{server}/scheduling/Slot.ndjson?sites=2&weeks=1&seed=1")
+        assert status == 200
+        assert headers.get("Content-Type") == "application/fhir+ndjson"
+        lines = [ln for ln in body.strip().splitlines() if ln]
+        assert lines
+        first = json.loads(lines[0])
+        assert first["resourceType"] == "Slot"
+        assert first["schedule"]["reference"].startswith("Schedule/")
+
+    def test_manifest_and_files_agree(self, server):
+        _, _, body = _get(f"{server}/scheduling/$bulk-publish?sites=2&weeks=1&seed=5")
+        manifest = json.loads(body)
+        loc_url = next(o["url"] for o in manifest["output"] if o["type"] == "Location")
+        status, _, body = _get(loc_url + "?sites=2&weeks=1&seed=5")
+        assert status == 200
+        locs = [ln for ln in body.strip().splitlines() if ln]
+        assert len(locs) == 2
+
+    def test_capability_advertises_bulk_publish(self, server):
+        _, _, body = _get(f"{server}/fhir/metadata")
+        ops = {o["name"] for o in json.loads(body)["rest"][0]["operation"]}
+        assert "bulk-publish" in ops

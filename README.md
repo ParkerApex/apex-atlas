@@ -38,6 +38,7 @@ Atlas output is structured for the same ingestion paths used in live interoperab
 | Payer / clearinghouse APIs | Eligibility, claims, remittance | Coverage, Organization, InsurancePlan, Claim, ExplanationOfBenefit |
 | CMS Blue Button 2.0 | Medicare beneficiary FHIR | Age-stratified payer mix, Coverage, EOB, chronic-care modules |
 | Bulk Data (`$export`) | Large-scale ingestion | NDJSON and versioned Parquet exports |
+| SMART Scheduling Links (`$bulk-publish`) | Appointment availability | Location, Schedule, Slot NDJSON + booking-deep-link/phone/capacity |
 
 Atlas does not connect to, ingest from, or replay data from these production systems. Population statistics are calibrated to cited public sources and validated in the [fidelity scorecard](./docs/fidelity-scorecard.md). See [known limitations](./docs/known-limitations.md) and the [security & provenance FAQ](./docs/security-provenance-faq.md).
 
@@ -53,6 +54,7 @@ Detailed generation recipes: [`docs/integration-cookbooks.md`](./docs/integratio
 - **Clinical documentation** — Template and optional LLM-authored notes (progress, discharge, radiology) grounded in structured data.
 - **Extensible authoring** — `atlas author` pipeline for citation-grounded module development with clinician sign-off. See [research authoring](./docs/authoring/research_authoring.md).
 - **Output formats** — FHIR R4/R5 transaction bundles, Bulk Data-style NDJSON, and Parquet with schema versioning.
+- **SMART Scheduling Links** — publish open appointment availability (Location, Schedule, Slot) as a SMART Scheduling Links `$bulk-publish` dataset via `atlas publish-scheduling`. See [`docs/smart-scheduling-links.md`](./docs/smart-scheduling-links.md).
 
 ## Validation and governance
 
@@ -99,6 +101,7 @@ Full catalog: [`docs/module-catalog.md`](./docs/module-catalog.md). Roadmap: [`d
 | Clinical notes | Available | Template and LLM (`--notes-strategy`) |
 | Module authoring (`atlas author`) | Available | Research → draft → clinician promote |
 | Dev API (`atlas serve`) | Available | Docker-deployable; see [`docs/deploy.md`](./docs/deploy.md) |
+| SMART Scheduling Links (`$bulk-publish`) | Available | `atlas publish-scheduling`; dev API `/scheduling/$bulk-publish` |
 | IPS 2.0 conformance | Planned | Post-v1 international profiles |
 | Production SMART / Bulk `$export` | Planned | Dev `$export` available today |
 
@@ -209,6 +212,18 @@ atlas generate --patients 5000 --seed 42 \
   --format ndjson --out ./bulk-export
 ```
 
+**SMART Scheduling Links (`$bulk-publish`)**
+
+```bash
+# Publish open appointment availability (Location, Schedule, Slot NDJSON + manifest).
+atlas publish-scheduling --sites 25 --weeks 2 --seed 42 --out ./scheduling
+
+# Book a subset of an existing cohort into busy slots as Appointments.
+atlas generate --patients 2000 --seed 42 --format ndjson --out ./cohort
+atlas publish-scheduling --sites 25 --weeks 2 --seed 42 \
+  --patients ./cohort/Patient.ndjson --out ./scheduling
+```
+
 **Cohort fidelity report**
 
 ```bash
@@ -229,6 +244,7 @@ apex-atlas/
 │   ├── core/                  # Demographics, payer, provider, SDoH
 │   ├── modules/library/       # 101 clinical module definitions
 │   ├── fhir/                  # US Core 6.1 resource builders
+│   ├── scheduling/            # SMART Scheduling Links ($bulk-publish)
 │   ├── measures/              # Quality measure evaluation
 │   ├── notes/                 # Clinical note generation
 │   ├── validation/            # Structural and cohort fidelity
@@ -245,6 +261,7 @@ Full design: [`docs/architecture.md`](./docs/architecture.md). Rationale: [`docs
 | --- | --- |
 | [Web generator](https://parkerapex.github.io/apex-atlas/generator.html) | Browser UI for cohort generation and download |
 | [Integration cookbooks](./docs/integration-cookbooks.md) | QHIN, HIE, payer, and Blue Button-shaped workflows |
+| [SMART Scheduling Links](./docs/smart-scheduling-links.md) | `$bulk-publish` appointment availability (Location/Schedule/Slot) |
 | [Known limitations](./docs/known-limitations.md) | Capability boundaries and tier definitions |
 | [Security & provenance FAQ](./docs/security-provenance-faq.md) | PHI, licensing, API keys, deployment |
 | [Commercial one-pager](./docs/commercial-one-pager.md) | Apache 2.0 vs enterprise license |

@@ -83,3 +83,74 @@ def build_location_resource(
     }
     _Location.model_validate(resource)
     return resource
+
+
+PARKER_LOCATION_IDENTIFIER_SYSTEM = "https://parkerapex.com/atlas/location"
+US_NPI_SYSTEM = "http://hl7.org/fhir/sid/us-npi"
+
+
+def scheduling_location_id(*, identifier_value: str) -> str:
+    """Deterministic Location.id keyed by the publisher-scoped identifier."""
+    return str(uuid.uuid5(_URL_NAMESPACE, f"scheduling-location:{identifier_value}"))
+
+
+def build_scheduling_location_resource(
+    *,
+    identifier_value: str,
+    name: str,
+    line: str,
+    city: str,
+    state: str,
+    postal_code: str,
+    latitude: float,
+    longitude: float,
+    phone: str | None = None,
+    url: str | None = None,
+    npi: str | None = None,
+    district: str | None = None,
+) -> dict[str, Any]:
+    """Build a standalone FHIR Location for SMART Scheduling Links publishing.
+
+    Unlike :func:`build_location_resource` (a US Core Location managed by a
+    facility Organization), a scheduling Location is self-contained: it carries
+    its own identifier, contact details, address, and geographic position so a
+    consumer scheduling app can render and route to the site directly.
+    """
+    telecom: list[dict[str, Any]] = []
+    if phone is not None:
+        telecom.append({"system": "phone", "value": phone, "use": "work"})
+    if url is not None:
+        telecom.append({"system": "url", "value": url, "use": "work"})
+
+    identifiers: list[dict[str, Any]] = [
+        {"system": PARKER_LOCATION_IDENTIFIER_SYSTEM, "value": identifier_value}
+    ]
+    if npi is not None:
+        identifiers.append({"system": US_NPI_SYSTEM, "value": npi})
+
+    address: dict[str, Any] = {
+        "use": "work",
+        "line": [line],
+        "city": city,
+        "state": state,
+        "postalCode": postal_code,
+        "country": "US",
+    }
+    if district is not None:
+        address["district"] = district
+
+    resource: dict[str, Any] = {
+        "resourceType": "Location",
+        "id": scheduling_location_id(identifier_value=identifier_value),
+        "meta": {"tag": [GPX.synthetic_meta_tag()]},
+        "identifier": identifiers,
+        "status": "active",
+        "name": name,
+        "address": address,
+        "position": {"latitude": latitude, "longitude": longitude},
+    }
+    if telecom:
+        resource["telecom"] = telecom
+
+    _Location.model_validate(resource)
+    return resource

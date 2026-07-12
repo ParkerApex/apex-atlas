@@ -1571,6 +1571,7 @@ def status() -> None:
         ("Pediatric well-child",  "[green]implemented[/green]",    "Diff-1"),
         ("Maternal health / OB",  "[green]implemented[/green]",    "Diff-1"),
         ("Quality MeasureReport", "[green]implemented[/green]",    "Diff-3"),
+        ("SMART Scheduling Links","[green]$bulk-publish[/green]",   "Diff-4"),
     ]
     for row in rows:
         table.add_row(*row)
@@ -1918,6 +1919,120 @@ def author_research_cmd(
         f"  [yellow]Next:[/yellow] clinician review → fill `Signed-off-by:` in "
         f"{draft_dir / 'SIGNOFF.md'} → [bold]atlas author promote --draft {draft_dir}[/bold]"
     )
+
+
+def _load_patient_ids(path: Path) -> list[str]:
+    """Read Patient.id values from a Patient.ndjson file or a cohort directory."""
+    if path.is_dir():
+        candidate = path / "Patient.ndjson"
+        if not candidate.exists():
+            raise typer.BadParameter(
+                f"no Patient.ndjson under {path}; pass the file directly or a "
+                f"directory produced by `atlas generate --format ndjson`."
+            )
+        path = candidate
+    ids: list[str] = []
+    with path.open(encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line:
+                continue
+            ids.append(json.loads(line)["id"])
+    return ids
+
+
+@app.command("publish-scheduling")
+def publish_scheduling(
+    out: Annotated[Path, typer.Option("--out", "-o", help="Output directory for the bulk-publish dataset.")] = Path("./scheduling"),
+    sites: Annotated[int, typer.Option(help="Number of clinic Locations to publish (1–40).")] = 25,
+    service_types: Annotated[str, typer.Option("--service-types", help="Comma-separated service types: general-practice, immunization, mental-health.")] = "general-practice,immunization",
+    window_start: Annotated[str | None, typer.Option("--window-start", help="ISO date the availability window opens (default: today).")] = None,
+    weeks: Annotated[int, typer.Option(help="Number of weeks of availability (weekdays only).")] = 2,
+    day_start_hour: Annotated[int, typer.Option("--day-start-hour", help="First slot start hour (local, 24h).")] = 8,
+    day_end_hour: Annotated[int, typer.Option("--day-end-hour", help="Slots stop before this hour (local, 24h).")] = 17,
+    slot_minutes: Annotated[int, typer.Option("--slot-minutes", help="Slot length in minutes.")] = 60,
+    booked_fraction: Annotated[float, typer.Option("--booked-fraction", help="Fraction of slots marked busy (0–1).")] = 0.20,
+    seed: Annotated[int | None, typer.Option(help="RNG seed for reproducibility.")] = None,
+    base_url: Annotated[str, typer.Option("--base-url", help="Base URL the manifest advertises for its NDJSON output files.")] = "https://example.org/scheduling",
+    booking_base_url: Annotated[str, typer.Option("--booking-base-url", help="Base URL used to build per-slot booking deep links.")] = "https://booking.example.org",
+    patients: Annotated[Path | None, typer.Option("--patients", help="Patient.ndjson file or cohort dir; when set, booked slots get Appointment resources referencing these patients.")] = None,
+) -> None:
+    """Publish a SMART Scheduling Links (`$bulk-publish`) availability dataset.
+
+    Emits a `bulk-publish-manifest.json` plus `Location.ndjson`,
+    `Schedule.ndjson`, and `Slot.ndjson` conforming to the SMART Scheduling
+    Links specification — the "SMART FHIR Scheduling" flow that advertises open,
+    bookable appointment slots. Slots carry the SMART booking-deep-link,
+    booking-phone, and slot-capacity extensions.
+
+    With `--patients`, every busy slot is booked with an Appointment referencing
+    a patient from the given cohort, written to `Appointment.ndjson` (a
+    connectathon convenience; Appointment is not part of the manifest).
+    """
+    from parker_atlas.scheduling import (
+        SchedulingConfig,
+        generate_scheduling_dataset,
+        write_bulk_publish,
+    )
+
+    keys = tuple(s.strip() for s in service_types.split(",") if s.strip())
+    try:
+        start = date.fromisoformat(window_start) if window_start else date.today()
+    except ValueError as exc:
+        err_console.print(f"[red]invalid --window-start:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    patient_ids: list[str] | None = None
+    if patients is not None:
+        if not patients.exists():
+            err_console.print(f"[red]--patients path does not exist:[/red] {patients}")
+            raise typer.Exit(code=1)
+        try:
+            patient_ids = _load_patient_ids(patients)
+        except typer.BadParameter as exc:
+            err_console.print(f"[red]{exc}[/red]")
+            raise typer.Exit(code=1) from exc
+        if not patient_ids:
+            err_console.print(f"[yellow]no patients found under {patients}[/yellow]")
+            raise typer.Exit(code=1)
+
+    config = SchedulingConfig(
+        sites=sites,
+        service_keys=keys,
+        window_start=start,
+        weeks=weeks,
+        day_start_hour=day_start_hour,
+        day_end_hour=day_end_hour,
+        slot_minutes=slot_minutes,
+        booked_fraction=booked_fraction,
+        seed=seed,
+        booking_base_url=booking_base_url,
+    )
+    try:
+        config.validate()
+    except ValueError as exc:
+        err_console.print(f"[red]invalid scheduling config:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    transaction_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    dataset = generate_scheduling_dataset(config, patient_ids=patient_ids)
+    manifest_path = write_bulk_publish(
+        dataset,
+        out,
+        base_url=base_url,
+        transaction_time=transaction_time,
+    )
+
+    counts = dataset.counts
+    console.print(
+        f"[green]✓[/green] Published SMART Scheduling Links dataset to [bold]{out}[/bold]"
+    )
+    console.print(
+        f"  Locations={counts['Location']} Schedules={counts['Schedule']} "
+        f"Slots={counts['Slot']} (free={counts['Slot(free)']}, busy={counts['Slot(busy)']}) "
+        f"Appointments={counts['Appointment']}"
+    )
+    console.print(f"  manifest: [bold]{manifest_path}[/bold]")
 
 
 @app.command()

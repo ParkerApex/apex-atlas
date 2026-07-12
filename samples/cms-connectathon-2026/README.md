@@ -86,10 +86,24 @@ curl -s .../scheduling/bulk-publish-manifest.json | jq -r '.output[].url'
 Referential graph: `Slot.schedule → Schedule`, `Schedule.actor → Location`,
 `Appointment.slot → Slot`, `Appointment.participant.actor → Patient/GPX-SYN-…`.
 
-Regenerate (reads `patients/Patient.ndjson` for Appointment references):
+This dataset is produced by the built-in **SMART Scheduling Links** feature
+(`atlas publish-scheduling` / `parker_atlas.scheduling`); see
+[`docs/smart-scheduling-links.md`](../../docs/smart-scheduling-links.md).
+
+Regenerate (a thin wrapper pinning the connectathon parameters; reads
+`patients/Patient.ndjson` for Appointment references):
 
 ```bash
 python scripts/build_cms_connectathon_scheduling.py
+```
+
+Or directly via the CLI:
+
+```bash
+atlas publish-scheduling --sites 40 --weeks 4 --slot-minutes 60 --seed 20260712 \
+  --service-types general-practice,immunization \
+  --window-start 2026-07-13 --patients ./samples/cms-connectathon-2026/patients \
+  --out ./samples/cms-connectathon-2026/scheduling
 ```
 
 ---
