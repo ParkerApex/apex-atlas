@@ -19,6 +19,18 @@
 
 ---
 
+> ## 📦 CMS Connectathon 2026 — Synthetic Bulk-Publish Dataset
+>
+> **A ready-to-use, download-and-go dataset lives in [`samples/cms-connectathon-2026/`](./samples/cms-connectathon-2026/).** No build step required.
+>
+> - **20,000 patients** as FHIR Bulk Data (`$export`) NDJSON — Patient, Condition, Encounter, Observation, MedicationRequest, Immunization, Coverage. → [`patients/`](./samples/cms-connectathon-2026/patients/)
+> - **SMART Scheduling Links** (`$bulk-publish`) appointment availability — manifest + Location, Schedule, Slot, Appointment. → [`scheduling/`](./samples/cms-connectathon-2026/scheduling/)
+> - **Readable per-patient samples** (pretty-printed FHIR Bundles, healthy → multi-morbid) so you can eyeball records without opening the large NDJSON. → [`patients/examples/`](./samples/cms-connectathon-2026/patients/examples/)
+>
+> **Start here → [`samples/cms-connectathon-2026/README.md`](./samples/cms-connectathon-2026/README.md)** for download and usage instructions.
+
+---
+
 ## Executive summary
 
 Apex Atlas is a synthetic patient population generator that produces FHIR-native clinical records at scale. Cohorts are grounded in publicly sourced US epidemiology and designed to mirror aggregate care patterns—prevalence, comorbidity, utilization, payer mix, social-risk effects, and quality-measure numerators—without replicating individual production records or using restricted datasets.
