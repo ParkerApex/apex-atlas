@@ -163,7 +163,7 @@ def _write_readme(location, schedules, slots, appts, patients) -> None:
         "| `clinic-availability.example.json` | A single self-contained FHIR **collection Bundle** stitching the whole graph together: Location → Schedules → Slots → Appointments → Patients. |\n\n"
         "## Reference graph\n\n"
         "```\n"
-        "Location  ←actor–  Schedule  ←schedule–  Slot  ←slot–  Appointment  –participant→  Patient (GPX-SYN-…)\n"
+        "Location  <-actor-  Schedule  <-schedule-  Slot  <-slot-  Appointment  -participant->  Patient (GPX-SYN-...)\n"
         "```\n\n"
         f"The {len(appts)} booked appointments here reference these patients from "
         "the population: "

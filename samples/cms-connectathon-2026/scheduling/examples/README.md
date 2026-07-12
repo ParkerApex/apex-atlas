@@ -17,7 +17,7 @@ All records below are for a single example clinic — **Apex Atlas Community Cli
 ## Reference graph
 
 ```
-Location  ←actor–  Schedule  ←schedule–  Slot  ←slot–  Appointment  –participant→  Patient (GPX-SYN-…)
+Location  <-actor-  Schedule  <-schedule-  Slot  <-slot-  Appointment  -participant->  Patient (GPX-SYN-...)
 ```
 
 The 4 booked appointments here reference these patients from the population: `GPX-SYN-0000005895-8`, `GPX-SYN-0000011977-6`, `GPX-SYN-0000012487-5`, `GPX-SYN-0000015546-5`.
