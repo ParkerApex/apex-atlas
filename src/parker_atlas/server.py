@@ -22,9 +22,12 @@ POST /generate?<params>           → synchronous; streams application/fhir+ndjs
 GET  /fhir/$export?<params>       → 202 kickoff; Content-Location: /jobs/<id>
 GET  /jobs/<id>                    → 202 (in progress) | 200 Bulk Data manifest
 GET  /jobs/<id>/<Type>.ndjson     → the per-resource-type NDJSON file
+GET  /scheduling/$bulk-publish     → SMART Scheduling Links manifest
+GET  /scheduling/<Type>.ndjson    → Location/Schedule/Slot NDJSON (deterministic)
 
 Params (query string): patients (int, capped), seed (int), modules (csv),
-sdoh / coverage / measures / notes (bool: "1"/"true").
+sdoh / coverage / measures / notes (bool: "1"/"true"). Scheduling params:
+sites (int, capped), weeks (int, capped), seed (int), services (csv).
 """
 
 from __future__ import annotations
@@ -47,6 +50,9 @@ from parker_atlas.modules.runtime import list_bundled_modules
 
 MAX_PATIENTS = 5000
 DEFAULT_PATIENTS = 100
+# Dev-server caps for on-demand SMART Scheduling Links generation.
+SCHED_MAX_SITES = 10
+SCHED_MAX_WEEKS = 4
 # Per-request generation timeout (seconds) so one request can't hang a hosted
 # instance. Overridable via ATLAS_GEN_TIMEOUT.
 GEN_TIMEOUT = int(os.environ.get("ATLAS_GEN_TIMEOUT", "180"))
@@ -157,6 +163,10 @@ class AtlasHandler(BaseHTTPRequestHandler):
             return self._kickoff_export(qs)
         if path.startswith("/jobs/"):
             return self._jobs_route(path)
+        if path == "/scheduling/$bulk-publish":
+            return self._scheduling_manifest(qs)
+        if path.startswith("/scheduling/") and path.endswith(".ndjson"):
+            return self._scheduling_file(path, qs)
         return self._send_json(404, {"error": f"no route for {path}"})
 
     def do_POST(self) -> None:  # noqa: N802
@@ -173,7 +183,7 @@ class AtlasHandler(BaseHTTPRequestHandler):
             "status": "active", "kind": "instance",
             "software": {"name": "Apex Atlas dev server", "version": __version__},
             "fhirVersion": "4.0.1", "format": ["application/fhir+ndjson"],
-            "rest": [{"mode": "server", "operation": [{"name": "export"}]}],
+            "rest": [{"mode": "server", "operation": [{"name": "export"}, {"name": "bulk-publish"}]}],
             "_note": "Development server; pragmatic subset of FHIR Bulk Data.",
         }
 
@@ -222,6 +232,51 @@ class AtlasHandler(BaseHTTPRequestHandler):
         threading.Thread(target=_worker, daemon=True).start()
         self._send_json(202, {"status": "accepted", "job": job_id},
                         extra_headers={"Content-Location": f"{base}/jobs/{job_id}"})
+
+    # -- SMART Scheduling Links ($bulk-publish) -------------------------------
+    def _scheduling_config(self, qs: dict):
+        from parker_atlas.scheduling import DEFAULT_SERVICE_KEYS, SchedulingConfig
+
+        sites = min(int(qs.get("sites", ["8"])[0] or 8), SCHED_MAX_SITES)
+        weeks = min(int(qs.get("weeks", ["2"])[0] or 2), SCHED_MAX_WEEKS)
+        seed = int(qs.get("seed", ["0"])[0] or 0)
+        services = (qs.get("services", [""])[0] or "").strip()
+        keys = tuple(s.strip() for s in services.split(",") if s.strip()) or DEFAULT_SERVICE_KEYS
+        cfg = SchedulingConfig(sites=sites, weeks=weeks, seed=seed, service_keys=keys)
+        cfg.validate()
+        return cfg
+
+    def _scheduling_manifest(self, qs: dict) -> None:
+        from parker_atlas.scheduling import build_manifest, generate_scheduling_dataset
+
+        try:
+            cfg = self._scheduling_config(qs)
+        except (ValueError, TypeError) as exc:
+            return self._send_json(400, {"error": str(exc)})
+        dataset = generate_scheduling_dataset(cfg)
+        base = f"{self._base_url()}/scheduling"
+        manifest = build_manifest(dataset, base_url=base, transaction_time=_iso_now())
+        self._send_json(200, manifest)
+
+    def _scheduling_file(self, path: str, qs: dict) -> None:
+        from parker_atlas.scheduling import generate_scheduling_dataset
+
+        rtype = path.rsplit("/", 1)[-1][: -len(".ndjson")]
+        try:
+            cfg = self._scheduling_config(qs)
+        except (ValueError, TypeError) as exc:
+            return self._send_json(400, {"error": str(exc)})
+        dataset = generate_scheduling_dataset(cfg)
+        rows = {
+            "Location": dataset.locations,
+            "Schedule": dataset.schedules,
+            "Slot": dataset.slots,
+            "Appointment": dataset.appointments,
+        }.get(rtype)
+        if rows is None:
+            return self._send_json(404, {"error": f"no scheduling resource {rtype!r}"})
+        body = ("".join(json.dumps(r) + "\n" for r in rows)).encode("utf-8")
+        self._send_ndjson(body)
 
     def _jobs_route(self, path: str) -> None:
         parts = path.split("/")  # ['', 'jobs', '<id>', '<file>?']
