@@ -25,7 +25,7 @@
 >
 > - **20,000 patients** as FHIR Bulk Data (`$export`) NDJSON — Patient, Condition, Encounter, Observation, MedicationRequest, Immunization, Coverage. → [`patients/`](./samples/cms-connectathon-2026/patients/)
 > - **SMART Scheduling Links** (`$bulk-publish`) appointment availability — manifest + Location, Schedule, Slot, Appointment. → [`scheduling/`](./samples/cms-connectathon-2026/scheduling/)
-> - **Readable per-patient samples** (pretty-printed FHIR Bundles, healthy → multi-morbid) so you can eyeball records without opening the large NDJSON. → [`patients/examples/`](./samples/cms-connectathon-2026/patients/examples/)
+> - **Readable samples** (pretty-printed FHIR Bundles) so you can eyeball records without opening the large NDJSON — per-patient records (healthy → multi-morbid) at [`patients/examples/`](./samples/cms-connectathon-2026/patients/examples/) and a clinic scheduling walkthrough at [`scheduling/examples/`](./samples/cms-connectathon-2026/scheduling/examples/).
 >
 > **Start here → [`samples/cms-connectathon-2026/README.md`](./samples/cms-connectathon-2026/README.md)** for download and usage instructions.
 

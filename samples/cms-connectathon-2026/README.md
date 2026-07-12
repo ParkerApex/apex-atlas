@@ -109,6 +109,12 @@ Directory: [`scheduling/`](./scheduling/)
 Implements the SMART Scheduling Links bulk-publish flow used to advertise open,
 bookable appointment slots to consumer scheduling apps.
 
+> **Just want to read a few?** `Slot.ndjson` is large. See
+> [`scheduling/examples/`](./scheduling/examples/) for readable, pretty-printed
+> samples — one clinic's Location, Schedules, free/booked Slots, and the
+> Appointments booking real patients — plus a single self-contained
+> `clinic-availability.example.json` Bundle showing the whole graph.
+
 | File | Resource | Count | Notes |
 | --- | --- | ---: | --- |
 | `bulk-publish-manifest.json` | — | — | The document a server returns from `$bulk-publish`; its `output[]` links the NDJSON below. |
