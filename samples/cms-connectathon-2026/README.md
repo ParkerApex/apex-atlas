@@ -16,22 +16,21 @@ individual. See the repository [security & provenance FAQ](../../docs/security-p
 
 ## How to get this data
 
-This dataset lives on the **`cms-connectathon-2026`** branch under
+This dataset lives on **`main`** under
 `samples/cms-connectathon-2026/` (≈180 MB total: patients ≈161 MB, scheduling ≈19 MB).
 
-**Option A — clone just this branch:**
+**Option A — clone the repo (main branch):**
 
 ```bash
-git clone --branch cms-connectathon-2026 --single-branch \
-  https://github.com/ParkerApex/apex-atlas.git
+git clone https://github.com/ParkerApex/apex-atlas.git
 cd apex-atlas/samples/cms-connectathon-2026
 ```
 
 **Option B — download individual files** (raw URLs, no clone). Each file is
-`https://raw.githubusercontent.com/ParkerApex/apex-atlas/cms-connectathon-2026/samples/cms-connectathon-2026/<path>`, e.g.:
+`https://raw.githubusercontent.com/ParkerApex/apex-atlas/main/samples/cms-connectathon-2026/<path>`, e.g.:
 
 ```bash
-BASE=https://raw.githubusercontent.com/ParkerApex/apex-atlas/cms-connectathon-2026/samples/cms-connectathon-2026
+BASE=https://raw.githubusercontent.com/ParkerApex/apex-atlas/main/samples/cms-connectathon-2026
 curl -O $BASE/patients/Patient.ndjson
 curl -O $BASE/scheduling/Slot.ndjson
 ```
@@ -40,7 +39,7 @@ curl -O $BASE/scheduling/Slot.ndjson
 client at it and follow the `output[]` URLs:
 
 ```bash
-curl -s https://raw.githubusercontent.com/ParkerApex/apex-atlas/cms-connectathon-2026/samples/cms-connectathon-2026/scheduling/bulk-publish-manifest.json \
+curl -s https://raw.githubusercontent.com/ParkerApex/apex-atlas/main/samples/cms-connectathon-2026/scheduling/bulk-publish-manifest.json \
   | jq -r '.output[].url'
 ```
 

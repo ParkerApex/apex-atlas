@@ -30,10 +30,10 @@ PATIENT_NDJSON = (
     REPO_ROOT / "samples" / "cms-connectathon-2026" / "patients" / "Patient.ndjson"
 )
 
-# The manifest advertises the raw files as committed on the connectathon branch.
+# The manifest advertises the raw files as published on the default branch.
 PUBLISH_BASE = (
     "https://raw.githubusercontent.com/ParkerApex/apex-atlas/"
-    "cms-connectathon-2026/samples/cms-connectathon-2026/scheduling"
+    "main/samples/cms-connectathon-2026/scheduling"
 )
 # Fixed transaction time keeps re-runs byte-stable (no wall-clock in output).
 TRANSACTION_TIME = "2026-07-12T00:00:00Z"
