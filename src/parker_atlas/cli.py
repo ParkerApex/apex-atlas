@@ -29,6 +29,7 @@ from parker_atlas.core.payer import sample_payer
 from parker_atlas.core.sdoh import sample_sdoh
 from parker_atlas.fhir.allergy_intolerance import build_allergy_intolerance_resource
 from parker_atlas.fhir.bundle import build_bundle, fullurl_for_gpx, fullurl_for_resource
+from parker_atlas.fhir.carin_bb import enrich_carin_bb
 from parker_atlas.fhir.claim import (
     build_claim_resource,
     build_explanation_of_benefit_resource,
@@ -131,6 +132,31 @@ class Profile(str, Enum):
     BASE = "base"
 
 
+class RefStyle(str, Enum):
+    """How inter-resource references are written in NDJSON output."""
+
+    URN_UUID = "urn-uuid"   # urn:uuid:<uuid5> — self-consistent, matches bundles
+    RELATIVE = "relative"   # Patient/<id> — idiomatic FHIR Bulk Data ($export)
+
+
+def _relativize_references(node: Any, mapping: dict[str, str]) -> None:
+    """Rewrite urn:uuid Reference.reference values to relative form, in place.
+
+    `mapping` maps each urn:uuid fullUrl to its `ResourceType/id` relative
+    reference. Walks the resource recursively so nested references (encounter,
+    payor, result, participant, …) are all rewritten.
+    """
+    if isinstance(node, dict):
+        ref = node.get("reference")
+        if isinstance(ref, str) and ref in mapping:
+            node["reference"] = mapping[ref]
+        for value in node.values():
+            _relativize_references(value, mapping)
+    elif isinstance(node, list):
+        for value in node:
+            _relativize_references(value, mapping)
+
+
 # Backwards-compatible alias — full launch-hardened set (see validation/gtm.py).
 GTM_HARDENED_MODULES = gtm_hardened_modules()
 
@@ -175,6 +201,8 @@ def _write_generation_metadata(
     format: OutputFormat,
     profile: Profile,
     seed: int | None,
+    as_of: str | None,
+    ref_style: str | None,
     with_notes: bool,
     note_types: str | None,
     notes_strategy: NoteStrategy,
@@ -184,6 +212,7 @@ def _write_generation_metadata(
     with_claims: bool,
     with_sdoh: bool,
     with_measures: bool,
+    carin_bb: bool = False,
     summary_counts: dict[str, Any] | None = None,
 ) -> None:
     metadata: dict[str, Any] = {
@@ -198,6 +227,8 @@ def _write_generation_metadata(
         "format": format.value,
         "profile": profile.value,
         "seed": seed,
+        "as_of": as_of,
+        "ref_style": ref_style,
         "with_notes": with_notes,
         "note_types": note_types,
         "notes_strategy": notes_strategy.value,
@@ -207,6 +238,7 @@ def _write_generation_metadata(
         "with_claims": with_claims,
         "with_sdoh": with_sdoh,
         "with_measures": with_measures,
+        "carin_bb": carin_bb,
     }
     if summary_counts is not None:
         metadata["summary"] = summary_counts
@@ -734,6 +766,8 @@ def generate(
     module: Annotated[str | None, typer.Option(help="Module(s) to run, comma-separated for multiple (e.g. hypertension,complications).")] = None,
     profile: Annotated[Profile, typer.Option(help="FHIR profile to conform to.")] = Profile.US_CORE_6_1,
     seed: Annotated[int | None, typer.Option(help="RNG seed for reproducibility.")] = None,
+    as_of: Annotated[str | None, typer.Option("--as-of", help="ISO date used as 'today' for age, onset, and measure periods. Pin it (with --seed) for fully reproducible cohorts that don't drift day to day. Defaults to the current date.")] = None,
+    ref_style: Annotated[RefStyle, typer.Option("--ref-style", help="NDJSON reference style: 'urn-uuid' (default) or 'relative' (Patient/<id>) for idiomatic FHIR Bulk Data ($export) consumers. Ignored for fhir-r4 bundles (which require urn:uuid fullUrls).")] = RefStyle.URN_UUID,
     summary: Annotated[bool, typer.Option("--summary", help="Print cohort demographics and condition summary after generation.")] = False,
     with_notes: Annotated[bool, typer.Option("--with-notes", help="Emit clinical notes as DocumentReference resources.")] = False,
     note_types: Annotated[str | None, typer.Option("--note-types", help="Comma-separated note types when --with-notes is set: progress, discharge, radiology. Default: progress.")] = None,
@@ -744,6 +778,7 @@ def generate(
     with_claims: Annotated[bool, typer.Option("--with-claims", help="Emit one Claim + ExplanationOfBenefit per Encounter. Requires --with-coverage; uninsured patients receive no claims.")] = False,
     with_sdoh: Annotated[bool, typer.Option("--with-sdoh", help="Sample SDoH risk factors per patient (food insecurity, housing, transport, financial strain, social support) and emit Gravity Project SDOHCC Observations. SDoH domains causally reduce outpatient encounter and medication adherence rates.")] = False,
     with_measures: Annotated[bool, typer.Option("--with-measures", help="Emit DEQM MeasureReport resources: one individual report per patient per applicable measure, plus a population-level summary MeasureReport per measure at the end of the run.")] = False,
+    carin_bb: Annotated[bool, typer.Option("--carin-bb", help="Stamp CARIN Blue Button (C4BB) profiles + required top-level elements onto Patient / Coverage / payer Organization / ExplanationOfBenefit. Requires --with-coverage (EOB parts also need --with-claims). Alignment with the CMS Interoperability rule, not full IG-validated conformance.")] = False,
 ) -> None:
     """Generate a synthetic FHIR patient population."""
     if patients < 1:
@@ -775,6 +810,12 @@ def generate(
     if with_claims and not with_coverage:
         err_console.print("[red]--with-claims requires --with-coverage[/red]")
         raise typer.Exit(code=1)
+    if carin_bb and not with_coverage:
+        err_console.print(
+            "[red]--carin-bb requires --with-coverage[/red] "
+            "(add --with-claims for ExplanationOfBenefit enrichment too)."
+        )
+        raise typer.Exit(code=1)
     try:
         parsed_note_types = parse_note_types(note_types)
     except ValueError as exc:
@@ -790,11 +831,16 @@ def generate(
                 err_console.print(f"[red]{exc}[/red]")
                 raise typer.Exit(code=1) from exc
 
+    try:
+        today = date.fromisoformat(as_of) if as_of else date.today()
+    except ValueError as exc:
+        err_console.print(f"[red]invalid --as-of:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
     out.mkdir(parents=True, exist_ok=True)
     rng = random.Random(seed)
     allocator = Allocator(Category.SYNTHETIC)
 
-    today = date.today()
     measure_period_start = today.replace(month=1, day=1)
     measure_period_end = today.replace(month=12, day=31)
 
@@ -1129,10 +1175,23 @@ def generate(
                     )
                     extras.append(indv_report)
 
+            if carin_bb:
+                enrich_carin_bb([patient, *extras])
+
             if format is OutputFormat.FHIR_R4:
                 bundle = build_bundle(gpx, patient, extras)
                 (out / f"{gpx}.json").write_text(json.dumps(bundle, indent=2))
             elif format is OutputFormat.NDJSON:
+                if ref_style is RefStyle.RELATIVE:
+                    ref_map = {
+                        fullurl_for_gpx(gpx): f"Patient/{patient['id']}",
+                    }
+                    for res in extras:
+                        ref_map[fullurl_for_resource(gpx, res)] = (
+                            f"{res['resourceType']}/{res.get('id', '')}"
+                        )
+                    for resource in (patient, *extras):
+                        _relativize_references(resource, ref_map)
                 for resource in (patient, *extras):
                     rtype = resource["resourceType"]
                     rid = resource.get("id", "")
@@ -1307,6 +1366,8 @@ def generate(
         format=format,
         profile=profile,
         seed=seed,
+        as_of=today.isoformat(),
+        ref_style=ref_style.value if format is OutputFormat.NDJSON else None,
         with_notes=with_notes,
         note_types=note_types_label,
         notes_strategy=notes_strategy,
@@ -1316,6 +1377,7 @@ def generate(
         with_claims=with_claims,
         with_sdoh=with_sdoh,
         with_measures=with_measures,
+        carin_bb=carin_bb,
         summary_counts=generation_metadata,
     )
 
@@ -1572,6 +1634,9 @@ def status() -> None:
         ("Maternal health / OB",  "[green]implemented[/green]",    "Diff-1"),
         ("Quality MeasureReport", "[green]implemented[/green]",    "Diff-3"),
         ("SMART Scheduling Links","[green]$bulk-publish[/green]",   "Diff-4"),
+        ("Da Vinci Plan-Net",     "[green]$bulk-publish[/green]",   "Diff-5"),
+        ("CARIN Blue Button",     "[green]C4BB alignment[/green]",  "Diff-5"),
+        ("Reproducible --as-of",  "[green]implemented[/green]",     "Diff-5"),
     ]
     for row in rows:
         table.add_row(*row)
@@ -2031,6 +2096,49 @@ def publish_scheduling(
         f"  Locations={counts['Location']} Schedules={counts['Schedule']} "
         f"Slots={counts['Slot']} (free={counts['Slot(free)']}, busy={counts['Slot(busy)']}) "
         f"Appointments={counts['Appointment']}"
+    )
+    console.print(f"  manifest: [bold]{manifest_path}[/bold]")
+
+
+@app.command("publish-provider-directory")
+def publish_provider_directory(
+    out: Annotated[Path, typer.Option("--out", "-o", help="Output directory for the Plan-Net bulk-publish directory.")] = Path("./provider-directory"),
+    sites: Annotated[int, typer.Option(help="Number of provider Organizations/Locations (1–40).")] = 15,
+    practitioners_per_site: Annotated[int, typer.Option("--practitioners-per-site", help="Practitioners generated at each site.")] = 4,
+    base_url: Annotated[str, typer.Option("--base-url", help="Base URL the manifest advertises for its NDJSON output files.")] = "https://example.org/provider-directory",
+) -> None:
+    """Publish a Da Vinci PDEX Plan-Net provider directory (bulk NDJSON + manifest).
+
+    Emits a `bulk-publish-manifest.json` plus per-type NDJSON (Organization —
+    networks and providers — Location, Practitioner, PractitionerRole,
+    HealthcareService, InsurancePlan, Endpoint) conforming to the Plan-Net
+    profiles. This is the payer provider-directory surface referenced by the CMS
+    Interoperability & Patient Access rule.
+    """
+    from parker_atlas.provider_directory import (
+        DirectoryConfig,
+        generate_provider_directory,
+        write_bulk_publish,
+    )
+
+    config = DirectoryConfig(sites=sites, practitioners_per_site=practitioners_per_site)
+    try:
+        config.validate()
+    except ValueError as exc:
+        err_console.print(f"[red]invalid provider-directory config:[/red] {exc}")
+        raise typer.Exit(code=1) from exc
+
+    transaction_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    directory = generate_provider_directory(config)
+    manifest_path = write_bulk_publish(
+        directory, out, base_url=base_url, transaction_time=transaction_time
+    )
+    counts = directory.counts
+    console.print(
+        f"[green]✓[/green] Published Plan-Net provider directory to [bold]{out}[/bold]"
+    )
+    console.print(
+        "  " + " ".join(f"{k}={v}" for k, v in counts.items())
     )
     console.print(f"  manifest: [bold]{manifest_path}[/bold]")
 

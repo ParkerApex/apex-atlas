@@ -19,6 +19,12 @@ LOINC_FEV1_FVC = "19926-5"
 RXNORM_TIOTROPIUM = "1546430"
 
 
+# Pin generation to the same reference date the assertions evaluate ages at, so
+# a hard age-boundary invariant (pediatric prevalence 0) holds regardless of the
+# wall-clock date the suite runs on.
+AS_OF = "2026-04-25"
+
+
 def _generate(tmp_path, patients=2000, seed=42):
     r = runner.invoke(
         app,
@@ -27,6 +33,7 @@ def _generate(tmp_path, patients=2000, seed=42):
             "--patients", str(patients),
             "--seed", str(seed),
             "--module", "copd",
+            "--as-of", AS_OF,
             "--out", str(tmp_path),
         ],
     )

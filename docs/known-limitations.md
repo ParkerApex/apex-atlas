@@ -51,6 +51,8 @@ See the [module catalog](./module-catalog.md) for per-module tier and review sta
 | **IPS 2.0 conformance** | Post-v1 | International Patient Summary not implemented. |
 | **SMART on FHIR / production Bulk $export** | Dev first cut | `atlas serve` exposes async `$export` for demos; no OAuth, no multi-tenant SLA. |
 | **Claims & EOB** | First cut | One Claim + EOB per covered Encounter; not payer-specific editing or remittance logic. |
+| **CARIN Blue Button (C4BB)** | Alignment | `--carin-bb` stamps C4BB profiles + required top-level elements (member id, class, EOB billablePeriod/payee/coded adjudication); deeper slicing (careTeam, supportingInfo, diagnosis sequencing) is out of scope — not an IG-validated conformance run. |
+| **Da Vinci Plan-Net directory** | Alignment | `atlas publish-provider-directory` emits Plan-Net-profiled resources with primary must-support elements; not a formally IG-validated conformance run. Example NPIs/endpoints are synthetic. |
 | **Quality measures** | HEDIS-analog (5) | Not NCQA-certified; DEQM-profiled MeasureReports for testing only. |
 | **Clinical notes — blinded audit** | Not run | Template + LLM progress notes ship; discharge and radiology notes are template-first; no published ≥80% clinician acceptance study. |
 | **Structured ↔ unstructured consistency check** | Planned | No automated contradiction detector between FHIR resources and note text yet. |

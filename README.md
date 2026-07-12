@@ -49,8 +49,10 @@ Atlas output is structured for the same ingestion paths used in live interoperab
 | HIE | Longitudinal, multi-source charts | Multi-condition panels, progressions, DocumentReference notes |
 | Payer / clearinghouse APIs | Eligibility, claims, remittance | Coverage, Organization, InsurancePlan, Claim, ExplanationOfBenefit |
 | CMS Blue Button 2.0 | Medicare beneficiary FHIR | Age-stratified payer mix, Coverage, EOB, chronic-care modules |
-| Bulk Data (`$export`) | Large-scale ingestion | NDJSON and versioned Parquet exports |
+| Bulk Data (`$export`) | Large-scale ingestion | NDJSON (urn:uuid or relative refs) and versioned Parquet exports |
 | SMART Scheduling Links (`$bulk-publish`) | Appointment availability | Location, Schedule, Slot NDJSON + booking-deep-link/phone/capacity |
+| Da Vinci Plan-Net (`$bulk-publish`) | Payer provider directory | Organization/Network, Location, Practitioner, PractitionerRole, HealthcareService, InsurancePlan, Endpoint |
+| CARIN Blue Button (C4BB) | Payer patient-access | C4BB profiles on Patient/Coverage/Organization/EOB (`--carin-bb`) |
 
 Atlas does not connect to, ingest from, or replay data from these production systems. Population statistics are calibrated to cited public sources and validated in the [fidelity scorecard](./docs/fidelity-scorecard.md). See [known limitations](./docs/known-limitations.md) and the [security & provenance FAQ](./docs/security-provenance-faq.md).
 
@@ -114,6 +116,9 @@ Full catalog: [`docs/module-catalog.md`](./docs/module-catalog.md). Roadmap: [`d
 | Module authoring (`atlas author`) | Available | Research → draft → clinician promote |
 | Dev API (`atlas serve`) | Available | Docker-deployable; see [`docs/deploy.md`](./docs/deploy.md) |
 | SMART Scheduling Links (`$bulk-publish`) | Available | `atlas publish-scheduling`; dev API `/scheduling/$bulk-publish` |
+| Da Vinci Plan-Net directory (`$bulk-publish`) | Available | `atlas publish-provider-directory` |
+| CARIN Blue Button (C4BB) alignment | Available | `atlas generate --carin-bb` (profiles + required elements) |
+| Reproducible cohorts (`--as-of`) | Available | Pin the generation date for byte-stable, seed-reproducible runs |
 | IPS 2.0 conformance | Planned | Post-v1 international profiles |
 | Production SMART / Bulk `$export` | Planned | Dev `$export` available today |
 
@@ -238,6 +243,22 @@ atlas publish-scheduling --sites 25 --weeks 2 --seed 42 \
   --patients ./cohort/Patient.ndjson --out ./scheduling
 ```
 
+**Reproducible, interoperable payer export (CARIN Blue Button)**
+
+```bash
+# Pin the date (--as-of) for byte-stable runs, emit relative Bulk Data refs,
+# and stamp CARIN Blue Button profiles on the payer resources.
+atlas generate --patients 500 --seed 42 --as-of 2026-01-01 \
+  --module hypertension,diabetes --with-coverage --with-claims \
+  --format ndjson --ref-style relative --carin-bb --out ./carin-cohort
+```
+
+**Da Vinci Plan-Net provider directory (`$bulk-publish`)**
+
+```bash
+atlas publish-provider-directory --sites 15 --practitioners-per-site 4 --out ./provider-directory
+```
+
 **Cohort fidelity report**
 
 ```bash
@@ -276,6 +297,7 @@ Full design: [`docs/architecture.md`](./docs/architecture.md). Rationale: [`docs
 | [Web generator](https://parkerapex.github.io/apex-atlas/generator.html) | Browser UI for cohort generation and download |
 | [Integration cookbooks](./docs/integration-cookbooks.md) | QHIN, HIE, payer, and Blue Button-shaped workflows |
 | [SMART Scheduling Links](./docs/smart-scheduling-links.md) | `$bulk-publish` appointment availability (Location/Schedule/Slot) |
+| [Da Vinci Plan-Net directory](./docs/provider-directory.md) | `$bulk-publish` payer provider directory (Organization/Practitioner/PractitionerRole/…) |
 | [Known limitations](./docs/known-limitations.md) | Capability boundaries and tier definitions |
 | [Security & provenance FAQ](./docs/security-provenance-faq.md) | PHI, licensing, API keys, deployment |
 | [Commercial one-pager](./docs/commercial-one-pager.md) | Apache 2.0 vs enterprise license |
