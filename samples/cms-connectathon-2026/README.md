@@ -14,6 +14,50 @@ individual. See the repository [security & provenance FAQ](../../docs/security-p
 
 ---
 
+## How to get this data
+
+This dataset lives on the **`cms-connectathon-2026`** branch under
+`samples/cms-connectathon-2026/` (≈180 MB total: patients ≈161 MB, scheduling ≈19 MB).
+
+**Option A — clone just this branch:**
+
+```bash
+git clone --branch cms-connectathon-2026 --single-branch \
+  https://github.com/ParkerApex/apex-atlas.git
+cd apex-atlas/samples/cms-connectathon-2026
+```
+
+**Option B — download individual files** (raw URLs, no clone). Each file is
+`https://raw.githubusercontent.com/ParkerApex/apex-atlas/cms-connectathon-2026/samples/cms-connectathon-2026/<path>`, e.g.:
+
+```bash
+BASE=https://raw.githubusercontent.com/ParkerApex/apex-atlas/cms-connectathon-2026/samples/cms-connectathon-2026
+curl -O $BASE/patients/Patient.ndjson
+curl -O $BASE/scheduling/Slot.ndjson
+```
+
+**Option C — the SMART Scheduling Links manifest** is self-describing; point a
+client at it and follow the `output[]` URLs:
+
+```bash
+curl -s https://raw.githubusercontent.com/ParkerApex/apex-atlas/cms-connectathon-2026/samples/cms-connectathon-2026/scheduling/bulk-publish-manifest.json \
+  | jq -r '.output[].url'
+```
+
+### At a glance
+
+| Dataset | Directory | Files | Rough size |
+| --- | --- | --- | ---: |
+| Patients (FHIR Bulk Data `$export`) | [`patients/`](./patients/) | 9 NDJSON + metadata | ≈161 MB |
+| Scheduling (SMART Scheduling Links `$bulk-publish`) | [`scheduling/`](./scheduling/) | manifest + 4 NDJSON | ≈19 MB |
+
+Loading into a FHIR server: the patient NDJSON follows the FHIR
+[Bulk Data Access](https://hl7.org/fhir/uv/bulkdata/) layout (one file per
+resource type), so most servers can ingest each `*.ndjson` directly. The
+scheduling files follow [SMART Scheduling Links](https://github.com/smart-on-fhir/smart-scheduling-links).
+
+---
+
 ## 1. Patients — FHIR Bulk Data (`$export`) NDJSON
 
 Directory: [`patients/`](./patients/)
