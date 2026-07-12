@@ -66,6 +66,12 @@ One NDJSON file per resource type, one resource per line — the FHIR
 US Core 6.1. Patient identity uses the Parker Global Patient Identifier
 (`GPX-SYN-…`) under the synthetic namespace.
 
+> **Just want to read a few patients?** The NDJSON files are large. See
+> [`patients/examples/`](./patients/examples/) for a handful of complete
+> patient records as pretty-printed, human-readable FHIR Bundles (Patient +
+> all their linked resources), ranging from a multi-morbid record to a healthy
+> one.
+
 | File | Resources | Lines |
 | --- | --- | ---: |
 | `Patient.ndjson` | US Core Patient | 20,000 |

@@ -128,6 +128,8 @@ atlas validate ./atlas-launch-demo --gtm
 
 Pre-built sample manifest (10,000 patients): [`samples/launch-demo-10000-patients/MANIFEST.json`](./samples/launch-demo-10000-patients/MANIFEST.json). Build instructions: [`samples/README.md`](./samples/README.md).
 
+**CMS Connectathon 2026 dataset** — a ready-to-use 20,000-patient FHIR Bulk Data (`$export`) population plus a SMART Scheduling Links (`$bulk-publish`) availability dataset: [`samples/cms-connectathon-2026/`](./samples/cms-connectathon-2026/). For a quick look, see the readable per-patient sample records in [`samples/cms-connectathon-2026/patients/examples/`](./samples/cms-connectathon-2026/patients/examples/).
+
 ### Web generator
 
 **UI:** [https://parkerapex.github.io/apex-atlas/generator.html](https://parkerapex.github.io/apex-atlas/generator.html)
