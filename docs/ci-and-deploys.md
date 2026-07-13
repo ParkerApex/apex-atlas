@@ -19,16 +19,18 @@ writing). New code should be clean; once the backlog is burned down, drop
 Both deploy workflows are correct but currently fail because of **repository /
 PyPI settings** that can only be set by an owner (not from code):
 
-### GitHub Pages (`pages.yml`)
+### GitHub Pages
 
-Failure: `Create Pages site failed. Error: Resource not accessible by integration`.
+The documentation site (`docs/`) is published via GitHub Pages using the
+**Deploy from a branch** source: **`main` / `/docs`** (repo **Settings → Pages**).
+GitHub's built-in `pages-build-deployment` handles the build; `docs/.nojekyll`
+makes it serve the static files as-is. No custom workflow is needed.
 
-Pages is not enabled, and the Actions token cannot enable it. Fix once:
-
-1. Repo **Settings → Pages**
-2. **Build and deployment → Source: GitHub Actions**
-
-After that, `pages.yml` publishes `docs/` on every change.
+> The `main` branch and org-verified custom domains are managed separately; the
+> repo-level Pages setting above is what actually enables the site. If you'd
+> rather deploy via a custom Actions workflow instead, set Source to
+> **GitHub Actions** and add a workflow that uploads `docs/` with
+> `actions/upload-pages-artifact` + `actions/deploy-pages`.
 
 ### PyPI publish (`publish-pypi.yml`)
 
