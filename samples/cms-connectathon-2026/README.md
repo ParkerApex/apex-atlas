@@ -1,16 +1,22 @@
 # CMS Connectathon 2026 — Synthetic Bulk-Publish Dataset
 
 Synthetic, license-clean FHIR R4 data prepared for the **CMS Connectathon 2026**.
-Two independently usable datasets are published here:
+Three independently usable datasets are published here:
 
-1. **Patients** — a 20,000-patient population as FHIR Bulk Data (`$export`)-style NDJSON.
+1. **Patients** — a 20,000-patient population as FHIR Bulk Data (`$export`)-style NDJSON (relative references).
 2. **Scheduling** — open appointment availability as a
    [SMART Scheduling Links](https://github.com/smart-on-fhir/smart-scheduling-links)
    (`$bulk-publish`) dataset, plus booked `Appointment` resources.
+3. **Provider directory** — a payer provider directory as a
+   [Da Vinci PDEX Plan-Net](http://hl7.org/fhir/us/davinci-pdex-plan-net/) (`$bulk-publish`) dataset.
 
 All records are synthetic. Every resource carries the
 `HTEST` ("test health data") `meta.tag`. No record corresponds to a real
 individual. See the repository [security & provenance FAQ](../../docs/security-provenance-faq.md).
+
+The whole dataset cross-validates: **246,084/246,084 references resolve across
+168,237 resources** — see [`conformance-report.md`](./conformance-report.md),
+regenerate with `atlas validate . --refs` / `atlas validate . --ig`.
 
 ---
 
@@ -49,6 +55,7 @@ curl -s https://raw.githubusercontent.com/ParkerApex/apex-atlas/main/samples/cms
 | --- | --- | --- | ---: |
 | Patients (FHIR Bulk Data `$export`) | [`patients/`](./patients/) | 9 NDJSON + metadata | ≈161 MB |
 | Scheduling (SMART Scheduling Links `$bulk-publish`) | [`scheduling/`](./scheduling/) | manifest + 4 NDJSON | ≈19 MB |
+| Provider directory (Plan-Net `$bulk-publish`) | [`provider-directory/`](./provider-directory/) | manifest + 7 NDJSON | ≈40 KB |
 
 Loading into a FHIR server: the patient NDJSON follows the FHIR
 [Bulk Data Access](https://hl7.org/fhir/uv/bulkdata/) layout (one file per
@@ -85,20 +92,21 @@ US Core 6.1. Patient identity uses the Parker Global Patient Identifier
 | `InsurancePlan.ndjson` | Insurance plans | 7 |
 | `generation-metadata.json` | Run manifest (seed, modules, flags) | — |
 
-**Generation parameters:** `seed=2026`, modules `hypertension,diabetes,wellness`,
-`--with-coverage`, US Core 6.1.
+**Generation parameters:** `seed=2026`, `as-of=2026-07-12`, modules
+`hypertension,diabetes,wellness`, `--with-coverage`, US Core 6.1, idiomatic
+relative references (`--ref-style relative`).
 
-Regenerate:
+Regenerate (byte-reproducible with the pinned `--seed` + `--as-of`):
 
 ```bash
-atlas generate --patients 20000 --seed 2026 --format ndjson \
-  --module hypertension,diabetes,wellness --with-coverage \
+atlas generate --patients 20000 --seed 2026 --as-of 2026-07-12 --format ndjson \
+  --module hypertension,diabetes,wellness --with-coverage --ref-style relative \
   --out ./samples/cms-connectathon-2026/patients
 ```
 
-> Note: within the NDJSON export, `subject`/`patient` references use the
-> `urn:uuid:` fullUrl form derived from each patient's GPX id (the resolver key
-> is the GPX id in `Patient.id`).
+> References use idiomatic FHIR Bulk Data relative form (`Patient/GPX-SYN-…`),
+> so the export resolves cleanly across files (and against the scheduling
+> Appointments) — see the [validation section](#validation--conformance).
 
 ---
 
@@ -159,6 +167,60 @@ atlas publish-scheduling --sites 40 --weeks 4 --slot-minutes 60 --seed 20260712 
   --service-types general-practice,immunization \
   --window-start 2026-07-13 --patients ./samples/cms-connectathon-2026/patients \
   --out ./samples/cms-connectathon-2026/scheduling
+```
+
+---
+
+## 3. Provider directory — Da Vinci Plan-Net (`$bulk-publish`)
+
+Directory: [`provider-directory/`](./provider-directory/)
+
+A payer provider directory conforming to the
+[Da Vinci PDEX Plan-Net](http://hl7.org/fhir/us/davinci-pdex-plan-net/) IG —
+the provider-directory surface referenced by the CMS Interoperability & Patient
+Access rule.
+
+| File | Resource | Role |
+| --- | --- | --- |
+| `bulk-publish-manifest.json` | — | Links the NDJSON via `output[]`. |
+| `Organization.ndjson` | Organization | Provider organizations **and** Networks (`type = ntwk`). |
+| `Location.ndjson` | Location | Practice sites (address, position, managing org). |
+| `Practitioner.ndjson` | Practitioner | Providers with NPI + board qualification (NUCC). |
+| `PractitionerRole.ndjson` | PractitionerRole | practitioner ↔ org ↔ location ↔ service ↔ network, with specialty + accepting-new-patients. |
+| `HealthcareService.ndjson` | HealthcareService | Services by org at a location. |
+| `InsurancePlan.ndjson` | InsurancePlan | Plans referencing their network(s). |
+| `Endpoint.ndjson` | Endpoint | A FHIR base URL per org. |
+
+Built from the **same provider roster** that patient encounters draw from, so a
+practitioner or facility NPI in a claim (`atlas generate --with-providers`) also
+appears here. See [`docs/provider-directory.md`](../../docs/provider-directory.md).
+
+Regenerate:
+
+```bash
+atlas publish-provider-directory \
+  --base-url https://raw.githubusercontent.com/ParkerApex/apex-atlas/main/samples/cms-connectathon-2026/provider-directory \
+  --out ./samples/cms-connectathon-2026/provider-directory
+```
+
+---
+
+## Validation & conformance
+
+The whole dataset is referentially consistent and structurally valid. A shipped
+report — [`conformance-report.md`](./conformance-report.md) — records the run:
+**168,237/168,237 resources structurally valid** (fhir.resources R4B) and
+**246,084/246,084 references resolved** (Appointment→Patient bookings included).
+
+Reproduce it:
+
+```bash
+# Cross-file referential integrity across all three datasets.
+atlas validate ./samples/cms-connectathon-2026 --refs
+
+# Full conformance report (add --validator-jar to include the HL7 FHIR validator).
+atlas validate ./samples/cms-connectathon-2026 --ig \
+  --ig-report ./samples/cms-connectathon-2026/conformance-report.md
 ```
 
 ---

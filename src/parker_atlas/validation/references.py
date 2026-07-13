@@ -91,7 +91,12 @@ def _load(path: Path) -> tuple[list[tuple[Path, dict]], set[str], list[tuple[str
                         _register(f, json.loads(line), resources, index)
             else:
                 doc = json.loads(f.read_text(encoding="utf-8"))
-                if doc.get("resourceType") == "Bundle":
+                if isinstance(doc, list):
+                    # A JSON array of resources (e.g. pretty-printed examples).
+                    for item in doc:
+                        if isinstance(item, dict) and "resourceType" in item:
+                            _register(f, item, resources, index)
+                elif isinstance(doc, dict) and doc.get("resourceType") == "Bundle":
                     for entry in doc.get("entry", []):
                         full_url = entry.get("fullUrl")
                         if isinstance(full_url, str):
@@ -99,7 +104,7 @@ def _load(path: Path) -> tuple[list[tuple[Path, dict]], set[str], list[tuple[str
                         res = entry.get("resource")
                         if isinstance(res, dict):
                             _register(f, res, resources, index)
-                elif "resourceType" in doc:
+                elif isinstance(doc, dict) and "resourceType" in doc:
                     _register(f, doc, resources, index)
         except (json.JSONDecodeError, OSError) as exc:
             errors.append((str(f), str(exc)))

@@ -1,8 +1,8 @@
 # Sample patient records
 
-Human-readable, pretty-printed FHIR R4 **transaction Bundles** for a few real patients drawn from the 20,000-patient bulk export in [`../`](../). Each file is a complete record for one patient — the `Patient` plus all of their linked resources (conditions, encounters, observations, medications, immunizations, coverage) — so you can read a whole patient in one file instead of scanning the large NDJSON.
+Human-readable, pretty-printed FHIR R4 **collection Bundles** for a few real patients drawn from the 20,000-patient bulk export in [`../`](../). Each file is a complete record for one patient — the `Patient` plus all of their linked resources (conditions, encounters, observations, medications, immunizations, coverage) — so you can read a whole patient in one file instead of scanning the large NDJSON.
 
-These are identical to what `atlas generate --format fhir-r4` emits for these patients; the full population lives in the `*.ndjson` files one directory up.
+References are relative (`Patient/<id>`, …) and resolve within each Bundle; the full population lives in the `*.ndjson` files one directory up.
 
 | File | Entries | Conditions |
 | --- | ---: | --- |

@@ -70,6 +70,19 @@ class TestValidateReferences:
         assert not report.ok
         assert report.urn_uuid_unresolved == 1
 
+    def test_json_array_of_resources(self, tmp_path):
+        # Pretty-printed example files are JSON arrays, not single resources.
+        (tmp_path / "examples.json").write_text(
+            json.dumps([
+                {"resourceType": "Location", "id": "L1"},
+                {"resourceType": "Schedule", "id": "S1", "actor": [{"reference": "Location/L1"}]},
+            ]),
+            encoding="utf-8",
+        )
+        report = validate_references(tmp_path)
+        assert report.ok
+        assert report.resolved == 1
+
     def test_manifest_files_skipped(self, tmp_path):
         (tmp_path / "bulk-publish-manifest.json").write_text(
             json.dumps({"transactionTime": "t", "output": []}), encoding="utf-8"
