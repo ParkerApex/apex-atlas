@@ -29,12 +29,21 @@ atlas serve --port 8080
 | GET | `/fhir/$export` | **async** Bulk Data kickoff → `202` + `Content-Location` |
 | GET | `/jobs/<id>` | poll: `202` while running, `200` Bulk Data manifest when done |
 | GET | `/jobs/<id>/<Type>.ndjson` | download a per-resource-type NDJSON file |
+| GET | `/scheduling/$bulk-publish` | SMART Scheduling Links manifest |
+| GET | `/scheduling/<Type>.ndjson` | Location / Schedule / Slot NDJSON |
+| GET | `/provider-directory/$bulk-publish` | Da Vinci Plan-Net directory manifest |
+| GET | `/provider-directory/<Type>.ndjson` | Plan-Net directory NDJSON |
 
 ### Query parameters
 
-`patients` (int, capped at 5000), `seed` (int), `modules` (comma-separated
-module names), and the boolean flags `sdoh`, `coverage`, `measures`, `notes`
-(`1`/`true`).
+For `/generate`: `patients` (int, capped at 5000), `seed` (int), `modules`
+(comma-separated module names), `as_of` (ISO date — reproducible cohorts),
+`ref_style` (`urn-uuid` | `relative`), and the boolean flags `sdoh`, `coverage`,
+`providers`, `measures`, `notes`, `carin_bb` (`1`/`true`).
+
+For `/scheduling/*`: `sites`, `weeks`, `seed`, `services`. The
+`/provider-directory/*` dataset is built from the shared provider roster and
+takes no parameters.
 
 ## Examples
 
@@ -62,7 +71,7 @@ experience into live generation. See [`roadmap.md`](./roadmap.md).
 
 ## Browser generator UI
 
-[`docs/generator.html`](./generator.html) is a static page that calls this server from the browser (CORS is enabled). Run `atlas serve`, open the page (via GitHub Pages, htmlpreview, or just open the file locally), point the "API base URL" field at your server, and generate cohorts interactively with a download button. It uses only `GET /health`, `GET /modules`, and `POST /generate`.
+[`docs/generator.html`](./generator.html) is a static page that calls this server from the browser (CORS is enabled). Run `atlas serve`, open the page (via GitHub Pages, htmlpreview, or just open the file locally), point the "API base URL" field at your server, and generate cohorts interactively with a download button. It also has a **Bulk-publish** section that pulls the SMART Scheduling Links and Da Vinci Plan-Net datasets. It uses `GET /health`, `GET /modules`, `POST /generate`, and the `/scheduling` + `/provider-directory` `$bulk-publish` endpoints.
 
 ## Deploying it
 

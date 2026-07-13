@@ -161,3 +161,36 @@ class TestSchedulingBulkPublish:
         _, _, body = _get(f"{server}/fhir/metadata")
         ops = {o["name"] for o in json.loads(body)["rest"][0]["operation"]}
         assert "bulk-publish" in ops
+
+
+class TestProviderDirectoryBulkPublish:
+    def test_manifest_lists_types(self, server):
+        status, _, body = _get(f"{server}/provider-directory/$bulk-publish")
+        assert status == 200
+        manifest = json.loads(body)
+        types = [o["type"] for o in manifest["output"]]
+        assert types[0] == "Organization"
+        assert "PractitionerRole" in types and "Endpoint" in types
+
+    def test_practitionerrole_ndjson(self, server):
+        status, headers, body = _get(f"{server}/provider-directory/PractitionerRole.ndjson")
+        assert status == 200
+        assert headers.get("Content-Type") == "application/fhir+ndjson"
+        rows = [ln for ln in body.strip().splitlines() if ln]
+        assert rows and json.loads(rows[0])["resourceType"] == "PractitionerRole"
+
+
+class TestGenerateArgsFlags:
+    def test_new_flags_passthrough(self):
+        from pathlib import Path
+
+        from parker_atlas.server import _generate_args
+
+        qs = {
+            "patients": ["5"], "seed": ["1"], "coverage": ["1"], "providers": ["1"],
+            "carin_bb": ["1"], "as_of": ["2026-04-25"], "ref_style": ["relative"],
+        }
+        argv, _ = _generate_args(qs, Path("/tmp/x"))
+        for expect in ("--with-coverage", "--with-providers", "--carin-bb",
+                       "--as-of", "2026-04-25", "--ref-style", "relative"):
+            assert expect in argv

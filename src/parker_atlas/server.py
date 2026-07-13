@@ -24,9 +24,12 @@ GET  /jobs/<id>                    → 202 (in progress) | 200 Bulk Data manifes
 GET  /jobs/<id>/<Type>.ndjson     → the per-resource-type NDJSON file
 GET  /scheduling/$bulk-publish     → SMART Scheduling Links manifest
 GET  /scheduling/<Type>.ndjson    → Location/Schedule/Slot NDJSON (deterministic)
+GET  /provider-directory/$bulk-publish → Da Vinci Plan-Net directory manifest
+GET  /provider-directory/<Type>.ndjson → Plan-Net directory NDJSON
 
 Params (query string): patients (int, capped), seed (int), modules (csv),
-sdoh / coverage / measures / notes (bool: "1"/"true"). Scheduling params:
+sdoh / coverage / measures / notes / providers / carin_bb (bool: "1"/"true"),
+as_of (ISO date), ref_style ("relative"|"urn-uuid"). Scheduling params:
 sites (int, capped), weeks (int, capped), seed (int), services (csv).
 """
 
@@ -79,9 +82,17 @@ def _generate_args(qs: dict, out: Path) -> tuple[list[str], str]:
     modules = (qs.get("modules", [""])[0] or "").strip()
     if modules:
         argv += ["--module", modules]
-    for flag in ("sdoh", "coverage", "measures", "notes"):
+    for flag in ("sdoh", "coverage", "measures", "notes", "providers"):
         if _bool(qs, flag):
             argv.append(f"--with-{flag}")
+    if _bool(qs, "carin_bb"):
+        argv.append("--carin-bb")
+    as_of = (qs.get("as_of", [""])[0] or "").strip()
+    if as_of:
+        argv += ["--as-of", as_of]
+    ref_style = (qs.get("ref_style", [""])[0] or "").strip()
+    if ref_style in ("relative", "urn-uuid"):
+        argv += ["--ref-style", ref_style]
     summary = f"patients={patients} seed={seed} modules={modules or '(default)'}"
     return argv, summary
 
@@ -167,6 +178,10 @@ class AtlasHandler(BaseHTTPRequestHandler):
             return self._scheduling_manifest(qs)
         if path.startswith("/scheduling/") and path.endswith(".ndjson"):
             return self._scheduling_file(path, qs)
+        if path == "/provider-directory/$bulk-publish":
+            return self._provider_directory_manifest()
+        if path.startswith("/provider-directory/") and path.endswith(".ndjson"):
+            return self._provider_directory_file(path)
         return self._send_json(404, {"error": f"no route for {path}"})
 
     def do_POST(self) -> None:  # noqa: N802
@@ -275,6 +290,41 @@ class AtlasHandler(BaseHTTPRequestHandler):
         }.get(rtype)
         if rows is None:
             return self._send_json(404, {"error": f"no scheduling resource {rtype!r}"})
+        body = ("".join(json.dumps(r) + "\n" for r in rows)).encode("utf-8")
+        self._send_ndjson(body)
+
+    # -- Da Vinci Plan-Net provider directory ($bulk-publish) -----------------
+    def _provider_directory_rows(self) -> dict:
+        from parker_atlas.provider_directory import generate_provider_directory
+
+        d = generate_provider_directory()
+        return {
+            "Organization": d.organizations,
+            "Location": d.locations,
+            "Practitioner": d.practitioners,
+            "PractitionerRole": d.practitioner_roles,
+            "HealthcareService": d.healthcare_services,
+            "InsurancePlan": d.insurance_plans,
+            "Endpoint": d.endpoints,
+        }
+
+    def _provider_directory_manifest(self) -> None:
+        base = f"{self._base_url()}/provider-directory"
+        rows = self._provider_directory_rows()
+        self._send_json(200, {
+            "transactionTime": _iso_now(),
+            "request": f"{base}/$bulk-publish",
+            "output": [
+                {"type": t, "url": f"{base}/{t}.ndjson"} for t, v in rows.items() if v
+            ],
+            "error": [],
+        })
+
+    def _provider_directory_file(self, path: str) -> None:
+        rtype = path.rsplit("/", 1)[-1][: -len(".ndjson")]
+        rows = self._provider_directory_rows().get(rtype)
+        if rows is None:
+            return self._send_json(404, {"error": f"no provider-directory resource {rtype!r}"})
         body = ("".join(json.dumps(r) + "\n" for r in rows)).encode("utf-8")
         self._send_ndjson(body)
 

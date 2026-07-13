@@ -24,8 +24,9 @@
     border-radius:10px;padding:12px 14px;color:var(--muted);font-size:13.5px;margin:18px 0}
   .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:18px}
   label{display:block;font-size:13px;color:var(--muted);margin:0 0 5px}
-  input[type=text],input[type=number]{width:100%;background:#06101f;border:1px solid var(--line);
+  input[type=text],input[type=number],select{width:100%;background:#06101f;border:1px solid var(--line);
     border-radius:9px;color:var(--ink);padding:9px 11px;font-family:var(--mono);font-size:13px}
+  h2{font-size:19px;margin:2px 0 4px;letter-spacing:-.01em}
   .row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
   .row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}
   .flags{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px}
@@ -83,11 +84,28 @@
       <datalist id="modulelist"></datalist>
       <div class="hint" id="moduleshint">Connect to the API to load the module list.</div>
     </div>
+    <div class="row3" style="margin-top:14px">
+      <div>
+        <label for="asof">As-of date (reproducible)</label>
+        <input type="text" id="asof" placeholder="YYYY-MM-DD (blank = today)" />
+        <div class="hint">Pin with a seed for byte-stable cohorts.</div>
+      </div>
+      <div>
+        <label for="refstyle">Reference style</label>
+        <select id="refstyle">
+          <option value="urn-uuid">urn:uuid (default)</option>
+          <option value="relative">relative (Patient/&lt;id&gt;)</option>
+        </select>
+      </div>
+      <div></div>
+    </div>
     <div class="flags">
       <label><input type="checkbox" id="sdoh" checked /> SDoH causal overlay</label>
       <label><input type="checkbox" id="coverage" /> Payer coverage</label>
+      <label><input type="checkbox" id="providers" /> Providers (NPI-keyed)</label>
       <label><input type="checkbox" id="measures" /> Quality MeasureReports</label>
       <label><input type="checkbox" id="notes" /> Clinical notes</label>
+      <label><input type="checkbox" id="carin_bb" /> CARIN Blue Button (C4BB)</label>
     </div>
     <div class="actions">
       <button class="primary" id="gen">Generate</button>
@@ -104,6 +122,18 @@
     </div>
     <p class="hint">Preview (first 12 resources):</p>
     <pre id="preview"></pre>
+  </div>
+
+  <div class="card">
+    <h2>Bulk-publish datasets (<code>$bulk-publish</code>)</h2>
+    <p class="lede" style="font-size:14px">Payer exchange surfaces served by the same dev API — no patients needed.</p>
+    <div class="actions">
+      <button id="sched">SMART Scheduling Links</button>
+      <button id="pdir">Da Vinci Plan-Net directory</button>
+      <span class="status" id="bstatus"></span>
+    </div>
+    <div class="pills" id="bulkpills" style="margin-top:14px"></div>
+    <div class="actions" id="bulklinks" style="margin-top:0"></div>
   </div>
 
   <footer>
@@ -131,9 +161,13 @@
     p.set("seed", $("seed").value || "0");
     var mods = $("modules").value.trim();
     if (mods) p.set("modules", mods);
-    ["sdoh", "coverage", "measures", "notes"].forEach(function (f) {
+    ["sdoh", "coverage", "providers", "measures", "notes", "carin_bb"].forEach(function (f) {
       if ($(f).checked) p.set(f, "1");
     });
+    var asof = $("asof").value.trim();
+    if (asof) p.set("as_of", asof);
+    var rs = $("refstyle").value;
+    if (rs) p.set("ref_style", rs);
     return p.toString();
   }
 
@@ -198,18 +232,53 @@
     }
   }
 
-  function download() {
-    var blob = new Blob([lastNdjson], { type: "application/fhir+ndjson" });
+  function downloadText(text, name) {
+    var blob = new Blob([text], { type: "application/fhir+ndjson" });
     var a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "atlas-cohort.ndjson";
+    a.download = name;
     a.click();
     URL.revokeObjectURL(a.href);
+  }
+
+  function download() { downloadText(lastNdjson, "atlas-cohort.ndjson"); }
+
+  // Fetch a $bulk-publish dataset (scheduling | provider-directory), list each
+  // resource type with its line count, and offer per-type NDJSON downloads.
+  async function fetchBulk(kind, label) {
+    var bs = $("bstatus"); bs.textContent = "Fetching " + label + "…"; bs.className = "status";
+    $("bulkpills").innerHTML = ""; $("bulklinks").innerHTML = "";
+    try {
+      var mr = await fetch(base() + "/" + kind + "/$bulk-publish");
+      if (!mr.ok) throw new Error("HTTP " + mr.status);
+      var manifest = await mr.json();
+      for (var i = 0; i < manifest.output.length; i++) {
+        var type = manifest.output[i].type;
+        var fr = await fetch(base() + "/" + kind + "/" + type + ".ndjson");
+        var text = await fr.text();
+        var n = text.split("\n").filter(function (l) { return l.trim(); }).length;
+        var pill = document.createElement("span"); pill.className = "pill";
+        pill.innerHTML = type + " <b>" + n + "</b>"; $("bulkpills").appendChild(pill);
+        (function (t, body) {
+          var btn = document.createElement("button");
+          btn.textContent = "↓ " + t + ".ndjson";
+          btn.addEventListener("click", function () { downloadText(body, t + ".ndjson"); });
+          $("bulklinks").appendChild(btn);
+        })(type, text);
+      }
+      bs.textContent = label + " ready — " + manifest.output.length + " resource types.";
+      bs.className = "status ok";
+    } catch (e) {
+      bs.textContent = "Failed: " + e.message + " — is `atlas serve` running?";
+      bs.className = "status err";
+    }
   }
 
   $("gen").addEventListener("click", generate);
   $("check").addEventListener("click", check);
   $("download").addEventListener("click", download);
+  $("sched").addEventListener("click", function () { fetchBulk("scheduling", "SMART Scheduling Links"); });
+  $("pdir").addEventListener("click", function () { fetchBulk("provider-directory", "Plan-Net directory"); });
   check();
 })();
 </script>
