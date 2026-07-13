@@ -7,7 +7,7 @@
 [![Documentation](https://img.shields.io/badge/docs-parkerapex.github.io%2Fapex--atlas-3ba9a0.svg)](https://parkerapex.github.io/apex-atlas/)
 [![Generator](https://img.shields.io/badge/🧪_Generator-open_in_browser-3ba9a0.svg)](https://parkerapex.github.io/apex-atlas/generator.html)
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](./LICENSE)
-[![Version](https://img.shields.io/badge/release-v1.0.0-blue.svg)](https://github.com/ParkerApex/apex-atlas/releases/tag/v1.0.0)
+[![Version](https://img.shields.io/badge/release-v1.1.0-blue.svg)](https://github.com/ParkerApex/apex-atlas/releases/tag/v1.1.0)
 [![FHIR R4](https://img.shields.io/badge/FHIR-R4-red.svg)](https://hl7.org/fhir/R4/)
 [![US Core 6.1](https://img.shields.io/badge/US_Core-6.1-green.svg)](https://hl7.org/fhir/us/core/)
 
@@ -348,7 +348,7 @@ Apex Atlas is maintained by **Parker Health, Inc.** Specifications referenced by
   author       = {Lopez, Vincent J.},
   title        = {{Apex Atlas: A Synthetic FHIR Patient Population Generator}},
   year         = {2026},
-  version      = {1.0.0},
+  version      = {1.1.0},
   publisher    = {Parker Health, Inc.},
   url          = {https://github.com/ParkerApex/apex-atlas},
   note         = {Generates FHIR R4/R5 patient populations grounded in public
@@ -359,7 +359,7 @@ Apex Atlas is maintained by **Parker Health, Inc.** Specifications referenced by
 
 Plain text:
 
-> Lopez, V. J. (2026). *Apex Atlas: A Synthetic FHIR Patient Population Generator* (v1.0.0). Parker Health, Inc. https://github.com/ParkerApex/apex-atlas
+> Lopez, V. J. (2026). *Apex Atlas: A Synthetic FHIR Patient Population Generator* (v1.1.0). Parker Health, Inc. https://github.com/ParkerApex/apex-atlas
 
 ---
 
