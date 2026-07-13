@@ -2,7 +2,7 @@
 
 The synthetic clinician + facility roster that populates both the Plan-Net provider directory here and the `Practitioner` / `PractitionerRole` references on patient encounters (`atlas generate --with-providers`). NPIs are dummy values in the `1xxxxxxxxx` (individual) / `2xxxxxxxxx` (organization) blocks, each with a valid CMS NPPES Luhn check digit; taxonomy codes are from the NUCC Health Care Provider Taxonomy. Everything is synthetic.
 
-**25 providers** across **21 specialties** at **9 facilities**.
+**40 providers** across **34 specialties** at **10 facilities**.
 
 ## Providers
 
@@ -33,6 +33,21 @@ The synthetic clinician + facility roster that populates both the Plan-Net provi
 | `1000000236` | Dr. Erik Larsson | Diagnostic Radiology | `2085R0202X` | Ambulatory | APEX Atlas Imaging Center |
 | `1000000244` | Sofia Reyes | Nurse Practitioner | `363L00000X` | Ambulatory | APEX Atlas Primary Care - Cambridge |
 | `1000000251` | Jordan Brooks | Physician Assistant | `363A00000X` | Ambulatory | APEX Atlas Primary Care - Somerville |
+| `1000000269` | Dr. Rafael Delgado | Interventional Cardiology | `207RI0011X` | Ambulatory | APEX Atlas Cardiology Clinic |
+| `1000000277` | Dr. Grace Whitfield | Clinical Cardiac Electrophysiology | `207RC0001X` | Ambulatory | APEX Atlas Cardiology Clinic |
+| `1000000285` | Dr. Kenji Yamamoto | Hematology & Oncology | `207RH0003X` | Ambulatory | APEX Atlas Cancer Center |
+| `1000000293` | Dr. Ngozi Abara | Radiation Oncology | `2085R0001X` | Ambulatory | APEX Atlas Cancer Center |
+| `1000000301` | Dr. Milena Petrova | Dermatology | `207N00000X` | Ambulatory | APEX Atlas Multispecialty Center - Boston |
+| `1000000319` | Dr. Sean OConnor | Urology | `208800000X` | Ambulatory | APEX Atlas Surgical & Orthopedic Center |
+| `1000000327` | Dr. Layla Haddad | Otolaryngology | `207Y00000X` | Ambulatory | APEX Atlas Surgical & Orthopedic Center |
+| `1000000335` | Dr. Jonas Weber | Allergy & Immunology | `207K00000X` | Ambulatory | APEX Atlas Multispecialty Center - Boston |
+| `1000000343` | Dr. Kwame Mensah | Physical Medicine & Rehabilitation | `208100000X` | Ambulatory | APEX Atlas Multispecialty Center - Boston |
+| `1000000350` | Dr. Chiara Romano | Anesthesiology | `207L00000X` | Inpatient | APEX Atlas General Hospital |
+| `1000000368` | Dr. Nils Andersson | Critical Care Medicine | `207RC0200X` | Inpatient | APEX Atlas General Hospital |
+| `1000000376` | Dr. Naomi Blackwell | Maternal & Fetal Medicine | `207VM0101X` | Ambulatory | APEX Atlas Women's & Children's Center |
+| `1000000384` | Dr. Ruth Feldman | Geriatric Medicine | `207RG0300X` | Ambulatory | APEX Atlas Primary Care - Cambridge |
+| `1000000392` | Dr. Ama Osei | Internal Medicine | `207R00000X` | Ambulatory | APEX Atlas Primary Care - Cambridge |
+| `1000000400` | Dr. Diego Vargas | Pediatrics | `208000000X` | Ambulatory | APEX Atlas Women's & Children's Center |
 
 ## Facilities
 
@@ -47,5 +62,6 @@ The synthetic clinician + facility roster that populates both the Plan-Net provi
 | `2000000077` | APEX Atlas Neuroscience & Behavioral Health | Boston, MA |
 | `2000000085` | APEX Atlas Surgical & Orthopedic Center | Boston, MA |
 | `2000000093` | APEX Atlas Imaging Center | Cambridge, MA |
+| `2000000101` | APEX Atlas Cancer Center | Boston, MA |
 
 Regenerate with `python scripts/build_provider_roster_table.py`. The machine-readable directory (Plan-Net NDJSON + manifest) is in this same folder; see [`../../../docs/provider-directory.md`](../../../docs/provider-directory.md).

@@ -14,8 +14,8 @@ All records are synthetic. Every resource carries the
 `HTEST` ("test health data") `meta.tag`. No record corresponds to a real
 individual. See the repository [security & provenance FAQ](../../docs/security-provenance-faq.md).
 
-The whole dataset cross-validates: **246,213/246,213 references resolve across
-168,303 resources** — see [`conformance-report.md`](./conformance-report.md),
+The whole dataset cross-validates: **246,316/246,316 references resolve across
+168,349 resources** — see [`conformance-report.md`](./conformance-report.md),
 regenerate with `atlas validate . --refs` / `atlas validate . --ig`.
 
 ---
@@ -178,7 +178,7 @@ Directory: [`provider-directory/`](./provider-directory/)
 A payer provider directory conforming to the
 [Da Vinci PDEX Plan-Net](http://hl7.org/fhir/us/davinci-pdex-plan-net/) IG —
 the provider-directory surface referenced by the CMS Interoperability & Patient
-Access rule. **25 providers across 21 specialties at 9 facilities.**
+Access rule. **40 providers across 34 specialties at 10 facilities.**
 
 > **Want the provider list?** See [`provider-directory/PROVIDERS.md`](./provider-directory/PROVIDERS.md)
 > for a readable table of every provider — NPI, name, specialty, NUCC taxonomy,
@@ -213,8 +213,8 @@ atlas publish-provider-directory \
 
 The whole dataset is referentially consistent and structurally valid. A shipped
 report — [`conformance-report.md`](./conformance-report.md) — records the run:
-**168,303/168,303 resources structurally valid** (fhir.resources R4B) and
-**246,213/246,213 references resolved** (Appointment→Patient bookings included).
+**168,349/168,349 resources structurally valid** (fhir.resources R4B) and
+**246,316/246,316 references resolved** (Appointment→Patient bookings included).
 
 Reproduce it:
 

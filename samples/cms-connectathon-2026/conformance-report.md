@@ -1,6 +1,6 @@
 # IG conformance report — PASS
 
-Dataset: `samples/cms-connectathon-2026` — 168303 resources
+Dataset: `samples/cms-connectathon-2026` — 168349 resources
 
 ## Resource types
 
@@ -10,17 +10,17 @@ Dataset: `samples/cms-connectathon-2026` — 168303 resources
 | Condition | 23396 |
 | Coverage | 18232 |
 | Encounter | 30978 |
-| Endpoint | 9 |
-| HealthcareService | 22 |
+| Endpoint | 10 |
+| HealthcareService | 35 |
 | Immunization | 6249 |
 | InsurancePlan | 9 |
-| Location | 52 |
+| Location | 53 |
 | MedicationRequest | 6275 |
 | Observation | 45651 |
-| Organization | 23 |
+| Organization | 24 |
 | Patient | 20009 |
-| Practitioner | 25 |
-| PractitionerRole | 25 |
+| Practitioner | 40 |
+| PractitionerRole | 40 |
 | Schedule | 84 |
 | Slot | 14416 |
 
@@ -38,19 +38,19 @@ Dataset: `samples/cms-connectathon-2026` — 168303 resources
 | `http://hl7.org/fhir/us/core/StructureDefinition/us-core-organization|6.1.0` | 12 |
 | `http://hl7.org/fhir/us/core/StructureDefinition/us-core-patient|6.1.0` | 20009 |
 | `http://hl7.org/fhir/us/core/StructureDefinition/us-core-vital-signs|6.1.0` | 12223 |
-| `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Endpoint` | 9 |
-| `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-HealthcareService` | 22 |
+| `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Endpoint` | 10 |
+| `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-HealthcareService` | 35 |
 | `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-InsurancePlan` | 2 |
-| `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Location` | 10 |
+| `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Location` | 11 |
 | `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Network` | 2 |
-| `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Organization` | 9 |
-| `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Practitioner` | 25 |
-| `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-PractitionerRole` | 25 |
+| `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Organization` | 10 |
+| `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-Practitioner` | 40 |
+| `http://hl7.org/fhir/us/davinci-pdex-plan-net/StructureDefinition/plannet-PractitionerRole` | 40 |
 
 ## Native checks
 
-- Structural (fhir.resources R4B): **168303/168303 valid**
-- Referential integrity: **246213/246213 references resolved**
+- Structural (fhir.resources R4B): **168349/168349 valid**
+- Referential integrity: **246316/246316 references resolved**
 
 ## External HL7 validator
 

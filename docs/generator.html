@@ -27,6 +27,11 @@
   input[type=text],input[type=number],select{width:100%;background:#06101f;border:1px solid var(--line);
     border-radius:9px;color:var(--ink);padding:9px 11px;font-family:var(--mono);font-size:13px}
   h2{font-size:19px;margin:2px 0 4px;letter-spacing:-.01em}
+  table.tbl{border-collapse:collapse;width:100%;font-size:12.5px}
+  table.tbl th,table.tbl td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line)}
+  table.tbl th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--panel)}
+  table.tbl td.npi{font-family:var(--mono);color:var(--muted)}
+  .tblwrap{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:12px}
   .row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
   .row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}
   .flags{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px}
@@ -134,6 +139,7 @@
     </div>
     <div class="pills" id="bulkpills" style="margin-top:14px"></div>
     <div class="actions" id="bulklinks" style="margin-top:0"></div>
+    <div id="bulktable" style="margin-top:14px;overflow:auto"></div>
   </div>
 
   <footer>
@@ -247,15 +253,17 @@
   // resource type with its line count, and offer per-type NDJSON downloads.
   async function fetchBulk(kind, label) {
     var bs = $("bstatus"); bs.textContent = "Fetching " + label + "…"; bs.className = "status";
-    $("bulkpills").innerHTML = ""; $("bulklinks").innerHTML = "";
+    $("bulkpills").innerHTML = ""; $("bulklinks").innerHTML = ""; $("bulktable").innerHTML = "";
     try {
       var mr = await fetch(base() + "/" + kind + "/$bulk-publish");
       if (!mr.ok) throw new Error("HTTP " + mr.status);
       var manifest = await mr.json();
+      var byType = {};
       for (var i = 0; i < manifest.output.length; i++) {
         var type = manifest.output[i].type;
         var fr = await fetch(base() + "/" + kind + "/" + type + ".ndjson");
         var text = await fr.text();
+        byType[type] = text;
         var n = text.split("\n").filter(function (l) { return l.trim(); }).length;
         var pill = document.createElement("span"); pill.className = "pill";
         pill.innerHTML = type + " <b>" + n + "</b>"; $("bulkpills").appendChild(pill);
@@ -266,12 +274,65 @@
           $("bulklinks").appendChild(btn);
         })(type, text);
       }
+      if (kind === "provider-directory") renderProviderRoster(byType);
       bs.textContent = label + " ready — " + manifest.output.length + " resource types.";
       bs.className = "status ok";
     } catch (e) {
       bs.textContent = "Failed: " + e.message + " — is `atlas serve` running?";
       bs.className = "status err";
     }
+  }
+
+  // Join Practitioner + PractitionerRole + Organization into a readable roster.
+  function renderProviderRoster(byType) {
+    function parse(t) {
+      return (t || "").split("\n").filter(function (l) { return l.trim(); })
+        .map(function (l) { return JSON.parse(l); });
+    }
+    function npiOf(res) {
+      var ids = res.identifier || [];
+      for (var i = 0; i < ids.length; i++) {
+        if ((ids[i].system || "").indexOf("us-npi") >= 0) return ids[i].value;
+      }
+      return "";
+    }
+    function nameOf(p) {
+      var n = (p.name || [])[0] || {};
+      var pre = (n.prefix || []).join(" ");
+      return (pre ? pre + " " : "") + (n.given || []).join(" ") + " " + (n.family || "");
+    }
+    var pracById = {}; parse(byType.Practitioner).forEach(function (p) { pracById[p.id] = p; });
+    var orgById = {}; parse(byType.Organization).forEach(function (o) { orgById[o.id] = o; });
+    var rows = parse(byType.PractitionerRole).map(function (r) {
+      var p = pracById[((r.practitioner || {}).reference || "/").split("/")[1]] || {};
+      var o = orgById[((r.organization || {}).reference || "/").split("/")[1]] || {};
+      var spec = (((r.specialty || [])[0] || {}).coding || [])[0] || {};
+      var accepting = "";
+      try {
+        var ext = (((r.specialty || [])[0] || {}).extension || [])[0].extension[0];
+        accepting = ext.valueCodeableConcept.coding[0].display || "";
+      } catch (e) {}
+      return { name: nameOf(p), npi: npiOf(p), spec: spec.display || "", code: spec.code || "",
+               org: o.name || "", accepting: accepting };
+    }).sort(function (a, b) { return a.name.localeCompare(b.name); });
+    if (!rows.length) return;
+    var html = '<div class="tblwrap"><table class="tbl"><thead><tr>' +
+      '<th>Provider</th><th>Specialty</th><th>NPI</th><th>Facility</th><th>Accepting</th>' +
+      '</tr></thead><tbody>';
+    rows.forEach(function (r) {
+      html += "<tr><td>" + esc(r.name) + "</td><td>" + esc(r.spec) +
+        ' <span style="color:var(--muted)">' + esc(r.code) + "</span></td>" +
+        '<td class="npi">' + esc(r.npi) + "</td><td>" + esc(r.org) + "</td><td>" +
+        esc(r.accepting) + "</td></tr>";
+    });
+    html += "</tbody></table></div>";
+    $("bulktable").innerHTML = html;
+  }
+
+  function esc(s) {
+    return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) {
+      return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c];
+    });
   }
 
   $("gen").addEventListener("click", generate);
