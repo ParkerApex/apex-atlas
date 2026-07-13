@@ -31,23 +31,28 @@ atlas publish-provider-directory [OPTIONS]
 | Option | Default | Description |
 | --- | --- | --- |
 | `--out`, `-o` | `./provider-directory` | Output directory. |
-| `--sites` | `15` | Number of provider Organizations/Locations (1–40). |
-| `--practitioners-per-site` | `4` | Practitioners generated at each site. |
 | `--base-url` | `https://example.org/provider-directory` | Base URL advertised in the manifest `output[]`. |
 
 ```bash
-atlas publish-provider-directory --sites 15 --practitioners-per-site 4 --out ./provider-directory
+atlas publish-provider-directory --out ./provider-directory
 ```
+
+The directory is built from the **same provider roster** that patient encounters
+draw from (`practitioners.csv` / `locations.csv`), so a practitioner or facility
+NPI referenced by a patient's Encounter/Claim
+(`atlas generate --with-providers`) also appears in this directory — the
+claims ↔ directory linkage the CMS Interoperability rule exercises. Verify with
+`atlas validate <cohort-and-directory> --refs`.
 
 ## Python API
 
 ```python
 from pathlib import Path
 from parker_atlas.provider_directory import (
-    DirectoryConfig, generate_provider_directory, write_bulk_publish,
+    generate_provider_directory, write_bulk_publish,
 )
 
-directory = generate_provider_directory(DirectoryConfig(sites=15, practitioners_per_site=4))
+directory = generate_provider_directory()
 write_bulk_publish(
     directory, Path("./provider-directory"),
     base_url="https://example.org/provider-directory",

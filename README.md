@@ -256,7 +256,18 @@ atlas generate --patients 500 --seed 42 --as-of 2026-01-01 \
 **Da Vinci Plan-Net provider directory (`$bulk-publish`)**
 
 ```bash
-atlas publish-provider-directory --sites 15 --practitioners-per-site 4 --out ./provider-directory
+atlas publish-provider-directory --out ./provider-directory
+```
+
+**Referential-integrity + IG conformance checks**
+
+```bash
+# Every Type/id and Bundle fullUrl reference must resolve within the dataset.
+atlas validate ./carin-cohort --refs
+
+# Optional: run outputs through the HL7 FHIR validator (auto-downloads the CLI)
+# and write a conformance report.
+atlas validate ./carin-cohort --ig --ig-report ./conformance.md
 ```
 
 **Cohort fidelity report**
@@ -298,6 +309,7 @@ Full design: [`docs/architecture.md`](./docs/architecture.md). Rationale: [`docs
 | [Integration cookbooks](./docs/integration-cookbooks.md) | QHIN, HIE, payer, and Blue Button-shaped workflows |
 | [SMART Scheduling Links](./docs/smart-scheduling-links.md) | `$bulk-publish` appointment availability (Location/Schedule/Slot) |
 | [Da Vinci Plan-Net directory](./docs/provider-directory.md) | `$bulk-publish` payer provider directory (Organization/Practitioner/PractitionerRole/…) |
+| [CI & deployments](./docs/ci-and-deploys.md) | CI workflow, and the one-time settings to fix the Pages / PyPI deploys |
 | [Known limitations](./docs/known-limitations.md) | Capability boundaries and tier definitions |
 | [Security & provenance FAQ](./docs/security-provenance-faq.md) | PHI, licensing, API keys, deployment |
 | [Commercial one-pager](./docs/commercial-one-pager.md) | Apache 2.0 vs enterprise license |

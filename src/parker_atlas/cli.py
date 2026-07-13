@@ -699,6 +699,80 @@ def _validate_cohort(
     raise typer.Exit(code=0 if report.passed else 1)
 
 
+def _validate_refs(path: Path) -> None:
+    """Cross-file referential-integrity check for a generated dataset."""
+    from parker_atlas.validation.references import validate_references
+
+    report = validate_references(path)
+
+    if report.resources_scanned == 0:
+        err_console.print(f"[yellow]No FHIR resources found under[/yellow] {path}")
+        raise typer.Exit(code=1)
+
+    for p, err in report.parse_errors:
+        console.print(f"[red]parse error:[/red] {p}: {err}")
+
+    if report.dangling:
+        shown = report.dangling[:20]
+        table = Table(title="Dangling references")
+        table.add_column("From", style="bold")
+        table.add_column("Unresolved reference")
+        table.add_column("File")
+        for d in shown:
+            table.add_row(d.source, d.reference, Path(d.file).name)
+        console.print(table)
+        if len(report.dangling) > len(shown):
+            console.print(f"  … and {len(report.dangling) - len(shown)} more")
+
+    color = "green" if report.ok else "red"
+    console.print(
+        f"[{color}]{report.resolved}/{report.references_total} references resolved[/{color}] "
+        f"across [bold]{report.resources_scanned}[/bold] resources in "
+        f"[bold]{report.files_scanned}[/bold] file(s)."
+    )
+    if report.urn_uuid_unresolved:
+        console.print(
+            f"[yellow]{report.urn_uuid_unresolved} urn:uuid reference(s) did not resolve[/yellow] — "
+            "urn:uuid links only resolve inside a transaction Bundle. For a "
+            "cross-file NDJSON check, regenerate with "
+            "[bold]atlas generate --ref-style relative[/bold]."
+        )
+    raise typer.Exit(code=0 if report.ok else 1)
+
+
+def _validate_ig(
+    path: Path, *, validator_jar: str | None, ig_version: str, ig_report: Path | None
+) -> None:
+    """IG conformance harness: native checks + optional external HL7 validator."""
+    from parker_atlas.validation.ig import render_report, run_ig_validation
+
+    report = run_ig_validation(path, validator_jar=validator_jar, ig_version=ig_version)
+    if report.resources_scanned == 0:
+        err_console.print(f"[yellow]No FHIR resources found under[/yellow] {path}")
+        raise typer.Exit(code=1)
+
+    struct_ok = report.resources_scanned - len(report.structural_invalid)
+    console.print(
+        f"Structural: [bold]{struct_ok}/{report.resources_scanned}[/bold] valid · "
+        f"References: [bold]{report.ref_report.resolved}/{report.ref_report.references_total}[/bold] resolved · "
+        f"Profiles: [bold]{len(report.profiles)}[/bold] distinct"
+    )
+    if report.external.ran:
+        ext_status = "[green]PASS[/green]" if report.external.passed else "[red]FAIL[/red]"
+        console.print(f"External HL7 validator: {ext_status}")
+    else:
+        console.print(f"[yellow]External HL7 validator not run[/yellow] — {report.external.reason}")
+
+    if ig_report is not None:
+        ig_report.parent.mkdir(parents=True, exist_ok=True)
+        ig_report.write_text(render_report(report, dataset=str(path)), encoding="utf-8")
+        console.print(f"[green]✓[/green] Wrote conformance report to [bold]{ig_report}[/bold]")
+
+    color = "green" if report.ok else "red"
+    console.print(f"[{color}]IG conformance: {'PASS' if report.ok else 'FAIL'}[/{color}]")
+    raise typer.Exit(code=0 if report.ok else 1)
+
+
 def _validate_gtm(path: Path, *, min_samples: int, as_of: str | None) -> None:
     """Run structural validation plus all launch-hardened cohort expectations."""
 
@@ -1430,6 +1504,11 @@ def validate(
     strict: Annotated[bool, typer.Option("--strict", help="Treat warnings as errors.")] = False,
     cohort: Annotated[bool, typer.Option("--cohort", help="Run cohort fidelity harness instead of per-file structural.")] = False,
     gtm: Annotated[bool, typer.Option("--gtm", help="Run structural validation plus all launch-hardened sourced expectations.")] = False,
+    refs: Annotated[bool, typer.Option("--refs", help="Check cross-file referential integrity: every Type/id and Bundle fullUrl reference must resolve within the dataset. Works on NDJSON, $bulk-publish datasets, and R4 Bundles.")] = False,
+    ig: Annotated[bool, typer.Option("--ig", help="Run the IG conformance harness: native structural + profile + reference checks, plus the external HL7 FHIR validator when a validator_cli.jar is available.")] = False,
+    ig_report: Annotated[Path | None, typer.Option("--ig-report", help="Write the --ig conformance report (Markdown) to this file.")] = None,
+    validator_jar: Annotated[str | None, typer.Option("--validator-jar", help="Path to the HL7 FHIR validator_cli.jar for --ig (else $ATLAS_FHIR_VALIDATOR_JAR or a local cache).")] = None,
+    ig_version: Annotated[str, typer.Option("--ig-version", help="FHIR version passed to the external validator under --ig.")] = "4.0.1",
     module: Annotated[str | None, typer.Option(help="Module whose bundled expectation to run under --cohort.")] = None,
     min_samples: Annotated[int, typer.Option(help="Minimum bracket N under --cohort; smaller brackets are skipped.")] = 30,
     as_of: Annotated[str | None, typer.Option(help="ISO date used as the reference for age computation under --cohort.")] = None,
@@ -1456,6 +1535,14 @@ def validate(
             "Milestone 1 implements only us-core-6.1."
         )
         raise typer.Exit(code=2)
+
+    if refs:
+        _validate_refs(path)
+        return
+
+    if ig:
+        _validate_ig(path, validator_jar=validator_jar, ig_version=ig_version, ig_report=ig_report)
+        return
 
     if gtm:
         _validate_gtm(path, min_samples=min_samples, as_of=as_of)
@@ -2103,8 +2190,6 @@ def publish_scheduling(
 @app.command("publish-provider-directory")
 def publish_provider_directory(
     out: Annotated[Path, typer.Option("--out", "-o", help="Output directory for the Plan-Net bulk-publish directory.")] = Path("./provider-directory"),
-    sites: Annotated[int, typer.Option(help="Number of provider Organizations/Locations (1–40).")] = 15,
-    practitioners_per_site: Annotated[int, typer.Option("--practitioners-per-site", help="Practitioners generated at each site.")] = 4,
     base_url: Annotated[str, typer.Option("--base-url", help="Base URL the manifest advertises for its NDJSON output files.")] = "https://example.org/provider-directory",
 ) -> None:
     """Publish a Da Vinci PDEX Plan-Net provider directory (bulk NDJSON + manifest).
@@ -2114,22 +2199,18 @@ def publish_provider_directory(
     HealthcareService, InsurancePlan, Endpoint) conforming to the Plan-Net
     profiles. This is the payer provider-directory surface referenced by the CMS
     Interoperability & Patient Access rule.
+
+    The directory is built from the same provider roster patient encounters use
+    (`atlas generate --with-providers`), so practitioner and facility NPIs match
+    across claims and the directory.
     """
     from parker_atlas.provider_directory import (
-        DirectoryConfig,
         generate_provider_directory,
         write_bulk_publish,
     )
 
-    config = DirectoryConfig(sites=sites, practitioners_per_site=practitioners_per_site)
-    try:
-        config.validate()
-    except ValueError as exc:
-        err_console.print(f"[red]invalid provider-directory config:[/red] {exc}")
-        raise typer.Exit(code=1) from exc
-
     transaction_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    directory = generate_provider_directory(config)
+    directory = generate_provider_directory()
     manifest_path = write_bulk_publish(
         directory, out, base_url=base_url, transaction_time=transaction_time
     )

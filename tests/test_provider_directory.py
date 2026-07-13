@@ -1,10 +1,14 @@
-"""Tests for the Da Vinci Plan-Net provider directory generator + publish."""
+"""Tests for the Da Vinci Plan-Net provider directory generator + publish.
+
+Also verifies the coherence guarantee: the directory is built from the same
+provider roster that patient encounters draw from, so NPIs match across claims
+and the directory.
+"""
 
 from __future__ import annotations
 
 import json
 
-import pytest
 from fhir.resources.R4B.endpoint import Endpoint
 from fhir.resources.R4B.healthcareservice import HealthcareService
 from fhir.resources.R4B.insuranceplan import InsurancePlan
@@ -17,34 +21,36 @@ from typer.testing import CliRunner
 from parker_atlas.cli import app
 from parker_atlas.fhir.plannet import NETWORK_REFERENCE_EXT, PLANNET_NETWORK
 from parker_atlas.provider_directory import (
-    DirectoryConfig,
     build_manifest,
     generate_provider_directory,
     write_bulk_publish,
 )
+from parker_atlas.references import load_locations, load_practitioners
 
 runner = CliRunner()
 
 
-def _dir(sites=5, ppl=3):
-    return generate_provider_directory(
-        DirectoryConfig(sites=sites, practitioners_per_site=ppl)
-    )
+def _npis(resources):
+    out = set()
+    for r in resources:
+        for ident in r.get("identifier", []):
+            if ident.get("system") == "http://hl7.org/fhir/sid/us-npi":
+                out.add(ident["value"])
+    return out
 
 
 class TestGeneration:
-    def test_counts(self):
-        d = _dir(sites=5, ppl=3)
-        c = d.counts
-        assert c["Organization"] == 5 + 2       # provider orgs + 2 networks
-        assert c["Location"] == 5
-        assert c["Practitioner"] == 15
-        assert c["PractitionerRole"] == 15
-        assert c["Endpoint"] == 5
-        assert c["InsurancePlan"] == 2
+    def test_reflects_the_roster(self):
+        d = generate_provider_directory()
+        assert len(d.practitioners) == len(load_practitioners())
+        assert len(d.locations) == len(load_locations())
+        # 2 networks + one Organization per unique facility NPI.
+        n_facilities = len({loc.facility_npi for loc in load_locations()})
+        assert d.counts["Organization"] == 2 + n_facilities
+        assert d.counts["InsurancePlan"] == 2
 
     def test_all_resources_validate(self):
-        d = _dir()
+        d = generate_provider_directory()
         for r in d.organizations:
             Organization(**r)
         for r in d.locations:
@@ -61,47 +67,45 @@ class TestGeneration:
             Endpoint(**r)
 
     def test_two_networks_present(self):
-        d = _dir()
-        networks = [
-            o for o in d.organizations if PLANNET_NETWORK in o["meta"]["profile"]
-        ]
-        assert len(networks) == 2
+        d = generate_provider_directory()
+        nets = [o for o in d.organizations if PLANNET_NETWORK in o["meta"]["profile"]]
+        assert len(nets) == 2
+
+    def test_practitioner_npis_match_roster(self):
+        d = generate_provider_directory()
+        assert _npis(d.practitioners) == {p.npi for p in load_practitioners()}
+
+    def test_facility_npis_match_roster(self):
+        d = generate_provider_directory()
+        facility_orgs = [o for o in d.organizations if PLANNET_NETWORK not in o["meta"]["profile"]]
+        assert _npis(facility_orgs) == {loc.facility_npi for loc in load_locations()}
 
     def test_practitioner_role_references_resolve(self):
-        d = _dir()
+        d = generate_provider_directory()
         ids = {
             r["id"]
-            for group in (
-                d.organizations, d.locations, d.practitioners,
-                d.healthcare_services,
-            )
+            for group in (d.organizations, d.locations, d.practitioners, d.healthcare_services)
             for r in group
         }
         for role in d.practitioner_roles:
-            refs = [
+            for ref in (
                 role["practitioner"]["reference"],
                 role["organization"]["reference"],
                 role["location"][0]["reference"],
                 role["healthcareService"][0]["reference"],
                 role["extension"][0]["valueReference"]["reference"],
-            ]
-            for ref in refs:
+            ):
                 assert ref.split("/", 1)[1] in ids, ref
 
     def test_role_has_network_extension(self):
-        d = _dir()
+        d = generate_provider_directory()
         for role in d.practitioner_roles:
             assert any(e["url"] == NETWORK_REFERENCE_EXT for e in role["extension"])
-
-    @pytest.mark.parametrize("kw", [{"sites": 0}, {"sites": 999}, {"practitioners_per_site": 0}])
-    def test_invalid_config_raises(self, kw):
-        with pytest.raises(ValueError):
-            generate_provider_directory(DirectoryConfig(**kw))
 
 
 class TestManifestAndPublish:
     def test_manifest_lists_present_types(self):
-        d = _dir()
+        d = generate_provider_directory()
         m = build_manifest(d, base_url="https://x/pd/", transaction_time="2026-07-12T00:00:00Z")
         assert m["request"] == "https://x/pd/$bulk-publish"
         types = [o["type"] for o in m["output"]]
@@ -109,22 +113,38 @@ class TestManifestAndPublish:
         assert "PractitionerRole" in types and "Endpoint" in types
 
     def test_write_bulk_publish(self, tmp_path):
-        d = _dir()
+        d = generate_provider_directory()
         mp = write_bulk_publish(d, tmp_path, base_url="https://x/pd", transaction_time="2026-07-12T00:00:00Z")
         assert mp.exists()
         for t in ("Organization", "Location", "Practitioner", "PractitionerRole", "HealthcareService", "InsurancePlan", "Endpoint"):
             assert (tmp_path / f"{t}.ndjson").read_text().strip()
 
 
+class TestCoherenceWithEncounters:
+    def test_encounter_practitioner_npis_are_in_directory(self, tmp_path):
+        # Generate a cohort with providers; every Practitioner NPI it emits must
+        # appear in the published Plan-Net directory.
+        result = runner.invoke(
+            app,
+            ["generate", "--patients", "60", "--seed", "7", "--as-of", "2026-04-25",
+             "--module", "hypertension,diabetes", "--with-providers",
+             "--format", "ndjson", "--out", str(tmp_path)],
+        )
+        assert result.exit_code == 0, result.output
+        prac_file = tmp_path / "Practitioner.ndjson"
+        assert prac_file.exists()
+        encounter_npis = _npis(
+            json.loads(x) for x in prac_file.read_text().splitlines() if x
+        )
+        assert encounter_npis  # providers were emitted
+        directory_npis = _npis(generate_provider_directory().practitioners)
+        assert encounter_npis <= directory_npis
+
+
 class TestCli:
     def test_publish_provider_directory(self, tmp_path):
         out = tmp_path / "pd"
-        result = runner.invoke(
-            app,
-            ["publish-provider-directory", "--sites", "3", "--practitioners-per-site", "2", "--out", str(out)],
-        )
+        result = runner.invoke(app, ["publish-provider-directory", "--out", str(out)])
         assert result.exit_code == 0, result.output
         manifest = json.loads((out / "bulk-publish-manifest.json").read_text())
         assert next(o["type"] for o in manifest["output"]) == "Organization"
-        roles = [json.loads(x) for x in (out / "PractitionerRole.ndjson").read_text().splitlines() if x]
-        assert len(roles) == 6

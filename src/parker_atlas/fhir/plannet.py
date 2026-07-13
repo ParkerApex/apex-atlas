@@ -56,6 +56,11 @@ def _meta(profile: str) -> dict[str, Any]:
     return {"profile": [profile], "tag": [GPX.synthetic_meta_tag()]}
 
 
+def location_id_for(org_npi: str, name: str) -> str:
+    """Deterministic Plan-Net Location.id for (facility NPI, location name)."""
+    return _id("location", org_npi, name)
+
+
 def build_network(*, network_key: str, name: str) -> dict[str, Any]:
     """A Plan-Net Network (Organization with type=ntwk)."""
     resource = {
@@ -97,8 +102,8 @@ def build_location(
     city: str,
     state: str,
     postal_code: str,
-    latitude: float,
-    longitude: float,
+    latitude: float | None = None,
+    longitude: float | None = None,
     phone: str | None = None,
 ) -> dict[str, Any]:
     """A Plan-Net Location managed by a provider Organization."""
@@ -116,9 +121,10 @@ def build_location(
             "postalCode": postal_code,
             "country": "US",
         },
-        "position": {"latitude": latitude, "longitude": longitude},
         "managingOrganization": {"reference": f"Organization/{_id('org', org_npi)}"},
     }
+    if latitude is not None and longitude is not None:
+        resource["position"] = {"latitude": latitude, "longitude": longitude}
     if phone is not None:
         resource["telecom"] = [{"system": "phone", "value": phone, "use": "work"}]
     _Location.model_validate(resource)

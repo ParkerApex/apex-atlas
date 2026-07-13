@@ -37,9 +37,20 @@ See the [module catalog](./module-catalog.md) for per-module tier and review sta
 ## Validated today
 
 - **Structural FHIR** — schema + US Core Patient/Condition minimums via `atlas validate`.
+- **Referential integrity** — every `Type/id` / Bundle `fullUrl` reference resolves within the dataset via `atlas validate --refs`.
 - **Cohort fidelity** — per-module expectations vs. Wilson-interval tolerance via `atlas validate --cohort`.
 - **SDoH causal signal** — encounter and medication adherence modifiers; see [SDoH benchmark](./sdoh-causal-benchmark.md).
-- **Deterministic generation** — fixed seed → reproducible cohort (except LLM-authored note prose across model versions).
+- **Deterministic generation** — fixed `--seed` **and** `--as-of` → byte-reproducible cohort (except LLM-authored note prose across model versions).
+
+## IG conformance
+
+`atlas validate --ig` runs a two-layer harness: native structural + profile +
+referential checks (always, no external deps), and — when the official HL7 FHIR
+`validator_cli.jar` is provided (`--validator-jar` / `$ATLAS_FHIR_VALIDATOR_JAR`)
+— the external validator for full US Core / C4BB / Plan-Net profile conformance.
+The native layer is a fast approximation; declaring a `meta.profile` is not the
+same as passing that IG's full slicing, and Atlas does not ship a certified
+conformance run.
 
 ## Not validated / incomplete
 
