@@ -19,18 +19,21 @@ writing). New code should be clean; once the backlog is burned down, drop
 Both deploy workflows are correct but currently fail because of **repository /
 PyPI settings** that can only be set by an owner (not from code):
 
-### GitHub Pages
+### GitHub Pages (`pages.yml`)
 
-The documentation site (`docs/`) is published via GitHub Pages using the
-**Deploy from a branch** source: **`main` / `/docs`** (repo **Settings → Pages**).
-GitHub's built-in `pages-build-deployment` handles the build; `docs/.nojekyll`
-makes it serve the static files as-is. No custom workflow is needed.
+The documentation site (`docs/`) is published via GitHub Pages with
+**Source: GitHub Actions** (repo **Settings → Pages → Build and deployment**).
+`.github/workflows/pages.yml` uploads the static `docs/` folder as-is
+(`docs/.nojekyll`, no Jekyll build) and deploys it on every change to `docs/`.
 
-> The `main` branch and org-verified custom domains are managed separately; the
-> repo-level Pages setting above is what actually enables the site. If you'd
-> rather deploy via a custom Actions workflow instead, set Source to
-> **GitHub Actions** and add a workflow that uploads `docs/` with
-> `actions/upload-pages-artifact` + `actions/deploy-pages`.
+> Do **not** use GitHub's auto-suggested "Jekyll" starter workflow here — it
+> builds from the repo **root** (`source: ./`), which would try to Jekyll-process
+> the entire repository (including the large `samples/` folder) instead of
+> `docs/`. `pages.yml` uploads `docs/` directly.
+>
+> Alternative: set Source to **Deploy from a branch** → `main` / `/docs` and
+> delete `pages.yml` — GitHub's built-in `pages-build-deployment` then serves
+> `docs/` with no custom workflow.
 
 ### PyPI publish (`publish-pypi.yml`)
 
