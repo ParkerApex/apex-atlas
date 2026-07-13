@@ -1,10 +1,13 @@
 table: practitioners.csv
 purpose: |
   Synthetic clinician roster used to populate Practitioner + PractitionerRole
-  resources and Encounter.participant references. Names are fictitious;
-  NPI numbers are dummy values within the 1xxxxxxxxx individual-NPI block,
-  each terminated with a valid Luhn check digit computed per the CMS
-  NPPES algorithm (prefix "80840", mod-10).
+  resources (both patient-encounter care teams and the Da Vinci Plan-Net
+  provider directory) and Encounter.participant references. Names are
+  fictitious; NPI numbers are dummy values within the 1xxxxxxxxx individual-NPI
+  block, each terminated with a valid Luhn check digit computed per the CMS
+  NPPES algorithm (prefix "80840", mod-10). The facility_npi column links each
+  clinician to their primary facility (an organization NPI in locations.csv),
+  so the same NPIs appear in claims and in the published provider directory.
 sources:
   - name: NUCC Health Care Provider Taxonomy Code Set
     url: https://www.nucc.org/index.php/code-sets-mainmenu-41/provider-taxonomy-mainmenu-40
@@ -22,6 +25,8 @@ sources:
       prefixed with "80840" (ISO 7812 issuer prefix). All NPIs in this
       file pass that check.
 notes: |
-  Roster is intentionally small (~8 clinicians) and weighted-uniform by
-  encounter_class. It is intended as a placeholder for downstream tests
-  and demos, NOT a statistically realistic distribution of US clinicians.
+  Roster covers 25 clinicians across 21 specialties at 9 facilities,
+  weighted-uniform by encounter_class within each specialty. It is intended
+  as a realistic-shaped placeholder for downstream tests, provider-directory
+  publishing, and demos, NOT a statistically calibrated distribution of US
+  clinicians.

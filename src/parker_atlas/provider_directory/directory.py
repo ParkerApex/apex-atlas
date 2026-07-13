@@ -98,16 +98,9 @@ def generate_provider_directory() -> ProviderDirectory:
         directory.locations.append(location)
         location_ids_by_facility.setdefault(loc.facility_npi, []).append(location["id"])
 
-    # A practitioner staffing an encounter class is listed at a facility that
-    # offers that class of care (hospital for IMP/EMER, office otherwise).
-    def facility_for_class(class_code: str) -> tuple[str, str, str]:
-        want = {"IMP": "hosp", "EMER": "hosp"}.get(class_code, "prov")
-        for loc in location_rows:
-            role = "hosp" if loc.facility_role == "hosp" else "prov"
-            if role == want:
-                return loc.facility_npi, facility_org_id[loc.facility_npi], loc.location_name
-        loc = location_rows[0]
-        return loc.facility_npi, facility_org_id[loc.facility_npi], loc.location_name
+    # Each practitioner is listed at their primary facility (roster facility_npi),
+    # at that facility's first location.
+    first_loc_id = {f: ids[0] for f, ids in location_ids_by_facility.items()}
 
     seen_services: set[str] = set()
     for idx, prac_row in enumerate(practitioner_rows):
@@ -118,8 +111,9 @@ def generate_provider_directory() -> ProviderDirectory:
         )
         directory.practitioners.append(practitioner)
 
-        fac_npi, org_id, loc_name = facility_for_class(prac_row.encounter_class)
-        loc_id = plannet.location_id_for(fac_npi, loc_name)
+        fac_npi = prac_row.facility_npi
+        org_id = facility_org_id[fac_npi]
+        loc_id = first_loc_id[fac_npi]
 
         service = plannet.build_healthcare_service(
             org_npi=fac_npi, location_id=loc_id, service_key=prac_row.taxonomy_code,

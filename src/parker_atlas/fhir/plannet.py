@@ -135,13 +135,16 @@ def build_practitioner(
     *, npi: str, family: str, given: str, prefix: str, taxonomy_code: str, taxonomy_display: str
 ) -> dict[str, Any]:
     """A Plan-Net Practitioner with an NPI and a board qualification."""
+    name: dict[str, Any] = {"family": family, "given": [given]}
+    if prefix:
+        name["prefix"] = [prefix]
     resource = {
         "resourceType": "Practitioner",
         "id": _id("practitioner", npi),
         "meta": _meta(PLANNET_PRACTITIONER),
         "identifier": [{"system": US_NPI_SYSTEM, "value": npi}],
         "active": True,
-        "name": [{"family": family, "given": [given], "prefix": [prefix]}],
+        "name": [name],
         "qualification": [
             {
                 "code": {

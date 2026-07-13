@@ -69,3 +69,17 @@ def test_clear_cache_drops_memo():
 def test_category_weight_is_immutable():
     rows = load_race()
     assert isinstance(rows[0], CategoryWeight)
+
+
+def test_practitioner_roster_integrity():
+    from parker_atlas.references import load_locations, load_practitioners
+
+    facilities = {loc.facility_npi for loc in load_locations()}
+    practitioners = load_practitioners()
+    assert len(practitioners) >= 20  # richer roster
+    for p in practitioners:
+        # 10-digit NPI, individual block (starts with 1)
+        assert len(p.npi) == 10 and p.npi.isdigit() and p.npi[0] == "1"
+        # every clinician's primary facility exists in the location roster
+        assert p.facility_npi in facilities, p.npi
+        assert p.taxonomy_code and p.taxonomy_display

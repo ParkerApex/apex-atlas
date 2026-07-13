@@ -148,3 +148,21 @@ class TestCli:
         assert result.exit_code == 0, result.output
         manifest = json.loads((out / "bulk-publish-manifest.json").read_text())
         assert next(o["type"] for o in manifest["output"]) == "Organization"
+
+
+class TestFacilityPlacement:
+    def test_each_practitioner_listed_at_roster_facility(self):
+        from parker_atlas.references import load_practitioners
+
+        d = generate_provider_directory()
+        org_npi_by_id = {}
+        for o in d.organizations:
+            for ident in o.get("identifier", []):
+                if ident.get("system") == "http://hl7.org/fhir/sid/us-npi":
+                    org_npi_by_id[o["id"]] = ident["value"]
+        prac_npi_by_id = {p["id"]: p["identifier"][0]["value"] for p in d.practitioners}
+        npi_to_facility = {p.npi: p.facility_npi for p in load_practitioners()}
+        for role in d.practitioner_roles:
+            pid = role["practitioner"]["reference"].split("/", 1)[1]
+            oid = role["organization"]["reference"].split("/", 1)[1]
+            assert org_npi_by_id[oid] == npi_to_facility[prac_npi_by_id[pid]]

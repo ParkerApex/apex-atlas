@@ -57,6 +57,7 @@ class PractitionerRow:
     taxonomy_code: str
     taxonomy_display: str
     encounter_class: str
+    facility_npi: str  # primary facility (Organization NPI) this clinician practices at
 
 
 @dataclass(frozen=True, slots=True)
@@ -155,6 +156,7 @@ def load_practitioners() -> tuple[PractitionerRow, ...]:
             taxonomy_code=r["taxonomy_code"],
             taxonomy_display=r["taxonomy_display"],
             encounter_class=r["encounter_class"],
+            facility_npi=r["facility_npi"],
         )
         for r in _read_csv("practitioners.csv")
     )
