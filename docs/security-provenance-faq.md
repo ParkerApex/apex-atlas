@@ -56,7 +56,7 @@ Dual-licensed:
 
 ## `atlas serve` security model
 
-The dev API has **no authentication, no rate limiting, and a 5,000-patient cap per request**. Suitable for demos behind a reverse proxy with rate limits and WAF — not a multi-tenant production service. See [deploy.md](./deploy.md).
+The dev API has **no authentication, no rate limiting, and a 20,000-patient cap per request**. Suitable for demos behind a reverse proxy with rate limits and WAF — not a multi-tenant production service. See [deploy.md](./deploy.md).
 
 ## Supply chain
 

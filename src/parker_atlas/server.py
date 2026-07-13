@@ -51,14 +51,14 @@ from urllib.parse import parse_qs, urlparse
 from parker_atlas import __version__
 from parker_atlas.modules.runtime import list_bundled_modules
 
-MAX_PATIENTS = 5000
+MAX_PATIENTS = 20000
 DEFAULT_PATIENTS = 100
 # Dev-server caps for on-demand SMART Scheduling Links generation.
 SCHED_MAX_SITES = 10
 SCHED_MAX_WEEKS = 4
 # Per-request generation timeout (seconds) so one request can't hang a hosted
 # instance. Overridable via ATLAS_GEN_TIMEOUT.
-GEN_TIMEOUT = int(os.environ.get("ATLAS_GEN_TIMEOUT", "180"))
+GEN_TIMEOUT = int(os.environ.get("ATLAS_GEN_TIMEOUT", "600"))
 
 # job_id -> {"status": "in-progress"|"complete"|"error", "dir": Path|None,
 #            "manifest": dict|None, "error": str|None, "request": str}

@@ -36,7 +36,7 @@ atlas serve --port 8080
 
 ### Query parameters
 
-For `/generate`: `patients` (int, capped at 5000), `seed` (int), `modules`
+For `/generate`: `patients` (int, capped at 20000), `seed` (int), `modules`
 (comma-separated module names), `as_of` (ISO date — reproducible cohorts),
 `ref_style` (`urn-uuid` | `relative`), and the boolean flags `sdoh`, `coverage`,
 `providers`, `measures`, `notes`, `carin_bb` (`1`/`true`).

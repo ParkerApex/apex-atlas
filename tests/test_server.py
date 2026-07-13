@@ -87,13 +87,18 @@ class TestSyncGenerate:
         n_patients = sum(1 for r in lines if r.get("resourceType") == "Patient")
         assert n_patients == 8
 
-    def test_patient_cap_enforced(self, server):
-        # Request far above MAX_PATIENTS; should be capped, not error.
+    def test_patient_cap_enforced(self, server, monkeypatch):
+        # Request far above MAX_PATIENTS; should be capped, not error. Patch the
+        # cap to a small value so the test stays fast (the handler reads the
+        # module global at request time).
+        import parker_atlas.server as srv
+
+        monkeypatch.setattr(srv, "MAX_PATIENTS", 8)
         status, body = _post(f"{server}/generate?patients=999999&seed=1&modules=asthma")
         assert status == 200
         n = sum(1 for line in body.splitlines() if '"resourceType": "Patient"' in line
                 or '"resourceType":"Patient"' in line)
-        assert 0 < n <= 5000
+        assert 0 < n <= 8
 
 
 class TestBulkExport:

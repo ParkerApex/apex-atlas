@@ -75,8 +75,9 @@
         <div class="hint" id="apistatus">Not checked yet.</div>
       </div>
       <div>
-        <label for="patients">Patients (max 5000)</label>
-        <input type="number" id="patients" value="100" min="1" max="5000" />
+        <label for="patients">Patients (max 20000)</label>
+        <input type="number" id="patients" value="100" min="1" max="20000" />
+        <div class="hint">Large cohorts take longer &amp; return a big payload.</div>
       </div>
       <div>
         <label for="seed">Seed</label>
@@ -115,6 +116,7 @@
     <div class="actions">
       <button class="primary" id="gen">Generate</button>
       <button id="check">Check connection</button>
+      <button id="preset" title="Fill in the exact parameters of the shipped CMS Connectathon 2026 population">Connectathon preset (20K)</button>
       <span class="status" id="status"></span>
     </div>
   </div>
@@ -249,6 +251,21 @@
 
   function download() { downloadText(lastNdjson, "atlas-cohort.ndjson"); }
 
+  // Fill the form with the exact parameters of the shipped CMS Connectathon
+  // 2026 population (samples/cms-connectathon-2026/patients).
+  function applyConnectathonPreset() {
+    $("patients").value = "20000";
+    $("seed").value = "2026";
+    $("modules").value = "hypertension,diabetes,wellness";
+    $("asof").value = "2026-07-12";
+    $("refstyle").value = "relative";
+    var on = { coverage: true };
+    ["sdoh", "coverage", "providers", "measures", "notes", "carin_bb"].forEach(function (f) {
+      $(f).checked = !!on[f];
+    });
+    setStatus("Loaded connectathon preset — 20,000 patients, seed 2026. Click Generate (large; allow a few minutes).", "ok");
+  }
+
   // Fetch a $bulk-publish dataset (scheduling | provider-directory), list each
   // resource type with its line count, and offer per-type NDJSON downloads.
   async function fetchBulk(kind, label) {
@@ -316,7 +333,18 @@
                org: o.name || "", accepting: accepting };
     }).sort(function (a, b) { return a.name.localeCompare(b.name); });
     if (!rows.length) return;
-    var html = '<div class="tblwrap"><table class="tbl"><thead><tr>' +
+    var specs = {}, facs = {}, accepting = 0;
+    rows.forEach(function (r) {
+      if (r.code) specs[r.code] = 1;
+      if (r.org) facs[r.org] = 1;
+      if (/accepting/i.test(r.accepting) && !/not/i.test(r.accepting)) accepting++;
+    });
+    var summary = '<div style="margin-bottom:10px;color:var(--muted);font-size:13px">' +
+      '<b style="color:var(--ink)">' + rows.length + '</b> providers · ' +
+      Object.keys(specs).length + ' specialties · ' + Object.keys(facs).length +
+      ' facilities · ' + accepting + ' accepting new patients · ' +
+      '<a href="https://github.com/ParkerApex/apex-atlas/blob/main/samples/cms-connectathon-2026/provider-directory/PROVIDERS.md" target="_blank" rel="noopener">readable roster ↗</a></div>';
+    var html = summary + '<div class="tblwrap"><table class="tbl"><thead><tr>' +
       '<th>Provider</th><th>Specialty</th><th>NPI</th><th>Facility</th><th>Accepting</th>' +
       '</tr></thead><tbody>';
     rows.forEach(function (r) {
@@ -337,6 +365,7 @@
 
   $("gen").addEventListener("click", generate);
   $("check").addEventListener("click", check);
+  $("preset").addEventListener("click", applyConnectathonPreset);
   $("download").addEventListener("click", download);
   $("sched").addEventListener("click", function () { fetchBulk("scheduling", "SMART Scheduling Links"); });
   $("pdir").addEventListener("click", function () { fetchBulk("provider-directory", "Plan-Net directory"); });

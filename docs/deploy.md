@@ -14,8 +14,8 @@ local setup** — a hosted `atlas serve` that the static page calls.
 > image.
 
 > **Read this first — security.** `atlas serve` is a *development* server. It has
-> two built-in safeguards (a 5,000-patient cap per request and a generation
-> timeout, `ATLAS_GEN_TIMEOUT`, default 180s) but **no auth, rate limiting, or
+> two built-in safeguards (a 20,000-patient cap per request and a generation
+> timeout, `ATLAS_GEN_TIMEOUT`, default 600s) but **no auth, rate limiting, or
 > abuse protection**. For anything public, put it behind a reverse proxy / API
 > gateway with rate limiting (and ideally a WAF), keep the timeout low, and use
 > scale-to-zero so an idle demo costs nothing. Treat it as a demo backend, not a
