@@ -1711,6 +1711,8 @@ def status() -> None:
         ("atlas generate",        "[green]implemented[/green]",    "M1"),
         ("atlas validate",        "[green]structural[/green]",     "M1"),
         ("atlas validate --cohort","[green]first cut[/green]",      "M2"),
+        ("atlas validate --refs", "[green]referential[/green]",    "Diff-5"),
+        ("atlas validate --ig",   "[green]native + HL7[/green]",   "Diff-5"),
         ("Module runtime",        "[green]cross-module reqs[/green]", "M2"),
         ("Module library",        "[green]100 modules[/green]",    "M2"),
         ("Fidelity harness",      "[green]18 sourced modules[/green]", "M2"),
@@ -1724,6 +1726,9 @@ def status() -> None:
         ("Da Vinci Plan-Net",     "[green]$bulk-publish[/green]",   "Diff-5"),
         ("CARIN Blue Button",     "[green]C4BB alignment[/green]",  "Diff-5"),
         ("Reproducible --as-of",  "[green]implemented[/green]",     "Diff-5"),
+        ("Relative NDJSON refs",  "[green]--ref-style[/green]",     "Diff-5"),
+        ("Coherent provider ids", "[green]roster-shared[/green]",   "Diff-5"),
+        ("CI pipeline",           "[green]pytest/ruff/mypy[/green]","Diff-5"),
     ]
     for row in rows:
         table.add_row(*row)

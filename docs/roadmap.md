@@ -193,6 +193,35 @@ See [`docs/gtm.md`](./gtm.md) for the prime-time GTM checklist and launch gates.
 
 ---
 
+## Milestone 6 — Interoperability & CMS alignment ✅ Complete
+
+**Goal:** Extend Atlas from a population generator into a CMS-interoperability
+toolkit — the payer-facing exchange surfaces and the reproducibility / validation
+plumbing a connectathon exercises.
+
+- Reproducible generation: ✅ `atlas generate --as-of DATE` pins the generation
+  date so `--seed` runs are byte-stable and don't drift day to day.
+- Idiomatic Bulk Data references: ✅ `--ref-style relative` emits `Patient/<id>`
+  references for drop-in `$export` consumers.
+- SMART Scheduling Links (`$bulk-publish`): ✅ `atlas publish-scheduling` +
+  dev-API `/scheduling/$bulk-publish`. ([`docs/smart-scheduling-links.md`](./smart-scheduling-links.md))
+- Da Vinci PDEX Plan-Net provider directory (`$bulk-publish`): ✅
+  `atlas publish-provider-directory`, built from the same provider roster patient
+  encounters use (claims ↔ directory NPI coherence). ([`docs/provider-directory.md`](./provider-directory.md))
+- CARIN Blue Button (C4BB) alignment: ✅ `atlas generate --carin-bb` stamps
+  profiles + required elements on Patient/Coverage/Organization/EOB.
+- Referential integrity: ✅ `atlas validate --refs` across NDJSON,
+  `$bulk-publish` datasets, and Bundles.
+- IG conformance harness: ✅ `atlas validate --ig` — native structural + profile
+  + reference checks, plus the external HL7 validator when a jar is provided.
+- CI: ✅ `.github/workflows/ci.yml` — pytest (3.11/3.12) blocking; ruff + mypy
+  advisory. ([`docs/ci-and-deploys.md`](./ci-and-deploys.md))
+- CMS Connectathon 2026 dataset: ✅ a fully cross-validating three-part bundle
+  (patients `$export` + scheduling + Plan-Net) under
+  [`samples/cms-connectathon-2026/`](../samples/cms-connectathon-2026/).
+
+---
+
 ## Post-v1 Directions
 
 - **Longitudinal patient simulation** — drift, disease progression over simulated years, policy-change counterfactuals

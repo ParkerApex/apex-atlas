@@ -72,6 +72,10 @@ Detailed generation recipes: [`docs/integration-cookbooks.md`](./docs/integratio
 - **Extensible authoring** — `atlas author` pipeline for citation-grounded module development with clinician sign-off. See [research authoring](./docs/authoring/research_authoring.md).
 - **Output formats** — FHIR R4/R5 transaction bundles, Bulk Data-style NDJSON, and Parquet with schema versioning.
 - **SMART Scheduling Links** — publish open appointment availability (Location, Schedule, Slot) as a SMART Scheduling Links `$bulk-publish` dataset via `atlas publish-scheduling`. See [`docs/smart-scheduling-links.md`](./docs/smart-scheduling-links.md).
+- **Da Vinci Plan-Net directory** — publish a payer provider directory (`$bulk-publish`) via `atlas publish-provider-directory`, built from the same provider roster patient encounters use. See [`docs/provider-directory.md`](./docs/provider-directory.md).
+- **CARIN Blue Button** — `atlas generate --carin-bb` stamps C4BB profiles + required elements onto Patient/Coverage/Organization/ExplanationOfBenefit.
+- **Reproducible & idiomatic exports** — `--as-of` pins the generation date for byte-stable, seed-reproducible cohorts; `--ref-style relative` emits idiomatic FHIR Bulk Data references.
+- **Conformance validation** — `atlas validate --refs` (cross-file referential integrity) and `atlas validate --ig` (native structural + profile + reference checks, plus the external HL7 validator when available).
 
 ## Validation and governance
 
@@ -292,11 +296,12 @@ apex-atlas/
 │   ├── cli.py                 # Command-line interface
 │   ├── core/                  # Demographics, payer, provider, SDoH
 │   ├── modules/library/       # 101 clinical module definitions
-│   ├── fhir/                  # US Core 6.1 resource builders
+│   ├── fhir/                  # US Core 6.1 + C4BB + Plan-Net resource builders
 │   ├── scheduling/            # SMART Scheduling Links ($bulk-publish)
+│   ├── provider_directory/    # Da Vinci Plan-Net directory ($bulk-publish)
 │   ├── measures/              # Quality measure evaluation
 │   ├── notes/                 # Clinical note generation
-│   ├── validation/            # Structural and cohort fidelity
+│   ├── validation/            # Structural, cohort, referential, and IG checks
 │   └── references/            # ACS and epidemiological tables
 ├── docs/                      # Architecture, catalog, compliance
 └── tests/
