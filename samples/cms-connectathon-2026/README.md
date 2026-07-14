@@ -240,10 +240,26 @@ Reproduce it:
 # Cross-file referential integrity across all three datasets.
 atlas validate ./samples/cms-connectathon-2026 --refs
 
-# Full conformance report (add --validator-jar to include the HL7 FHIR validator).
+# Native conformance report (structural + profile + refs; no external deps).
 atlas validate ./samples/cms-connectathon-2026 --ig \
   --ig-report ./samples/cms-connectathon-2026/conformance-report.md
 ```
+
+**Official HL7 IG validation.** For a true US Core / Plan-Net / C4BB conformance
+pass, add the HL7 `validator_cli.jar` and the target IG package — this needs
+egress to the FHIR package registry + terminology server:
+
+```bash
+curl -L -o validator_cli.jar \
+  https://github.com/hapifhir/org.hl7.fhir.core/releases/latest/download/validator_cli.jar
+atlas validate ./provider-directory --ig --validator-jar ./validator_cli.jar \
+  --ig-package hl7.fhir.us.davinci-pdex-plan-net#1.1.0 --ig-report ./plan-net.md
+```
+
+This same pass runs continuously in CI
+([`ig-conformance.yml`](../../.github/workflows/ig-conformance.yml)) across the
+US Core, Plan-Net, C4BB, and SMART Scheduling surfaces, uploading a conformance
+report per surface as a build artifact.
 
 ---
 

@@ -741,12 +741,15 @@ def _validate_refs(path: Path) -> None:
 
 
 def _validate_ig(
-    path: Path, *, validator_jar: str | None, ig_version: str, ig_report: Path | None
+    path: Path, *, validator_jar: str | None, ig_version: str, ig_report: Path | None,
+    igs: tuple[str, ...] = (),
 ) -> None:
     """IG conformance harness: native checks + optional external HL7 validator."""
     from parker_atlas.validation.ig import render_report, run_ig_validation
 
-    report = run_ig_validation(path, validator_jar=validator_jar, ig_version=ig_version)
+    report = run_ig_validation(
+        path, validator_jar=validator_jar, ig_version=ig_version, igs=igs
+    )
     if report.resources_scanned == 0:
         err_console.print(f"[yellow]No FHIR resources found under[/yellow] {path}")
         raise typer.Exit(code=1)
@@ -1509,6 +1512,7 @@ def validate(
     ig_report: Annotated[Path | None, typer.Option("--ig-report", help="Write the --ig conformance report (Markdown) to this file.")] = None,
     validator_jar: Annotated[str | None, typer.Option("--validator-jar", help="Path to the HL7 FHIR validator_cli.jar for --ig (else $ATLAS_FHIR_VALIDATOR_JAR or a local cache).")] = None,
     ig_version: Annotated[str, typer.Option("--ig-version", help="FHIR version passed to the external validator under --ig.")] = "4.0.1",
+    ig_package: Annotated[list[str] | None, typer.Option("--ig-package", help="IG package(s) to load into the external validator under --ig, e.g. hl7.fhir.us.core#6.1.0. Repeatable.")] = None,
     module: Annotated[str | None, typer.Option(help="Module whose bundled expectation to run under --cohort.")] = None,
     min_samples: Annotated[int, typer.Option(help="Minimum bracket N under --cohort; smaller brackets are skipped.")] = 30,
     as_of: Annotated[str | None, typer.Option(help="ISO date used as the reference for age computation under --cohort.")] = None,
@@ -1541,7 +1545,10 @@ def validate(
         return
 
     if ig:
-        _validate_ig(path, validator_jar=validator_jar, ig_version=ig_version, ig_report=ig_report)
+        _validate_ig(
+            path, validator_jar=validator_jar, ig_version=ig_version,
+            ig_report=ig_report, igs=tuple(ig_package or ()),
+        )
         return
 
     if gtm:

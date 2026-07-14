@@ -14,6 +14,48 @@ carries pre-existing lint/type debt (~87 ruff, ~138 mypy findings at time of
 writing). New code should be clean; once the backlog is burned down, drop
 `continue-on-error` to make them blocking.
 
+## IG conformance (`.github/workflows/ig-conformance.yml`)
+
+Runs the **official HL7 FHIR validator** (`validator_cli.jar`) against the
+shipped connectathon surfaces. GitHub-hosted runners have open egress to the
+FHIR package registry (`packages.fhir.org`) and terminology server
+(`tx.fhir.org`) that the validator needs at runtime — hosts that most sandboxes
+block — so this is where the true IG-validated pass lives (the native
+`atlas validate --ig` layer runs everywhere; the external validator needs those
+hosts).
+
+| Target (matrix) | Path | IG package |
+| --- | --- | --- |
+| `us-core` | `patients/examples` | `hl7.fhir.us.core#6.1.0` |
+| `plan-net` | `provider-directory` | `hl7.fhir.us.davinci-pdex-plan-net#1.1.0` |
+| `smart-scheduling` | `scheduling/examples` | base R4 |
+| `carin-bb` | freshly generated `--carin-bb` cohort | `hl7.fhir.us.carin-bb#2.1.0` |
+
+- **Triggers:** `workflow_dispatch`, a weekly schedule, and PRs touching the
+  samples / validation / FHIR-builder / workflow paths (it's slow — it downloads
+  a ~130 MB validator and the IG packages — so it does not run on every push).
+- **Scope:** a representative conformance *sample* (curated example bundles + the
+  full Plan-Net directory + a small C4BB cohort), **not** the whole
+  168k-resource population — the HL7 validator is far too slow for that.
+- **Caching:** the validator jar and `~/.fhir/packages` are cached across runs.
+- **Output:** each target uploads its Markdown report + raw validator log as an
+  artifact and writes its verdict to the job summary.
+- **Advisory for now** (`continue-on-error`): the synthetic data has not yet been
+  through the official validator, so the first runs establish a baseline of real
+  US Core / C4BB / Plan-Net findings. Once a target is green, drop its
+  `continue-on-error` to make it a blocking gate.
+
+Run the same pass locally where those hosts are reachable:
+
+```bash
+curl -L -o validator_cli.jar \
+  https://github.com/hapifhir/org.hl7.fhir.core/releases/latest/download/validator_cli.jar
+atlas validate ./samples/cms-connectathon-2026/provider-directory --ig \
+  --validator-jar ./validator_cli.jar \
+  --ig-package hl7.fhir.us.davinci-pdex-plan-net#1.1.0 \
+  --ig-report ./plan-net-conformance.md
+```
+
 ## Deployment workflows — one-time settings required
 
 Both deploy workflows are correct but currently fail because of **repository /

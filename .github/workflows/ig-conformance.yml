@@ -1,0 +1,146 @@
+name: IG conformance
+
+# Runs the official HL7 FHIR validator (validator_cli.jar) against the shipped
+# connectathon surfaces — US Core, Da Vinci Plan-Net, CARIN Blue Button (C4BB),
+# and SMART Scheduling Links. GitHub-hosted runners have open egress to the FHIR
+# package registry (packages.fhir.org) and terminology server (tx.fhir.org),
+# which the validator needs and which most sandboxes block — so this is where the
+# true IG-validated conformance pass lives.
+#
+# Scope: a representative conformance sample (the curated example bundles + the
+# full Plan-Net directory + a freshly generated C4BB cohort), NOT the whole
+# 168k-resource population — the HL7 validator is far too slow for that. Each
+# target uploads its Markdown report + raw validator log as an artifact and
+# writes its verdict to the job summary.
+#
+# Advisory for now (continue-on-error): the synthetic data has never been through
+# the official validator, so the first runs establish a baseline of real US Core /
+# C4BB / Plan-Net findings. Once a target is green, drop its continue-on-error to
+# make it a blocking gate.
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 7 * * 1" # Mondays 07:00 UTC
+  pull_request:
+    paths:
+      - "samples/cms-connectathon-2026/**"
+      - "src/parker_atlas/validation/**"
+      - "src/parker_atlas/fhir/**"
+      - "src/parker_atlas/provider_directory/**"
+      - "src/parker_atlas/scheduling/**"
+      - ".github/workflows/ig-conformance.yml"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ig-conformance-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ig:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - key: us-core
+            path: samples/cms-connectathon-2026/patients/examples
+            igs: "hl7.fhir.us.core#6.1.0"
+          - key: plan-net
+            path: samples/cms-connectathon-2026/provider-directory
+            igs: "hl7.fhir.us.davinci-pdex-plan-net#1.1.0"
+          - key: smart-scheduling
+            path: samples/cms-connectathon-2026/scheduling/examples
+            igs: ""
+          - key: carin-bb
+            path: _carinbb
+            igs: "hl7.fhir.us.carin-bb#2.1.0"
+            generate: >-
+              atlas generate --patients 25 --seed 2026
+              --module hypertension,diabetes --with-coverage --carin-bb
+              --ref-style relative --format ndjson --out ./_carinbb
+    name: ${{ matrix.key }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install atlas
+        run: pip install -e ".[dev]"
+
+      # Cache the ~130 MB validator jar and the FHIR package cache (base R4 +
+      # the IG packages the validator downloads on first run) across runs.
+      - name: Cache validator + FHIR packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cache/apex-atlas/validator_cli.jar
+            ~/.fhir/packages
+          key: fhir-validator-${{ matrix.key }}-v1
+
+      - name: Download HL7 validator_cli.jar
+        run: |
+          mkdir -p ~/.cache/apex-atlas
+          if [ ! -s ~/.cache/apex-atlas/validator_cli.jar ]; then
+            curl -fsSL -o ~/.cache/apex-atlas/validator_cli.jar \
+              https://github.com/hapifhir/org.hl7.fhir.core/releases/latest/download/validator_cli.jar
+          fi
+          ls -la ~/.cache/apex-atlas/validator_cli.jar
+
+      - name: Generate sample (if the target needs one)
+        run: |
+          if [ -n "${{ matrix.generate }}" ]; then
+            ${{ matrix.generate }}
+          fi
+
+      - name: Validate (${{ matrix.key }})
+        id: validate
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          JAR=~/.cache/apex-atlas/validator_cli.jar
+          REPORT="conformance-${{ matrix.key }}.md"
+          LOG="validate-${{ matrix.key }}.log"
+          if [ -n "${{ matrix.igs }}" ]; then
+            atlas validate "${{ matrix.path }}" --ig \
+              --validator-jar "$JAR" --ig-report "$REPORT" \
+              --ig-package "${{ matrix.igs }}" | tee "$LOG"
+          else
+            atlas validate "${{ matrix.path }}" --ig \
+              --validator-jar "$JAR" --ig-report "$REPORT" | tee "$LOG"
+          fi
+
+      - name: Job summary
+        if: always()
+        run: |
+          {
+            echo "## IG conformance — ${{ matrix.key }}"
+            echo ""
+            echo "- Target: \`${{ matrix.path }}\`"
+            echo "- IG package: \`${{ matrix.igs || 'base R4 only' }}\`"
+            echo "- Validate step outcome: **${{ steps.validate.outcome }}**"
+            echo ""
+            echo '```'
+            tail -n 40 "validate-${{ matrix.key }}.log" 2>/dev/null || echo "(no log)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload conformance report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: conformance-${{ matrix.key }}
+          path: |
+            conformance-${{ matrix.key }}.md
+            validate-${{ matrix.key }}.log
+          if-no-files-found: warn

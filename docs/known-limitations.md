@@ -46,11 +46,20 @@ See the [module catalog](./module-catalog.md) for per-module tier and review sta
 
 `atlas validate --ig` runs a two-layer harness: native structural + profile +
 referential checks (always, no external deps), and — when the official HL7 FHIR
-`validator_cli.jar` is provided (`--validator-jar` / `$ATLAS_FHIR_VALIDATOR_JAR`)
-— the external validator for full US Core / C4BB / Plan-Net profile conformance.
-The native layer is a fast approximation; declaring a `meta.profile` is not the
-same as passing that IG's full slicing, and Atlas does not ship a certified
-conformance run.
+`validator_cli.jar` is provided (`--validator-jar` / `$ATLAS_FHIR_VALIDATOR_JAR`,
+with `--ig-package` to load the target IG) — the external validator for full
+US Core / C4BB / Plan-Net profile conformance. The native layer is a fast
+approximation; declaring a `meta.profile` is not the same as passing that IG's
+full slicing.
+
+The external validator runs in CI: `.github/workflows/ig-conformance.yml`
+validates the connectathon US Core / Plan-Net / C4BB / SMART Scheduling surfaces
+against the official validator on GitHub runners (which have the FHIR
+package-registry + terminology egress the validator needs), uploading a
+conformance report per surface. It is **advisory** until each surface's baseline
+is triaged to green — so a genuine IG-validated pass now runs continuously, but
+Atlas does not yet claim a certified, error-free conformance run for every
+surface. See [ci-and-deploys.md](./ci-and-deploys.md#ig-conformance-githubworkflowsig-conformanceyml).
 
 ## Not validated / incomplete
 

@@ -88,3 +88,22 @@ class TestCli:
         ])
         result = runner.invoke(app, ["validate", str(tmp_path), "--ig"])
         assert result.exit_code == 1
+
+    def test_ig_package_threads_into_validator(self, tmp_path, monkeypatch):
+        # --ig-package values must reach run_ig_validation as `igs` so the
+        # external HL7 validator loads the right IG (US Core / Plan-Net / C4BB).
+        _valid_dataset(tmp_path)
+        captured = {}
+
+        def fake_run(path, *, validator_jar=None, ig_version="4.0.1", igs=(), run_external=True):
+            captured["igs"] = igs
+            return run_ig_validation(path, run_external=False)
+
+        monkeypatch.setattr("parker_atlas.validation.ig.run_ig_validation", fake_run)
+        result = runner.invoke(app, [
+            "validate", str(tmp_path), "--ig",
+            "--ig-package", "hl7.fhir.us.core#6.1.0",
+            "--ig-package", "hl7.fhir.us.carin-bb#2.1.0",
+        ])
+        assert result.exit_code == 0, result.output
+        assert captured["igs"] == ("hl7.fhir.us.core#6.1.0", "hl7.fhir.us.carin-bb#2.1.0")
