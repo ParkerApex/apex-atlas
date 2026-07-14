@@ -22,14 +22,17 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "0 7 * * 1" # Mondays 07:00 UTC
-  pull_request:
-    paths:
+  push:
+    branches: [main]
+    paths: &conformance_paths
       - "samples/cms-connectathon-2026/**"
       - "src/parker_atlas/validation/**"
       - "src/parker_atlas/fhir/**"
       - "src/parker_atlas/provider_directory/**"
       - "src/parker_atlas/scheduling/**"
       - ".github/workflows/ig-conformance.yml"
+  pull_request:
+    paths: *conformance_paths
 
 permissions:
   contents: read
