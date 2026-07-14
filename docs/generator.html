@@ -104,8 +104,6 @@
 
   .row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
   .row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}
-  .mini{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
-  .field+.field,.stack>*+*{margin-top:14px}
 
   .conn{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
   .conn .grow{flex:1 1 300px;min-width:220px}
@@ -154,10 +152,6 @@
     overflow:auto;font-family:var(--mono);font-size:12px;line-height:1.6;color:#c8d6f0;
     max-height:340px}
 
-  .subgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
-  .subpanel{border:1px solid var(--line);border-radius:14px;padding:17px;
-    background:linear-gradient(180deg,rgba(255,255,255,.02),transparent)}
-
   table.tbl{border-collapse:collapse;width:100%;font-size:12.5px}
   table.tbl th,table.tbl td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line)}
   table.tbl th{position:sticky;top:0;background:#0e1626;color:var(--muted);
@@ -173,7 +167,7 @@
   footer .sep{opacity:.4}
 
   @media (max-width:760px){
-    .row,.row3,.mini,.subgrid{grid-template-columns:1fr}
+    .row,.row3{grid-template-columns:1fr!important}
     .topnav a.hide-sm{display:none}
   }
   @media (prefers-reduced-motion:reduce){
@@ -288,65 +282,71 @@
     <pre id="preview"></pre>
   </div>
 
-  <!-- Bulk-publish -->
+  <!-- Provider cohort -->
   <div class="card">
     <div class="card-head">
-      <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22V12"/></svg></span>
-      <div><div class="kicker">Payer exchange</div><h2>Bulk-publish datasets <code>$bulk-publish</code></h2></div>
+      <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75M20 8v6M23 11h-6"/></svg></span>
+      <div><div class="kicker">Directory</div><h2>Provider cohort <code>$bulk-publish</code></h2></div>
     </div>
-    <p class="sub">Served by the same dev API — no patients needed. Tune each surface, then fetch.</p>
+    <p class="sub">Generate a synthetic <b>Da Vinci Plan-Net</b> provider directory — Practitioners,
+      roles, organizations, locations, services. Leave Providers blank to serve the shipped
+      150-clinician roster.</p>
 
-    <div class="subgrid">
-      <div class="subpanel">
-        <h3>📅 SMART Scheduling Links</h3>
-        <div class="mini">
-          <div>
-            <label for="sc_sites">Sites <span style="color:var(--faint)">(≤40)</span></label>
-            <input type="number" id="sc_sites" value="8" min="1" max="40" />
-          </div>
-          <div>
-            <label for="sc_weeks">Weeks <span style="color:var(--faint)">(≤8)</span></label>
-            <input type="number" id="sc_weeks" value="2" min="1" max="8" />
-          </div>
-          <div>
-            <label for="sc_seed">Seed</label>
-            <input type="number" id="sc_seed" value="20260712" min="0" />
-          </div>
-        </div>
-        <label style="margin:14px 0 0">Service types</label>
-        <div class="flags" style="margin-top:8px">
-          <label><input type="checkbox" id="sc_gp" value="general-practice" checked /> General Practice</label>
-          <label><input type="checkbox" id="sc_imm" value="immunization" checked /> Immunization</label>
-          <label><input type="checkbox" id="sc_mh" value="mental-health" /> Mental Health</label>
-        </div>
-        <div class="actions" style="margin-top:16px">
-          <button id="sched">Fetch scheduling</button>
-        </div>
+    <div class="row" style="grid-template-columns:1.6fr 1fr;margin-top:16px">
+      <div>
+        <label for="pd_count">Providers <span style="color:var(--faint)">(blank = built-in 150; max 2000)</span></label>
+        <input type="number" id="pd_count" placeholder="150" min="1" max="2000" />
+        <div class="hint">A larger number synthesizes more clinicians (valid NPPES NPIs) apportioned across specialties.</div>
       </div>
-
-      <div class="subpanel">
-        <h3>🗂️ Da Vinci Plan-Net directory</h3>
-        <div class="row" style="grid-template-columns:2fr 1fr">
-          <div>
-            <label for="pd_count">Providers <span style="color:var(--faint)">(blank = 150; ≤2000)</span></label>
-            <input type="number" id="pd_count" placeholder="150" min="1" max="2000" />
-          </div>
-          <div>
-            <label for="pd_seed">Seed</label>
-            <input type="number" id="pd_seed" value="20260713" min="0" />
-          </div>
-        </div>
-        <div class="hint">Blank serves the shipped roster; a larger number synthesizes more clinicians (valid NPIs).</div>
-        <div class="actions" style="margin-top:16px">
-          <button id="pdir">Fetch directory</button>
-        </div>
+      <div>
+        <label for="pd_seed">Seed</label>
+        <input type="number" id="pd_seed" value="20260713" min="0" />
       </div>
     </div>
+    <div class="actions">
+      <button class="primary" id="pdir">Generate directory</button>
+      <span class="status" id="pd_status"></span>
+    </div>
+    <div class="pills" id="pd_pills" style="margin-top:14px"></div>
+    <div class="actions" id="pd_links" style="margin-top:0"></div>
+    <div id="pd_table" style="margin-top:14px;overflow:auto"></div>
+  </div>
 
-    <div class="actions" style="margin-top:16px"><span class="status" id="bstatus"></span></div>
-    <div class="pills" id="bulkpills" style="margin-top:6px"></div>
-    <div class="actions" id="bulklinks" style="margin-top:0"></div>
-    <div id="bulktable" style="margin-top:14px;overflow:auto"></div>
+  <!-- Appointment availability -->
+  <div class="card">
+    <div class="card-head">
+      <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"/></svg></span>
+      <div><div class="kicker">Payer exchange</div><h2>Appointment availability <code>$bulk-publish</code></h2></div>
+    </div>
+    <p class="sub"><b>SMART Scheduling Links</b> — open, bookable appointment slots across clinic
+      sites and service types.</p>
+
+    <div class="row" style="grid-template-columns:1fr 1fr 1.6fr;margin-top:16px">
+      <div>
+        <label for="sc_sites">Sites <span style="color:var(--faint)">(max 40)</span></label>
+        <input type="number" id="sc_sites" value="8" min="1" max="40" />
+      </div>
+      <div>
+        <label for="sc_weeks">Weeks <span style="color:var(--faint)">(max 8)</span></label>
+        <input type="number" id="sc_weeks" value="2" min="1" max="8" />
+      </div>
+      <div>
+        <label for="sc_seed">Seed</label>
+        <input type="number" id="sc_seed" value="20260712" min="0" />
+      </div>
+    </div>
+    <label style="margin:16px 0 0">Service types</label>
+    <div class="flags" style="margin-top:8px">
+      <label><input type="checkbox" id="sc_gp" value="general-practice" checked /> General Practice</label>
+      <label><input type="checkbox" id="sc_imm" value="immunization" checked /> Immunization</label>
+      <label><input type="checkbox" id="sc_mh" value="mental-health" /> Mental Health</label>
+    </div>
+    <div class="actions">
+      <button class="primary" id="sched">Generate availability</button>
+      <span class="status" id="sc_status"></span>
+    </div>
+    <div class="pills" id="sc_pills" style="margin-top:14px"></div>
+    <div class="actions" id="sc_links" style="margin-top:0"></div>
   </div>
 
   <footer>
@@ -506,9 +506,12 @@
 
   // Fetch a $bulk-publish dataset (scheduling | provider-directory), list each
   // resource type with its line count, and offer per-type NDJSON downloads.
-  async function fetchBulk(kind, label) {
-    var bs = $("bstatus"); bs.textContent = "Fetching " + label + "…"; bs.className = "status";
-    $("bulkpills").innerHTML = ""; $("bulklinks").innerHTML = ""; $("bulktable").innerHTML = "";
+  // `t` names this card's own result containers so the two generators don't
+  // clobber each other's output.
+  async function fetchBulk(kind, label, t) {
+    var bs = $(t.status); bs.textContent = "Fetching " + label + "…"; bs.className = "status";
+    $(t.pills).innerHTML = ""; $(t.links).innerHTML = "";
+    if (t.table) $(t.table).innerHTML = "";
     var suffix = bulkQs(kind);
     try {
       var mr = await fetch(base() + "/" + kind + "/$bulk-publish" + suffix);
@@ -522,16 +525,16 @@
         byType[type] = text;
         var n = text.split("\n").filter(function (l) { return l.trim(); }).length;
         var pill = document.createElement("span"); pill.className = "pill";
-        pill.innerHTML = type + " <b>" + n + "</b>"; $("bulkpills").appendChild(pill);
-        (function (t, body) {
+        pill.innerHTML = type + " <b>" + n + "</b>"; $(t.pills).appendChild(pill);
+        (function (ty, body) {
           var btn = document.createElement("button");
           btn.className = "tiny";
-          btn.textContent = "↓ " + t + ".ndjson";
-          btn.addEventListener("click", function () { downloadText(body, t + ".ndjson"); });
-          $("bulklinks").appendChild(btn);
+          btn.textContent = "↓ " + ty + ".ndjson";
+          btn.addEventListener("click", function () { downloadText(body, ty + ".ndjson"); });
+          $(t.links).appendChild(btn);
         })(type, text);
       }
-      if (kind === "provider-directory") renderProviderRoster(byType);
+      if (kind === "provider-directory" && t.table) renderProviderRoster(byType, t.table);
       bs.textContent = label + " ready — " + manifest.output.length + " resource types.";
       bs.className = "status ok";
     } catch (e) {
@@ -541,7 +544,7 @@
   }
 
   // Join Practitioner + PractitionerRole + Organization into a readable roster.
-  function renderProviderRoster(byType) {
+  function renderProviderRoster(byType, tableId) {
     function parse(t) {
       return (t || "").split("\n").filter(function (l) { return l.trim(); })
         .map(function (l) { return JSON.parse(l); });
@@ -594,7 +597,7 @@
         esc(r.accepting) + "</td></tr>";
     });
     html += "</tbody></table></div>";
-    $("bulktable").innerHTML = html;
+    $(tableId).innerHTML = html;
   }
 
   function esc(s) {
@@ -607,8 +610,14 @@
   $("check").addEventListener("click", check);
   $("preset").addEventListener("click", applyConnectathonPreset);
   $("download").addEventListener("click", download);
-  $("sched").addEventListener("click", function () { fetchBulk("scheduling", "SMART Scheduling Links"); });
-  $("pdir").addEventListener("click", function () { fetchBulk("provider-directory", "Plan-Net directory"); });
+  $("sched").addEventListener("click", function () {
+    fetchBulk("scheduling", "SMART Scheduling Links",
+      { status: "sc_status", pills: "sc_pills", links: "sc_links" });
+  });
+  $("pdir").addEventListener("click", function () {
+    fetchBulk("provider-directory", "Plan-Net directory",
+      { status: "pd_status", pills: "pd_pills", links: "pd_links", table: "pd_table" });
+  });
   check();
 })();
 </script>
