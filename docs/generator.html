@@ -7,94 +7,233 @@
 <meta name="description" content="Generate synthetic FHIR patients on demand against a running Apex Atlas dev server." />
 <style>
   :root{
-    --bg:#0b1220; --panel:#111a2e; --panel2:#0e1729; --line:#1f2d49;
-    --ink:#e8eef9; --muted:#9fb0cc; --brand:#3ba9a0; --brand2:#5b8def; --accent:#7ee0d3;
-    --good:#46c08a; --bad:#e06a6a; --warn:#e0b450;
+    --bg:#080d18;
+    --panel:rgba(255,255,255,.035);
+    --panel2:rgba(255,255,255,.02);
+    --surface:#0e1626;
+    --field:#0a1120;
+    --line:rgba(148,166,196,.16);
+    --line-strong:rgba(148,166,196,.30);
+    --ink:#eaf0fb;
+    --muted:#93a4c2;
+    --faint:#5c6f8f;
+    --brand:#35c9b8; --brand2:#5b8def; --accent:#7ee0d3;
+    --good:#4bd08a; --bad:#f0736f; --warn:#f0c05a;
+    --ring:rgba(91,141,239,.45);
+    --radius:16px;
     --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
-    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --sans:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --shadow:0 1px 0 rgba(255,255,255,.04) inset, 0 24px 48px -28px rgba(0,0,0,.8);
   }
   *{box-sizing:border-box}
-  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5}
-  a{color:var(--accent)}
-  .wrap{max-width:920px;margin:0 auto;padding:28px 22px 64px}
-  .eyebrow{color:var(--brand);font-weight:700;letter-spacing:.12em;text-transform:uppercase;font-size:12px}
-  h1{font-size:clamp(26px,4vw,38px);margin:.3em 0 .2em;letter-spacing:-.02em}
-  .lede{color:var(--muted);max-width:680px}
-  .note{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--warn);
-    border-radius:10px;padding:12px 14px;color:var(--muted);font-size:13.5px;margin:18px 0}
-  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin-top:18px}
-  label{display:block;font-size:13px;color:var(--muted);margin:0 0 5px}
-  input[type=text],input[type=number],select{width:100%;background:#06101f;border:1px solid var(--line);
-    border-radius:9px;color:var(--ink);padding:9px 11px;font-family:var(--mono);font-size:13px}
-  h2{font-size:19px;margin:2px 0 4px;letter-spacing:-.01em}
-  table.tbl{border-collapse:collapse;width:100%;font-size:12.5px}
-  table.tbl th,table.tbl td{text-align:left;padding:6px 10px;border-bottom:1px solid var(--line)}
-  table.tbl th{color:var(--muted);font-weight:600;position:sticky;top:0;background:var(--panel)}
-  table.tbl td.npi{font-family:var(--mono);color:var(--muted)}
-  .tblwrap{max-height:420px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; color:var(--ink);
+    font-family:var(--sans); line-height:1.55; letter-spacing:-.005em;
+    background:
+      radial-gradient(1100px 560px at 50% -8%, rgba(91,141,239,.13), transparent 62%),
+      radial-gradient(900px 500px at 92% 4%, rgba(53,201,184,.08), transparent 60%),
+      var(--bg);
+    -webkit-font-smoothing:antialiased;
+  }
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.9em;background:rgba(148,166,196,.13);
+    padding:.12em .42em;border-radius:6px;color:#d7e3fb}
+
+  /* top bar */
+  .topbar{
+    position:sticky;top:0;z-index:20;
+    display:flex;align-items:center;justify-content:space-between;gap:16px;
+    padding:12px clamp(16px,4vw,28px);
+    background:rgba(8,13,24,.66);backdrop-filter:blur(14px) saturate(1.4);
+    border-bottom:1px solid var(--line);
+  }
+  .brand{display:flex;align-items:center;gap:10px;font-weight:700;letter-spacing:.01em}
+  .brand .dot{width:10px;height:10px;border-radius:50%;
+    background:conic-gradient(from 210deg,var(--brand),var(--brand2),var(--brand));
+    box-shadow:0 0 14px rgba(53,201,184,.7)}
+  .brand small{color:var(--muted);font-weight:500;letter-spacing:0}
+  .topnav{display:flex;gap:18px;align-items:center}
+  .topnav a{color:var(--muted);font-size:13px}
+  .topnav a:hover{color:var(--ink);text-decoration:none}
+
+  .wrap{max-width:980px;margin:0 auto;padding:clamp(28px,5vw,52px) clamp(16px,4vw,28px) 72px}
+
+  .eyebrow{font:700 12px/1 var(--mono);color:var(--brand);
+    letter-spacing:.18em;text-transform:uppercase}
+  h1{font-size:clamp(30px,5vw,46px);margin:.32em 0 .16em;letter-spacing:-.025em;line-height:1.04}
+  .lede{color:var(--muted);max-width:640px;font-size:clamp(15px,2vw,17px)}
+
+  .note{
+    display:flex;gap:12px;align-items:flex-start;
+    background:linear-gradient(180deg,rgba(240,192,90,.07),rgba(240,192,90,.02));
+    border:1px solid rgba(240,192,90,.28);border-radius:12px;
+    padding:13px 15px;color:var(--muted);font-size:13.5px;margin:22px 0 6px;
+  }
+  .note svg{flex:none;margin-top:1px;color:var(--warn)}
+  .note b{color:var(--ink)}
+
+  .card{
+    background:linear-gradient(180deg,var(--panel),var(--panel2));
+    border:1px solid var(--line);border-radius:var(--radius);
+    padding:clamp(18px,3vw,24px);margin-top:20px;box-shadow:var(--shadow);
+  }
+  .card-head{display:flex;align-items:center;gap:12px;margin-bottom:4px}
+  .card-head .ic{display:grid;place-items:center;width:34px;height:34px;flex:none;
+    border-radius:10px;color:#04121a;background:linear-gradient(135deg,var(--brand),var(--brand2))}
+  .kicker{font:600 11px/1 var(--mono);letter-spacing:.16em;text-transform:uppercase;color:var(--muted)}
+  h2{font-size:clamp(17px,2.4vw,20px);margin:2px 0 0;letter-spacing:-.015em}
+  h3{font-size:14.5px;margin:0 0 12px;display:flex;align-items:center;gap:8px;letter-spacing:-.01em}
+  .sub{color:var(--muted);font-size:13.5px;margin:2px 0 0}
+
+  label{display:block;font-size:12.5px;color:var(--muted);margin:0 0 6px;font-weight:500}
+  input[type=text],input[type=number],select{
+    width:100%;background:var(--field);border:1px solid var(--line);
+    border-radius:10px;color:var(--ink);padding:10px 12px;
+    font-family:var(--sans);font-size:14px;
+    transition:border-color .15s,box-shadow .15s,background .15s;
+  }
+  input[type=number],#api,#asof{font-family:var(--mono);font-size:13px}
+  input:focus,select:focus{outline:none;border-color:var(--brand2);
+    box-shadow:0 0 0 3px var(--ring);background:#0b1322}
+  input::placeholder{color:var(--faint)}
+  select{appearance:none;-webkit-appearance:none;cursor:pointer;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2393a4c2' stroke-width='2.5'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat:no-repeat;background-position:right 12px center;padding-right:34px}
+
   .row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
   .row3{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}
-  .flags{display:flex;flex-wrap:wrap;gap:16px;margin-top:14px}
-  .flags label{display:flex;align-items:center;gap:7px;color:var(--ink);font-size:14px;margin:0;cursor:pointer}
-  .actions{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:18px}
-  button{font-weight:650;border-radius:10px;padding:11px 18px;border:1px solid var(--line);cursor:pointer;
-    background:var(--panel2);color:var(--ink)}
-  button.primary{background:linear-gradient(92deg,var(--brand),var(--brand2));color:#04121a;border:none}
-  button:disabled{opacity:.5;cursor:not-allowed}
-  .status{font-size:13.5px;color:var(--muted)}
+  .mini{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+  .field+.field,.stack>*+*{margin-top:14px}
+
+  .conn{display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap}
+  .conn .grow{flex:1 1 300px;min-width:220px}
+
+  .flags{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}
+  .flags label{
+    display:inline-flex;align-items:center;gap:8px;margin:0;cursor:pointer;
+    padding:8px 13px;border:1px solid var(--line);border-radius:999px;
+    background:var(--panel2);color:var(--muted);font-size:13px;font-weight:500;
+    transition:border-color .15s,color .15s,background .15s;
+  }
+  .flags label:hover{border-color:var(--line-strong);color:var(--ink)}
+  .flags label:has(input:checked){
+    border-color:var(--brand2);color:var(--ink);background:rgba(91,141,239,.14)}
+  .flags input{width:auto;margin:0;accent-color:var(--brand);cursor:pointer}
+
+  .actions{display:flex;flex-wrap:wrap;gap:11px;align-items:center;margin-top:20px}
+  button{
+    font-family:var(--sans);font-weight:600;font-size:14px;
+    border-radius:10px;padding:10px 17px;border:1px solid var(--line-strong);
+    background:var(--surface);color:var(--ink);cursor:pointer;
+    transition:transform .06s,border-color .15s,background .15s,box-shadow .15s,filter .15s;
+  }
+  button:hover{border-color:var(--brand2);background:rgba(91,141,239,.10)}
+  button:active{transform:translateY(1px)}
+  button.primary{
+    background:linear-gradient(100deg,var(--brand),var(--brand2));color:#04121a;
+    border:none;box-shadow:0 10px 24px -12px rgba(53,201,184,.7)}
+  button.primary:hover{filter:brightness(1.06);box-shadow:0 12px 30px -12px rgba(91,141,239,.7)}
+  button:disabled{opacity:.5;cursor:not-allowed;transform:none;filter:none}
+  button.tiny{padding:7px 12px;font-size:12.5px;font-weight:500}
+
+  .status{font-size:13px;color:var(--muted);display:inline-flex;align-items:center;gap:7px}
+  .status::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;opacity:.55;flex:none}
+  .status:empty::before{display:none}
   .status.ok{color:var(--good)} .status.err{color:var(--bad)}
-  .results{margin-top:18px;display:none}
-  .pills{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 14px}
-  .pill{font-size:12px;border:1px solid var(--line);border-radius:999px;padding:4px 10px;background:var(--panel2);
-    color:var(--muted)}
-  .pill b{color:var(--ink)}
-  pre{background:#06101f;border:1px solid var(--line);border-radius:12px;padding:14px;overflow:auto;
-    font-family:var(--mono);font-size:12px;line-height:1.5;color:#cfe0f7;max-height:340px}
-  .hint{font-size:12px;color:var(--muted);margin-top:5px}
-  footer{margin-top:30px;color:var(--muted);font-size:13px}
+
+  .results{margin-top:20px;display:none}
+  .pills{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 14px}
+  .pill{display:inline-flex;align-items:center;gap:6px;font-size:12px;
+    border:1px solid var(--line);border-radius:999px;padding:5px 11px;
+    background:var(--panel2);color:var(--muted)}
+  .pill b{color:var(--ink);font-variant-numeric:tabular-nums}
+
+  pre{background:#070c16;border:1px solid var(--line);border-radius:12px;padding:15px;
+    overflow:auto;font-family:var(--mono);font-size:12px;line-height:1.6;color:#c8d6f0;
+    max-height:340px}
+
+  .subgrid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px}
+  .subpanel{border:1px solid var(--line);border-radius:14px;padding:17px;
+    background:linear-gradient(180deg,rgba(255,255,255,.02),transparent)}
+
+  table.tbl{border-collapse:collapse;width:100%;font-size:12.5px}
+  table.tbl th,table.tbl td{text-align:left;padding:8px 12px;border-bottom:1px solid var(--line)}
+  table.tbl th{position:sticky;top:0;background:#0e1626;color:var(--muted);
+    font-weight:600;backdrop-filter:blur(4px)}
+  table.tbl tbody tr:hover{background:rgba(91,141,239,.06)}
+  table.tbl td.npi{font-family:var(--mono);color:var(--muted)}
+  .tblwrap{max-height:440px;overflow:auto;border:1px solid var(--line);border-radius:12px}
+
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .divider{height:1px;background:var(--line);margin:20px 0 0;border:0}
+  footer{margin-top:34px;color:var(--muted);font-size:13px;
+    display:flex;gap:14px;flex-wrap:wrap;align-items:center}
+  footer .sep{opacity:.4}
+
+  @media (max-width:760px){
+    .row,.row3,.mini,.subgrid{grid-template-columns:1fr}
+    .topnav a.hide-sm{display:none}
+  }
+  @media (prefers-reduced-motion:reduce){
+    *{transition:none!important;scroll-behavior:auto!important}
+  }
 </style>
 </head>
 <body>
+
+<header class="topbar">
+  <div class="brand"><span class="dot"></span>APEX&nbsp;ATLAS <small>· FHIR generator</small></div>
+  <nav class="topnav">
+    <a class="hide-sm" href="https://github.com/ParkerApex/apex-atlas/blob/main/docs/api.md">API docs</a>
+    <a href="./index.html">Overview</a>
+    <a href="https://github.com/ParkerApex/apex-atlas">GitHub&nbsp;↗</a>
+  </nav>
+</header>
+
 <div class="wrap">
-  <div class="eyebrow">Apex Atlas</div>
+  <div class="eyebrow">Synthetic data · FHIR R4</div>
   <h1>Synthetic FHIR generator</h1>
-  <p class="lede">Generate synthetic FHIR R4 patients on demand against a running Apex Atlas dev server.
-    Everything here is synthetic — no real patient is depicted.</p>
+  <p class="lede">Generate synthetic FHIR R4 patients and payer-exchange datasets on demand against a
+    running Apex Atlas dev server. Everything here is synthetic — no real patient is depicted.</p>
 
   <div class="note">
-    <b>Requires a running API.</b> Start the dev server locally and point the field below at it:
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+    <div><b>Requires a running API.</b> Start the dev server locally and point the field below at it:
     <code>pip install -e ".[dev]" &amp;&amp; atlas serve --port 8080</code>. The browser calls it directly
-    (CORS is enabled). This is a development server, not a hosted service.
+    (CORS is enabled). This is a development server, not a hosted service.</div>
   </div>
 
+  <!-- Connection -->
   <div class="card">
-    <div class="row3">
-      <div>
+    <div class="conn">
+      <div class="grow">
         <label for="api">API base URL</label>
         <input type="text" id="api" value="http://127.0.0.1:8080" />
-        <div class="hint" id="apistatus">Not checked yet.</div>
       </div>
+      <button id="check">Check connection</button>
+    </div>
+    <div class="hint" id="apistatus">Not checked yet.</div>
+  </div>
+
+  <!-- Patient cohort -->
+  <div class="card">
+    <div class="card-head">
+      <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg></span>
+      <div><div class="kicker">Population</div><h2>Patient cohort</h2></div>
+    </div>
+    <p class="sub">Configure the cohort, then <b>Generate</b> to stream NDJSON from the dev API.</p>
+
+    <div class="row3" style="margin-top:16px">
       <div>
-        <label for="patients">Patients (max 20000)</label>
+        <label for="patients">Patients <span style="color:var(--faint)">(max 20000)</span></label>
         <input type="number" id="patients" value="100" min="1" max="20000" />
         <div class="hint">Large cohorts take longer &amp; return a big payload.</div>
       </div>
       <div>
         <label for="seed">Seed</label>
         <input type="number" id="seed" value="42" min="0" />
-      </div>
-    </div>
-    <div style="margin-top:14px">
-      <label for="modules">Modules (comma-separated; blank = default set)</label>
-      <input type="text" id="modules" list="modulelist" placeholder="hypertension,diabetes,depression" />
-      <datalist id="modulelist"></datalist>
-      <div class="hint" id="moduleshint">Connect to the API to load the module list.</div>
-    </div>
-    <div class="row3" style="margin-top:14px">
-      <div>
-        <label for="asof">As-of date (reproducible)</label>
-        <input type="text" id="asof" placeholder="YYYY-MM-DD (blank = today)" />
-        <div class="hint">Pin with a seed for byte-stable cohorts.</div>
       </div>
       <div>
         <label for="refstyle">Reference style</label>
@@ -103,8 +242,22 @@
           <option value="relative">relative (Patient/&lt;id&gt;)</option>
         </select>
       </div>
-      <div></div>
     </div>
+
+    <div class="row" style="grid-template-columns:1.5fr 1fr;margin-top:14px">
+      <div>
+        <label for="modules">Modules <span style="color:var(--faint)">(comma-separated; blank = default set)</span></label>
+        <input type="text" id="modules" list="modulelist" placeholder="hypertension,diabetes,depression" />
+        <datalist id="modulelist"></datalist>
+        <div class="hint" id="moduleshint">Connect to the API to load the module list.</div>
+      </div>
+      <div>
+        <label for="asof">As-of date <span style="color:var(--faint)">(reproducible)</span></label>
+        <input type="text" id="asof" placeholder="YYYY-MM-DD (blank = today)" />
+        <div class="hint">Pin with a seed for byte-stable cohorts.</div>
+      </div>
+    </div>
+
     <div class="flags">
       <label><input type="checkbox" id="sdoh" checked /> SDoH causal overlay</label>
       <label><input type="checkbox" id="coverage" /> Payer coverage</label>
@@ -113,76 +266,95 @@
       <label><input type="checkbox" id="notes" /> Clinical notes</label>
       <label><input type="checkbox" id="carin_bb" /> CARIN Blue Button (C4BB)</label>
     </div>
+
     <div class="actions">
       <button class="primary" id="gen">Generate</button>
-      <button id="check">Check connection</button>
       <button id="preset" title="Fill in the exact parameters of the shipped CMS Connectathon 2026 population">Connectathon preset (20K)</button>
       <span class="status" id="status"></span>
     </div>
   </div>
 
+  <!-- Results -->
   <div class="results card" id="results">
-    <div><b id="summary"></b></div>
+    <div class="card-head">
+      <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg></span>
+      <div><div class="kicker">Output</div><h2 id="summary"></h2></div>
+    </div>
     <div class="pills" id="pills"></div>
-    <div class="actions" style="margin-top:0">
+    <div class="actions" style="margin-top:6px">
       <button class="primary" id="download">Download .ndjson</button>
     </div>
     <p class="hint">Preview (first 12 resources):</p>
     <pre id="preview"></pre>
   </div>
 
+  <!-- Bulk-publish -->
   <div class="card">
-    <h2>Bulk-publish datasets (<code>$bulk-publish</code>)</h2>
-    <p class="lede" style="font-size:14px">Payer exchange surfaces served by the same dev API — no patients needed.</p>
-    <div class="row" style="margin-top:4px">
-      <div>
-        <label for="sc_sites">Sites (max 40)</label>
-        <input type="number" id="sc_sites" value="8" min="1" max="40" />
-      </div>
-      <div>
-        <label for="sc_weeks">Weeks (max 8)</label>
-        <input type="number" id="sc_weeks" value="2" min="1" max="8" />
-      </div>
-      <div>
-        <label for="sc_seed">Seed</label>
-        <input type="number" id="sc_seed" value="20260712" min="0" />
-      </div>
-      <div>
-        <label>Service types</label>
-        <div class="flags" style="margin-top:2px">
+    <div class="card-head">
+      <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><path d="M3.27 6.96 12 12l8.73-5.04M12 22V12"/></svg></span>
+      <div><div class="kicker">Payer exchange</div><h2>Bulk-publish datasets <code>$bulk-publish</code></h2></div>
+    </div>
+    <p class="sub">Served by the same dev API — no patients needed. Tune each surface, then fetch.</p>
+
+    <div class="subgrid">
+      <div class="subpanel">
+        <h3>📅 SMART Scheduling Links</h3>
+        <div class="mini">
+          <div>
+            <label for="sc_sites">Sites <span style="color:var(--faint)">(≤40)</span></label>
+            <input type="number" id="sc_sites" value="8" min="1" max="40" />
+          </div>
+          <div>
+            <label for="sc_weeks">Weeks <span style="color:var(--faint)">(≤8)</span></label>
+            <input type="number" id="sc_weeks" value="2" min="1" max="8" />
+          </div>
+          <div>
+            <label for="sc_seed">Seed</label>
+            <input type="number" id="sc_seed" value="20260712" min="0" />
+          </div>
+        </div>
+        <label style="margin:14px 0 0">Service types</label>
+        <div class="flags" style="margin-top:8px">
           <label><input type="checkbox" id="sc_gp" value="general-practice" checked /> General Practice</label>
           <label><input type="checkbox" id="sc_imm" value="immunization" checked /> Immunization</label>
           <label><input type="checkbox" id="sc_mh" value="mental-health" /> Mental Health</label>
         </div>
+        <div class="actions" style="margin-top:16px">
+          <button id="sched">Fetch scheduling</button>
+        </div>
+      </div>
+
+      <div class="subpanel">
+        <h3>🗂️ Da Vinci Plan-Net directory</h3>
+        <div class="row" style="grid-template-columns:2fr 1fr">
+          <div>
+            <label for="pd_count">Providers <span style="color:var(--faint)">(blank = 150; ≤2000)</span></label>
+            <input type="number" id="pd_count" placeholder="150" min="1" max="2000" />
+          </div>
+          <div>
+            <label for="pd_seed">Seed</label>
+            <input type="number" id="pd_seed" value="20260713" min="0" />
+          </div>
+        </div>
+        <div class="hint">Blank serves the shipped roster; a larger number synthesizes more clinicians (valid NPIs).</div>
+        <div class="actions" style="margin-top:16px">
+          <button id="pdir">Fetch directory</button>
+        </div>
       </div>
     </div>
-    <div class="hint" style="margin:6px 0 0">↑ Controls for <b>SMART Scheduling Links</b>.</div>
-    <div class="row3" style="margin-top:12px">
-      <div>
-        <label for="pd_count">Providers (blank = built-in 150; max 2000)</label>
-        <input type="number" id="pd_count" placeholder="150" min="1" max="2000" />
-      </div>
-      <div>
-        <label for="pd_seed">Seed</label>
-        <input type="number" id="pd_seed" value="20260713" min="0" />
-      </div>
-      <div></div>
-    </div>
-    <div class="hint" style="margin:6px 0 0">↑ Controls for the <b>Plan-Net directory</b> — leave Providers blank to serve the shipped roster; set a larger number to synthesize more clinicians (valid NPIs).</div>
-    <div class="actions">
-      <button id="sched">SMART Scheduling Links</button>
-      <button id="pdir">Da Vinci Plan-Net directory</button>
-      <span class="status" id="bstatus"></span>
-    </div>
-    <div class="pills" id="bulkpills" style="margin-top:14px"></div>
+
+    <div class="actions" style="margin-top:16px"><span class="status" id="bstatus"></span></div>
+    <div class="pills" id="bulkpills" style="margin-top:6px"></div>
     <div class="actions" id="bulklinks" style="margin-top:0"></div>
     <div id="bulktable" style="margin-top:14px;overflow:auto"></div>
   </div>
 
   <footer>
-    Static page; no data leaves your machine beyond the API you point it at.
-    See <a href="https://github.com/ParkerApex/apex-atlas/blob/main/docs/api.md">the API docs</a> ·
-    <a href="./index.html">back to overview</a>.
+    <span>Static page; no data leaves your machine beyond the API you point it at.</span>
+    <span class="sep">·</span>
+    <a href="https://github.com/ParkerApex/apex-atlas/blob/main/docs/api.md">API docs</a>
+    <span class="sep">·</span>
+    <a href="./index.html">Overview</a>
   </footer>
 </div>
 
@@ -353,6 +525,7 @@
         pill.innerHTML = type + " <b>" + n + "</b>"; $("bulkpills").appendChild(pill);
         (function (t, body) {
           var btn = document.createElement("button");
+          btn.className = "tiny";
           btn.textContent = "↓ " + t + ".ndjson";
           btn.addEventListener("click", function () { downloadText(body, t + ".ndjson"); });
           $("bulklinks").appendChild(btn);
