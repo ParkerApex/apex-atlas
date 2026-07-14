@@ -94,7 +94,7 @@ def _run_external(path: Path, jar: str, ig_version: str, igs: tuple[str, ...]) -
         proc = subprocess.run(cmd, capture_output=True, text=True, timeout=1800)
     except (subprocess.TimeoutExpired, OSError) as exc:
         return ExternalResult(ran=False, jar=jar, reason=f"validator failed to run: {exc}")
-    tail = "\n".join((proc.stdout + proc.stderr).splitlines()[-40:])
+    tail = "\n".join((proc.stdout + proc.stderr).splitlines()[-250:])
     return ExternalResult(ran=True, jar=jar, returncode=proc.returncode, output_tail=tail)
 
 

@@ -124,9 +124,15 @@ jobs:
               --validator-jar "$JAR" --ig-report "$REPORT" | tee "$LOG"
           fi
 
-      - name: Job summary
+      - name: Report (stdout + job summary)
         if: always()
         run: |
+          REPORT="conformance-${{ matrix.key }}.md"
+          # Print the full report to the job log so findings are readable via the
+          # Actions API (artifacts require blob egress that some tooling blocks).
+          echo "=================== $REPORT ==================="
+          cat "$REPORT" 2>/dev/null || echo "(no report produced)"
+          echo "=================== end $REPORT ==================="
           {
             echo "## IG conformance — ${{ matrix.key }}"
             echo ""
@@ -135,7 +141,7 @@ jobs:
             echo "- Validate step outcome: **${{ steps.validate.outcome }}**"
             echo ""
             echo '```'
-            tail -n 40 "validate-${{ matrix.key }}.log" 2>/dev/null || echo "(no log)"
+            cat "$REPORT" 2>/dev/null || echo "(no report)"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
