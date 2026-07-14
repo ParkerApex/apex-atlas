@@ -51,12 +51,15 @@ jobs:
           - key: us-core
             path: samples/cms-connectathon-2026/patients/examples
             igs: "hl7.fhir.us.core#6.1.0"
+            generate: ""
           - key: plan-net
             path: samples/cms-connectathon-2026/provider-directory
             igs: "hl7.fhir.us.davinci-pdex-plan-net#1.1.0"
+            generate: ""
           - key: smart-scheduling
             path: samples/cms-connectathon-2026/scheduling/examples
             igs: ""
+            generate: ""
           - key: carin-bb
             path: _carinbb
             igs: "hl7.fhir.us.carin-bb#2.1.0"
@@ -101,10 +104,8 @@ jobs:
           ls -la ~/.cache/apex-atlas/validator_cli.jar
 
       - name: Generate sample (if the target needs one)
-        run: |
-          if [ -n "${{ matrix.generate }}" ]; then
-            ${{ matrix.generate }}
-          fi
+        if: matrix.generate != ''
+        run: ${{ matrix.generate }}
 
       - name: Validate (${{ matrix.key }})
         id: validate
