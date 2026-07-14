@@ -134,6 +134,29 @@
   <div class="card">
     <h2>Bulk-publish datasets (<code>$bulk-publish</code>)</h2>
     <p class="lede" style="font-size:14px">Payer exchange surfaces served by the same dev API — no patients needed.</p>
+    <div class="row" style="margin-top:4px">
+      <div>
+        <label for="sc_sites">Sites (max 40)</label>
+        <input type="number" id="sc_sites" value="8" min="1" max="40" />
+      </div>
+      <div>
+        <label for="sc_weeks">Weeks (max 8)</label>
+        <input type="number" id="sc_weeks" value="2" min="1" max="8" />
+      </div>
+      <div>
+        <label for="sc_seed">Seed</label>
+        <input type="number" id="sc_seed" value="20260712" min="0" />
+      </div>
+      <div>
+        <label>Service types</label>
+        <div class="flags" style="margin-top:2px">
+          <label><input type="checkbox" id="sc_gp" value="general-practice" checked /> General Practice</label>
+          <label><input type="checkbox" id="sc_imm" value="immunization" checked /> Immunization</label>
+          <label><input type="checkbox" id="sc_mh" value="mental-health" /> Mental Health</label>
+        </div>
+      </div>
+    </div>
+    <div class="hint" style="margin:6px 0 0">Controls apply to <b>SMART Scheduling Links</b>. The Plan-Net directory is the built-in provider roster.</div>
     <div class="actions">
       <button id="sched">SMART Scheduling Links</button>
       <button id="pdir">Da Vinci Plan-Net directory</button>
@@ -266,19 +289,34 @@
     setStatus("Loaded connectathon preset — 20,000 patients, seed 2026. Click Generate (large; allow a few minutes).", "ok");
   }
 
+  // Scheduling controls → query string. The dataset is generated deterministically
+  // from these params, so the manifest and every NDJSON file must be fetched with
+  // the SAME query string or their contents won't match.
+  function schedQs() {
+    var p = new URLSearchParams();
+    p.set("sites", $("sc_sites").value || "8");
+    p.set("weeks", $("sc_weeks").value || "2");
+    p.set("seed", $("sc_seed").value || "0");
+    var svc = ["sc_gp", "sc_imm", "sc_mh"].filter(function (id) { return $(id).checked; })
+      .map(function (id) { return $(id).value; });
+    if (svc.length) p.set("services", svc.join(","));
+    return "?" + p.toString();
+  }
+
   // Fetch a $bulk-publish dataset (scheduling | provider-directory), list each
   // resource type with its line count, and offer per-type NDJSON downloads.
   async function fetchBulk(kind, label) {
     var bs = $("bstatus"); bs.textContent = "Fetching " + label + "…"; bs.className = "status";
     $("bulkpills").innerHTML = ""; $("bulklinks").innerHTML = ""; $("bulktable").innerHTML = "";
+    var suffix = kind === "scheduling" ? schedQs() : "";
     try {
-      var mr = await fetch(base() + "/" + kind + "/$bulk-publish");
+      var mr = await fetch(base() + "/" + kind + "/$bulk-publish" + suffix);
       if (!mr.ok) throw new Error("HTTP " + mr.status);
       var manifest = await mr.json();
       var byType = {};
       for (var i = 0; i < manifest.output.length; i++) {
         var type = manifest.output[i].type;
-        var fr = await fetch(base() + "/" + kind + "/" + type + ".ndjson");
+        var fr = await fetch(base() + "/" + kind + "/" + type + ".ndjson" + suffix);
         var text = await fr.text();
         byType[type] = text;
         var n = text.split("\n").filter(function (l) { return l.trim(); }).length;

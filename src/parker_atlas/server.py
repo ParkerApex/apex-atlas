@@ -54,8 +54,9 @@ from parker_atlas.modules.runtime import list_bundled_modules
 MAX_PATIENTS = 20000
 DEFAULT_PATIENTS = 100
 # Dev-server caps for on-demand SMART Scheduling Links generation.
-SCHED_MAX_SITES = 10
-SCHED_MAX_WEEKS = 4
+# Sites are capped at the full built-in clinic-site list (40); weeks at 8.
+SCHED_MAX_SITES = 40
+SCHED_MAX_WEEKS = 8
 # Per-request generation timeout (seconds) so one request can't hang a hosted
 # instance. Overridable via ATLAS_GEN_TIMEOUT.
 GEN_TIMEOUT = int(os.environ.get("ATLAS_GEN_TIMEOUT", "600"))

@@ -55,7 +55,7 @@ atlas publish-scheduling --sites 25 --weeks 2 --seed 42 \
 ## Dev API
 
 `atlas serve` exposes the same feature over HTTP (deterministic, capped for the
-dev server at 10 sites / 4 weeks):
+dev server at 40 sites / 8 weeks):
 
 ```
 GET /scheduling/$bulk-publish?sites=8&weeks=2&seed=0&services=general-practice,immunization
