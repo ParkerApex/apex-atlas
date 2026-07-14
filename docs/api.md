@@ -41,9 +41,12 @@ For `/generate`: `patients` (int, capped at 20000), `seed` (int), `modules`
 `ref_style` (`urn-uuid` | `relative`), and the boolean flags `sdoh`, `coverage`,
 `providers`, `measures`, `notes`, `carin_bb` (`1`/`true`).
 
-For `/scheduling/*`: `sites`, `weeks`, `seed`, `services`. The
-`/provider-directory/*` dataset is built from the shared provider roster and
-takes no parameters.
+For `/scheduling/*`: `sites`, `weeks`, `seed`, `services`. For
+`/provider-directory/*`: `count` (omit for the shipped 150-clinician roster; a
+larger value synthesizes additional deterministic clinicians, capped at 2000)
+and `seed`. As with scheduling, these datasets are deterministic in their
+params, so the manifest and every NDJSON file must be requested with the same
+query string.
 
 ## Examples
 

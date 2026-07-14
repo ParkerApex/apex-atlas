@@ -20,7 +20,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from parker_atlas.fhir import plannet
-from parker_atlas.references import load_locations, load_practitioners
+from parker_atlas.provider_directory.roster import DEFAULT_SEED, synthesize_roster
+from parker_atlas.references import load_locations
 from parker_atlas.scheduling.links import CLINIC_SITES
 
 SERVICE_CATEGORY_CODE = "17"
@@ -60,9 +61,18 @@ class ProviderDirectory:
         }
 
 
-def generate_provider_directory() -> ProviderDirectory:
-    """Generate a Plan-Net directory from the shared provider roster (deterministic)."""
-    practitioner_rows = load_practitioners()
+def generate_provider_directory(
+    count: int | None = None, seed: int = DEFAULT_SEED
+) -> ProviderDirectory:
+    """Generate a Plan-Net directory from the shared provider roster (deterministic).
+
+    ``count`` sizes the practitioner roster: ``None`` (default) uses the shipped
+    150-clinician roster verbatim; a smaller value truncates it; a larger value
+    extends it with deterministically-generated synthetic clinicians (valid NPPES
+    NPIs). ``seed`` controls the generated clinicians. Facilities, networks, and
+    plans are unaffected by ``count``.
+    """
+    practitioner_rows = synthesize_roster(count, seed)
     location_rows = load_locations()
     directory = ProviderDirectory()
 

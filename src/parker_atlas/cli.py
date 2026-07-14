@@ -2196,6 +2196,8 @@ def publish_scheduling(
 def publish_provider_directory(
     out: Annotated[Path, typer.Option("--out", "-o", help="Output directory for the Plan-Net bulk-publish directory.")] = Path("./provider-directory"),
     base_url: Annotated[str, typer.Option("--base-url", help="Base URL the manifest advertises for its NDJSON output files.")] = "https://example.org/provider-directory",
+    count: Annotated[int | None, typer.Option("--count", help="Number of practitioners. Omit for the shipped 150-clinician roster; a larger value synthesizes additional deterministic clinicians.")] = None,
+    seed: Annotated[int, typer.Option("--seed", help="Seed for synthesized clinicians when --count exceeds the shipped roster.")] = 20260713,
 ) -> None:
     """Publish a Da Vinci PDEX Plan-Net provider directory (bulk NDJSON + manifest).
 
@@ -2215,7 +2217,7 @@ def publish_provider_directory(
     )
 
     transaction_time = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-    directory = generate_provider_directory()
+    directory = generate_provider_directory(count=count, seed=seed)
     manifest_path = write_bulk_publish(
         directory, out, base_url=base_url, transaction_time=transaction_time
     )

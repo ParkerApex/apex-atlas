@@ -31,6 +31,8 @@ Params (query string): patients (int, capped), seed (int), modules (csv),
 sdoh / coverage / measures / notes / providers / carin_bb (bool: "1"/"true"),
 as_of (ISO date), ref_style ("relative"|"urn-uuid"). Scheduling params:
 sites (int, capped), weeks (int, capped), seed (int), services (csv).
+Provider-directory params: count (int, capped; omit for the shipped roster),
+seed (int).
 """
 
 from __future__ import annotations
@@ -57,6 +59,8 @@ DEFAULT_PATIENTS = 100
 # Sites are capped at the full built-in clinic-site list (40); weeks at 8.
 SCHED_MAX_SITES = 40
 SCHED_MAX_WEEKS = 8
+# Cap for on-demand Plan-Net provider-directory generation.
+PDIR_MAX_PROVIDERS = 2000
 # Per-request generation timeout (seconds) so one request can't hang a hosted
 # instance. Overridable via ATLAS_GEN_TIMEOUT.
 GEN_TIMEOUT = int(os.environ.get("ATLAS_GEN_TIMEOUT", "600"))
@@ -180,9 +184,9 @@ class AtlasHandler(BaseHTTPRequestHandler):
         if path.startswith("/scheduling/") and path.endswith(".ndjson"):
             return self._scheduling_file(path, qs)
         if path == "/provider-directory/$bulk-publish":
-            return self._provider_directory_manifest()
+            return self._provider_directory_manifest(qs)
         if path.startswith("/provider-directory/") and path.endswith(".ndjson"):
-            return self._provider_directory_file(path)
+            return self._provider_directory_file(path, qs)
         return self._send_json(404, {"error": f"no route for {path}"})
 
     def do_POST(self) -> None:  # noqa: N802
@@ -295,10 +299,28 @@ class AtlasHandler(BaseHTTPRequestHandler):
         self._send_ndjson(body)
 
     # -- Da Vinci Plan-Net provider directory ($bulk-publish) -----------------
-    def _provider_directory_rows(self) -> dict:
+    def _provider_directory_config(self, qs: dict):
+        """Read count/seed for on-demand directory generation.
+
+        `count` omitted → the shipped roster (default). Present → clamped to
+        [1, PDIR_MAX_PROVIDERS]. The generated directory is deterministic in
+        (count, seed), so the manifest and every NDJSON file MUST be requested
+        with the same params.
+        """
+        from parker_atlas.provider_directory import DEFAULT_SEED
+
+        raw = (qs.get("count", [""])[0] or "").strip()
+        count = None
+        if raw:
+            count = max(1, min(int(raw), PDIR_MAX_PROVIDERS))
+        seed = int(qs.get("seed", [str(DEFAULT_SEED)])[0] or DEFAULT_SEED)
+        return count, seed
+
+    def _provider_directory_rows(self, qs: dict) -> dict:
         from parker_atlas.provider_directory import generate_provider_directory
 
-        d = generate_provider_directory()
+        count, seed = self._provider_directory_config(qs)
+        d = generate_provider_directory(count=count, seed=seed)
         return {
             "Organization": d.organizations,
             "Location": d.locations,
@@ -309,9 +331,12 @@ class AtlasHandler(BaseHTTPRequestHandler):
             "Endpoint": d.endpoints,
         }
 
-    def _provider_directory_manifest(self) -> None:
+    def _provider_directory_manifest(self, qs: dict) -> None:
         base = f"{self._base_url()}/provider-directory"
-        rows = self._provider_directory_rows()
+        try:
+            rows = self._provider_directory_rows(qs)
+        except (ValueError, KeyError) as exc:
+            return self._send_json(400, {"error": f"bad provider-directory params: {exc}"})
         self._send_json(200, {
             "transactionTime": _iso_now(),
             "request": f"{base}/$bulk-publish",
@@ -321,9 +346,12 @@ class AtlasHandler(BaseHTTPRequestHandler):
             "error": [],
         })
 
-    def _provider_directory_file(self, path: str) -> None:
+    def _provider_directory_file(self, path: str, qs: dict) -> None:
         rtype = path.rsplit("/", 1)[-1][: -len(".ndjson")]
-        rows = self._provider_directory_rows().get(rtype)
+        try:
+            rows = self._provider_directory_rows(qs).get(rtype)
+        except (ValueError, KeyError) as exc:
+            return self._send_json(400, {"error": f"bad provider-directory params: {exc}"})
         if rows is None:
             return self._send_json(404, {"error": f"no provider-directory resource {rtype!r}"})
         body = ("".join(json.dumps(r) + "\n" for r in rows)).encode("utf-8")

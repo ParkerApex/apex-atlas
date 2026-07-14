@@ -149,6 +149,50 @@ class TestCli:
         manifest = json.loads((out / "bulk-publish-manifest.json").read_text())
         assert next(o["type"] for o in manifest["output"]) == "Organization"
 
+    def test_publish_provider_directory_count(self, tmp_path):
+        out = tmp_path / "pd"
+        result = runner.invoke(
+            app, ["publish-provider-directory", "--count", "300", "--out", str(out)]
+        )
+        assert result.exit_code == 0, result.output
+        lines = (out / "Practitioner.ndjson").read_text().splitlines()
+        assert len([ln for ln in lines if ln.strip()]) == 300
+
+
+class TestOnDemandCount:
+    def test_default_is_shipped_roster(self):
+        from parker_atlas.references import load_practitioners
+
+        d = generate_provider_directory()
+        assert len(d.practitioners) == len(load_practitioners())
+
+    def test_smaller_count_truncates(self):
+        d = generate_provider_directory(count=25)
+        assert len(d.practitioners) == 25
+        assert len(d.practitioner_roles) == 25
+
+    def test_larger_count_synthesizes_valid_unique_npis(self):
+        from parker_atlas.provider_directory.roster import npi_check_digit
+
+        d = generate_provider_directory(count=500)
+        npis = [p["identifier"][0]["value"] for p in d.practitioners]
+        assert len(npis) == 500
+        assert len(set(npis)) == 500  # unique
+        for npi in npis:
+            assert len(npi) == 10 and npi[0] == "1"
+            assert npi[:9] + npi_check_digit(npi[:9]) == npi  # valid check digit
+
+    def test_deterministic_in_count_and_seed(self):
+        a = generate_provider_directory(count=300, seed=7)
+        b = generate_provider_directory(count=300, seed=7)
+        assert [p["id"] for p in a.practitioners] == [p["id"] for p in b.practitioners]
+
+    def test_roles_resolve_to_practitioners(self):
+        d = generate_provider_directory(count=400)
+        pids = {p["id"] for p in d.practitioners}
+        for role in d.practitioner_roles:
+            assert role["practitioner"]["reference"].split("/", 1)[1] in pids
+
 
 class TestFacilityPlacement:
     def test_each_practitioner_listed_at_roster_facility(self):

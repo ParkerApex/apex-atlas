@@ -156,7 +156,19 @@
         </div>
       </div>
     </div>
-    <div class="hint" style="margin:6px 0 0">Controls apply to <b>SMART Scheduling Links</b>. The Plan-Net directory is the built-in provider roster.</div>
+    <div class="hint" style="margin:6px 0 0">↑ Controls for <b>SMART Scheduling Links</b>.</div>
+    <div class="row3" style="margin-top:12px">
+      <div>
+        <label for="pd_count">Providers (blank = built-in 150; max 2000)</label>
+        <input type="number" id="pd_count" placeholder="150" min="1" max="2000" />
+      </div>
+      <div>
+        <label for="pd_seed">Seed</label>
+        <input type="number" id="pd_seed" value="20260713" min="0" />
+      </div>
+      <div></div>
+    </div>
+    <div class="hint" style="margin:6px 0 0">↑ Controls for the <b>Plan-Net directory</b> — leave Providers blank to serve the shipped roster; set a larger number to synthesize more clinicians (valid NPIs).</div>
     <div class="actions">
       <button id="sched">SMART Scheduling Links</button>
       <button id="pdir">Da Vinci Plan-Net directory</button>
@@ -303,12 +315,29 @@
     return "?" + p.toString();
   }
 
+  // Plan-Net directory controls → query string. Blank Providers = shipped roster
+  // (no count param). Like scheduling, the dataset is deterministic in (count,
+  // seed) so the manifest and every NDJSON file must share the same params.
+  function pdirQs() {
+    var p = new URLSearchParams();
+    var count = ($("pd_count").value || "").trim();
+    if (count) p.set("count", count);
+    p.set("seed", $("pd_seed").value || "0");
+    return "?" + p.toString();
+  }
+
+  function bulkQs(kind) {
+    if (kind === "scheduling") return schedQs();
+    if (kind === "provider-directory") return pdirQs();
+    return "";
+  }
+
   // Fetch a $bulk-publish dataset (scheduling | provider-directory), list each
   // resource type with its line count, and offer per-type NDJSON downloads.
   async function fetchBulk(kind, label) {
     var bs = $("bstatus"); bs.textContent = "Fetching " + label + "…"; bs.className = "status";
     $("bulkpills").innerHTML = ""; $("bulklinks").innerHTML = ""; $("bulktable").innerHTML = "";
-    var suffix = kind === "scheduling" ? schedQs() : "";
+    var suffix = bulkQs(kind);
     try {
       var mr = await fetch(base() + "/" + kind + "/$bulk-publish" + suffix);
       if (!mr.ok) throw new Error("HTTP " + mr.status);

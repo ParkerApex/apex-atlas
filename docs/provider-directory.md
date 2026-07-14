@@ -32,9 +32,12 @@ atlas publish-provider-directory [OPTIONS]
 | --- | --- | --- |
 | `--out`, `-o` | `./provider-directory` | Output directory. |
 | `--base-url` | `https://example.org/provider-directory` | Base URL advertised in the manifest `output[]`. |
+| `--count` | shipped roster (150) | Number of practitioners. A larger value synthesizes additional deterministic clinicians (valid NPPES NPIs, apportioned across specialties); a smaller value truncates. |
+| `--seed` | `20260713` | Seed for the synthesized clinicians when `--count` exceeds the shipped roster. |
 
 ```bash
-atlas publish-provider-directory --out ./provider-directory
+atlas publish-provider-directory --out ./provider-directory          # shipped 150-clinician roster
+atlas publish-provider-directory --count 500 --out ./big-directory   # synthesize a 500-provider directory
 ```
 
 The directory is built from the **same provider roster** that patient encounters
