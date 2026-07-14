@@ -26,7 +26,9 @@ from parker_atlas.gpx import GPX
 US_CORE_ORGANIZATION_PROFILE = (
     "http://hl7.org/fhir/us/core/StructureDefinition/us-core-organization|6.1.0"
 )
-V3_ORG_TYPE_SYSTEM = "http://terminology.hl7.org/CodeSystem/v3-RoleCode"
+# Organization.type codes ("pay" = Payer, "prov" = Healthcare Provider) come from
+# the HL7 organization-type CodeSystem — NOT v3-RoleCode (which has neither code).
+ORG_TYPE_SYSTEM = "http://terminology.hl7.org/CodeSystem/organization-type"
 PARKER_PAYER_IDENTIFIER_SYSTEM = "https://parkerapex.com/atlas/payer"
 NPI_IDENTIFIER_SYSTEM = "http://hl7.org/fhir/sid/us-npi"
 
@@ -67,7 +69,7 @@ def build_payer_organization_resource(
             {
                 "coding": [
                     {
-                        "system": V3_ORG_TYPE_SYSTEM,
+                        "system": ORG_TYPE_SYSTEM,
                         "code": "pay",
                         "display": "Payer",
                     }
@@ -105,8 +107,10 @@ def build_facility_organization_resource(
             {
                 "coding": [
                     {
-                        "system": V3_ORG_TYPE_SYSTEM,
-                        "code": org_role,
+                        # organization-type has no hospital/clinic codes; every
+                        # facility here is a Healthcare Provider org ("prov").
+                        "system": ORG_TYPE_SYSTEM,
+                        "code": "prov",
                         "display": "Healthcare Provider",
                     }
                 ]

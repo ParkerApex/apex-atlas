@@ -49,9 +49,12 @@ jobs:
       matrix:
         include:
           - key: us-core
-            path: samples/cms-connectathon-2026/patients/examples
+            path: _uscore
             igs: "hl7.fhir.us.core#6.1.0"
-            generate: ""
+            generate: >-
+              atlas generate --patients 25 --seed 2026
+              --module hypertension,diabetes,wellness --with-coverage
+              --ref-style relative --format ndjson --out ./_uscore
           - key: plan-net
             path: samples/cms-connectathon-2026/provider-directory
             igs: "hl7.fhir.us.davinci-pdex-plan-net#1.1.0"
