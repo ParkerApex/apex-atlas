@@ -42,12 +42,21 @@ curl -O $BASE/scheduling/Slot.ndjson
 ```
 
 **Option C — the SMART Scheduling Links manifest** is self-describing; point a
-client at it and follow the `output[]` URLs:
+client at the `$bulk-publish` entry point and follow the `output[]` URLs:
 
 ```bash
-curl -s https://raw.githubusercontent.com/ParkerApex/apex-atlas/main/samples/cms-connectathon-2026/scheduling/bulk-publish-manifest.json \
+# `$bulk-publish` is the entry point named in the manifest's own `request` field
+# (the SMART Scheduling Links convention). On this static host it is a file, so
+# it resolves directly; `bulk-publish-manifest.json` is a byte-identical alias.
+curl -s 'https://raw.githubusercontent.com/ParkerApex/apex-atlas/main/samples/cms-connectathon-2026/scheduling/$bulk-publish' \
   | jq -r '.output[].url'
 ```
+
+> **Note on the `$` in the URL.** `$bulk-publish` is a real path here. In a shell,
+> single-quote the URL (as above) or escape the `$` so it isn't treated as a
+> variable. Both `.../scheduling/$bulk-publish` and
+> `.../provider-directory/$bulk-publish` resolve, as does the
+> `bulk-publish-manifest.json` alias in each folder.
 
 ### At a glance
 

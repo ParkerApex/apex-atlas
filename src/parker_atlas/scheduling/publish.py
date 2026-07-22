@@ -78,6 +78,12 @@ def write_bulk_publish(
     manifest = build_manifest(
         dataset, base_url=base_url, transaction_time=transaction_time
     )
+    manifest_json = json.dumps(manifest, indent=2) + "\n"
     manifest_path = out_dir / "bulk-publish-manifest.json"
-    manifest_path.write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    manifest_path.write_text(manifest_json, encoding="utf-8")
+    # Also publish the manifest at the literal `$bulk-publish` path the manifest's
+    # own `request` field (and the SMART Scheduling Links convention) advertises,
+    # so the entry-point URL resolves on static hosting (e.g. GitHub raw), not
+    # only on the live `atlas serve` API where `$bulk-publish` is an endpoint.
+    (out_dir / "$bulk-publish").write_text(manifest_json, encoding="utf-8")
     return manifest_path

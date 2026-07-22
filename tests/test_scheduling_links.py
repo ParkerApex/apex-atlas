@@ -136,6 +136,12 @@ class TestWriteBulkPublish:
             transaction_time="2026-07-12T00:00:00Z",
         )
         assert manifest_path.exists()
+        # The manifest is also published at the literal `$bulk-publish` path its
+        # own `request` field advertises, so the entry point resolves on static
+        # hosting (GitHub raw), byte-identical to bulk-publish-manifest.json.
+        bulk = tmp_path / "$bulk-publish"
+        assert bulk.exists()
+        assert bulk.read_text() == manifest_path.read_text()
         for name in ("Location", "Schedule", "Slot", "Appointment"):
             f = tmp_path / f"{name}.ndjson"
             assert f.exists()

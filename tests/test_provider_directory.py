@@ -116,6 +116,9 @@ class TestManifestAndPublish:
         d = generate_provider_directory()
         mp = write_bulk_publish(d, tmp_path, base_url="https://x/pd", transaction_time="2026-07-12T00:00:00Z")
         assert mp.exists()
+        # Entry point also published at the literal `$bulk-publish` path so it
+        # resolves on static hosting (GitHub raw), not only the live API.
+        assert (tmp_path / "$bulk-publish").read_text() == mp.read_text()
         for t in ("Organization", "Location", "Practitioner", "PractitionerRole", "HealthcareService", "InsurancePlan", "Endpoint"):
             assert (tmp_path / f"{t}.ndjson").read_text().strip()
 
