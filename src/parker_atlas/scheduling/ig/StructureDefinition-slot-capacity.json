@@ -1,0 +1,53 @@
+{
+  "resourceType": "StructureDefinition",
+  "id": "slot-capacity",
+  "url": "http://fhir-registry.smarthealthit.org/StructureDefinition/slot-capacity",
+  "name": "SlotCapacity",
+  "title": "Slot capacity",
+  "status": "active",
+  "publisher": "SMART Health IT (definition transcribed by Apex Atlas for validation)",
+  "description": "The number of appointments this Slot can accommodate. Transcribed from the SMART Scheduling Links specification, https://github.com/smart-on-fhir/smart-scheduling-links/blob/master/specification.md, which publishes these URLs without a FHIR package.",
+  "fhirVersion": "4.0.1",
+  "kind": "complex-type",
+  "abstract": false,
+  "context": [
+    {
+      "type": "element",
+      "expression": "Slot"
+    }
+  ],
+  "type": "Extension",
+  "baseDefinition": "http://hl7.org/fhir/StructureDefinition/Extension",
+  "derivation": "constraint",
+  "differential": {
+    "element": [
+      {
+        "id": "Extension",
+        "path": "Extension",
+        "short": "Slot capacity",
+        "definition": "The number of appointments this Slot can accommodate.",
+        "max": "1"
+      },
+      {
+        "id": "Extension.extension",
+        "path": "Extension.extension",
+        "max": "0"
+      },
+      {
+        "id": "Extension.url",
+        "path": "Extension.url",
+        "fixedUri": "http://fhir-registry.smarthealthit.org/StructureDefinition/slot-capacity"
+      },
+      {
+        "id": "Extension.value[x]",
+        "path": "Extension.value[x]",
+        "min": 1,
+        "type": [
+          {
+            "code": "integer"
+          }
+        ]
+      }
+    ]
+  }
+}

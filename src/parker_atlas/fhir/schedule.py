@@ -40,6 +40,8 @@ def build_schedule_resource(
     service_category_display: str | None = None,
     horizon_start: str | None = None,
     horizon_end: str | None = None,
+    extra_actor_refs: list[str] | None = None,
+    key_suffix: str | None = None,
 ) -> dict[str, Any]:
     """Build a FHIR Schedule resource whose actor is a Location.
 
@@ -50,7 +52,8 @@ def build_schedule_resource(
         service_category_code / _display: optional HL7 service-category coding.
         horizon_start / horizon_end: ISO-8601 bounds of the planning horizon.
     """
-    rid = schedule_id(location_id=location_id, service_key=service_key)
+    # A clinician's schedule at a site is keyed separately from the site's own.
+    rid = schedule_id(location_id=location_id, service_key=f"{service_key}:{key_suffix}" if key_suffix else service_key)
     resource: dict[str, Any] = {
         "resourceType": "Schedule",
         "id": rid,
@@ -69,7 +72,8 @@ def build_schedule_resource(
                 "text": service_type.display,
             }
         ],
-        "actor": [{"reference": f"Location/{location_id}"}],
+        # Location first: SMART Scheduling Links clients read actor[0] as the site.
+        "actor": [{"reference": f"Location/{location_id}"}, *({"reference": r} for r in (extra_actor_refs or []))],
     }
     if service_category_code is not None:
         resource["serviceCategory"] = [

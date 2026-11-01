@@ -18,8 +18,12 @@ from __future__ import annotations
 import random
 from dataclasses import dataclass, field
 from datetime import date, datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
 from parker_atlas.fhir.appointment import build_appointment_resource
+from parker_atlas.fhir.organization import build_facility_organization_resource
+from parker_atlas.fhir.practitioner import build_practitioner_resource
+from parker_atlas.fhir.practitioner_role import build_practitioner_role_resource
 from parker_atlas.fhir.location import build_scheduling_location_resource
 from parker_atlas.fhir.schedule import build_schedule_resource
 from parker_atlas.fhir.slot import build_slot_resource, slot_id
@@ -59,8 +63,9 @@ SERVICE_TYPES: dict[str, ServiceType] = {
         key="immunization",
         type_code="57",
         type_display="Immunization",
-        category_code="31",
-        category_display="Specialist Medical Services",
+        # service-category 27 is "Specialist Medical" (31 is "Specialist Surgical").
+        category_code="27",
+        category_display="Specialist Medical",
         minutes=15,
     ),
     "mental-health": ServiceType(
@@ -82,9 +87,33 @@ class ClinicSite:
 
     city: str
     state: str
-    tz_offset: str  # e.g. "-04:00" (US July / DST)
+    tz_offset: str  # July (daylight) offset, e.g. "-04:00"; see `tz` for the real zone
     latitude: float
     longitude: float
+
+    @property
+    def tz(self) -> ZoneInfo:
+        """The site's IANA time zone (Arizona keeps standard time year-round)."""
+        if self.state == "AZ":
+            return ZoneInfo("America/Phoenix")
+        return ZoneInfo(_ZONE_BY_JULY_OFFSET[self.tz_offset])
+
+    def offset_on(self, local: datetime) -> str:
+        """UTC offset ("-05:00") in effect at this site at ``local`` wall-clock time."""
+        off = local.replace(tzinfo=self.tz).utcoffset()
+        assert off is not None
+        minutes = int(off.total_seconds() // 60)
+        sign = "-" if minutes < 0 else "+"
+        return f"{sign}{abs(minutes) // 60:02d}:{abs(minutes) % 60:02d}"
+
+
+# July (DST) offset -> zone, for the sites below.
+_ZONE_BY_JULY_OFFSET = {
+    "-04:00": "America/New_York",
+    "-05:00": "America/Chicago",
+    "-06:00": "America/Denver",
+    "-07:00": "America/Los_Angeles",
+}
 
 
 # 40 synthetic clinic sites across 24 states. Timezone offsets are July (DST).
@@ -147,6 +176,13 @@ class SchedulingConfig:
     booked_fraction: float = 0.20
     seed: int | None = None
     booking_base_url: str = "https://booking.example.org"
+    # Bookable clinicians: each site's `clinician_service_key` availability is
+    # published per clinician (Practitioner + PractitionerRole + own Schedule).
+    clinicians: bool = False
+    clinician_service_key: str = "general-practice"
+    clinician_slot_minutes: int = 30
+    clinician_day_start_hour: int = 9
+    clinician_day_end_hour: int = 16
 
     def validate(self) -> None:
         if not 1 <= self.sites <= len(CLINIC_SITES):
@@ -176,6 +212,9 @@ class SchedulingDataset:
     schedules: list[dict] = field(default_factory=list)
     slots: list[dict] = field(default_factory=list)
     appointments: list[dict] = field(default_factory=list)
+    organizations: list[dict] = field(default_factory=list)
+    practitioners: list[dict] = field(default_factory=list)
+    practitioner_roles: list[dict] = field(default_factory=list)
 
     @property
     def counts(self) -> dict[str, int]:
@@ -187,6 +226,9 @@ class SchedulingDataset:
             "Slot(free)": free,
             "Slot(busy)": len(self.slots) - free,
             "Appointment": len(self.appointments),
+            "Organization": len(self.organizations),
+            "Practitioner": len(self.practitioners),
+            "PractitionerRole": len(self.practitioner_roles),
         }
 
 
@@ -200,13 +242,14 @@ def _weekdays(start: date, weeks: int) -> list[date]:
     return days
 
 
-def _slot_starts(day: date, cfg: SchedulingConfig) -> list[datetime]:
+def _slot_starts(day: date, cfg: SchedulingConfig, *, start_hour: int | None = None, end_hour: int | None = None, minutes: int | None = None) -> list[datetime]:
     starts: list[datetime] = []
-    cursor = datetime.combine(day, time(hour=cfg.day_start_hour))
-    end_of_day = datetime.combine(day, time(hour=0)) + timedelta(hours=cfg.day_end_hour)
+    cursor = datetime.combine(day, time(hour=cfg.day_start_hour if start_hour is None else start_hour))
+    end_of_day = datetime.combine(day, time(hour=0)) + timedelta(hours=cfg.day_end_hour if end_hour is None else end_hour)
+    step = cfg.slot_minutes if minutes is None else minutes
     while cursor < end_of_day:
         starts.append(cursor)
-        cursor += timedelta(minutes=cfg.slot_minutes)
+        cursor += timedelta(minutes=step)
     return starts
 
 
@@ -233,6 +276,16 @@ def generate_scheduling_dataset(
 
     dataset = SchedulingDataset()
 
+    org_ref: str | None = None
+    if config.clinicians:
+        from parker_atlas.scheduling.clinicians import scheduling_organization
+
+        org = scheduling_organization()
+        organization = build_facility_organization_resource(npi=org.npi, name=org.name, org_role="prov")
+        organization["telecom"] = [{"system": "phone", "value": org.phone, "use": "work"}]
+        dataset.organizations.append(organization)
+        org_ref = f"Organization/{organization['id']}"
+
     for idx, site in enumerate(CLINIC_SITES[: config.sites]):
         identifier_value = f"ATLAS-LOC-{100 + idx}"
         npi = f"{9000000000 + idx:010d}"
@@ -250,10 +303,19 @@ def generate_scheduling_dataset(
             url=f"{config.booking_base_url}/locations/{identifier_value}",
             npi=npi,
         )
+        if org_ref:
+            location["managingOrganization"] = {"reference": org_ref}
         dataset.locations.append(location)
         loc_id = location["id"]
 
+        role_ref: str | None = None
+        if config.clinicians:
+            role_ref = _add_clinician(dataset, config, idx, location, org_ref, phone)
+
         for svc in services:
+            if role_ref and svc.key == config.clinician_service_key:
+                _add_clinician_schedule(dataset, config, rng, site, location, svc, role_ref, phone, days, horizon_start, horizon_end, patient_ids, created)
+                continue
             schedule = build_schedule_resource(
                 location_id=loc_id,
                 service_key=svc.key,
@@ -268,8 +330,8 @@ def generate_scheduling_dataset(
 
             for day in days:
                 for start_dt in _slot_starts(day, config):
-                    start_s = start_dt.isoformat() + site.tz_offset
-                    end_s = (start_dt + timedelta(minutes=config.slot_minutes)).isoformat() + site.tz_offset
+                    start_s = start_dt.isoformat() + site.offset_on(start_dt)
+                    end_s = (start_dt + timedelta(minutes=config.slot_minutes)).isoformat() + site.offset_on(start_dt + timedelta(minutes=config.slot_minutes))
                     booked = rng.random() < config.booked_fraction
                     status = "busy" if booked else "free"
                     slot_id_value = slot_id(schedule_id=sched_id, start=start_s)
@@ -303,4 +365,146 @@ def generate_scheduling_dataset(
                         )
                         dataset.appointments.append(appt)
 
+    _add_narratives(dataset)
     return dataset
+
+
+def _add_clinician(dataset: SchedulingDataset, config: SchedulingConfig, idx: int, location: dict, org_ref: str | None, phone: str) -> str:
+    """Practitioner + PractitionerRole for the site's bookable clinician; returns the role reference."""
+    from parker_atlas.scheduling.clinicians import clinician_for_site
+
+    c = clinician_for_site(idx)
+    practitioner = build_practitioner_resource(npi=c.npi, family=c.family, given=c.given, prefix=c.prefix or None, suffix=c.suffix)
+    practitioner["telecom"] = [{"system": "phone", "value": phone, "use": "work"}]
+    dataset.practitioners.append(practitioner)
+    role = build_practitioner_role_resource(
+        practitioner_npi=c.npi,
+        facility_npi=location["identifier"][0]["value"],
+        taxonomy_code=c.specialty_code,
+        taxonomy_display=c.specialty_display,
+        practitioner_fullurl=f"Practitioner/{practitioner['id']}",
+        facility_organization_fullurl=org_ref or f"Location/{location['id']}",
+        role_code=c.role_code,
+        role_display=c.role_display,
+        role_snomed=c.snomed if c.snomed[0] else None,
+        location_fullurl=f"Location/{location['id']}",
+        telecom=[{"system": "phone", "value": phone, "use": "work"}],
+        available_time=[
+            {
+                "daysOfWeek": ["mon", "tue", "wed", "thu", "fri"],
+                "availableStartTime": f"{config.clinician_day_start_hour:02d}:00:00",
+                "availableEndTime": f"{config.clinician_day_end_hour:02d}:00:00",
+            }
+        ],
+    )
+    dataset.practitioner_roles.append(role)
+    return f"PractitionerRole/{role['id']}"
+
+
+def _add_clinician_schedule(
+    dataset: SchedulingDataset,
+    config: SchedulingConfig,
+    rng: random.Random,
+    site: ClinicSite,
+    location: dict,
+    svc: ServiceType,
+    role_ref: str,
+    phone: str,
+    days: list[date],
+    horizon_start: str,
+    horizon_end: str,
+    patient_ids: list[str] | None,
+    created: str,
+) -> None:
+    """One Schedule (actor: Location, PractitionerRole) and its Slots for a clinician."""
+    loc_id = location["id"]
+    schedule = build_schedule_resource(
+        location_id=loc_id,
+        service_key=svc.key,
+        service_type=svc.coding,
+        service_category_code=svc.category_code,
+        service_category_display=svc.category_display,
+        horizon_start=horizon_start,
+        horizon_end=horizon_end,
+        extra_actor_refs=[role_ref],
+        key_suffix=role_ref,
+    )
+    dataset.schedules.append(schedule)
+    sched_id = schedule["id"]
+    for day in days:
+        for start_dt in _slot_starts(
+            day,
+            config,
+            start_hour=config.clinician_day_start_hour,
+            end_hour=config.clinician_day_end_hour,
+            minutes=config.clinician_slot_minutes,
+        ):
+            start_s = start_dt.isoformat() + site.offset_on(start_dt)
+            end_s = (start_dt + timedelta(minutes=config.clinician_slot_minutes)).isoformat() + site.offset_on(start_dt + timedelta(minutes=config.clinician_slot_minutes))
+            booked = rng.random() < config.booked_fraction
+            slot_id_value = slot_id(schedule_id=sched_id, start=start_s)
+            slot = build_slot_resource(
+                schedule_id=sched_id,
+                service_type=svc.coding,
+                start=start_s,
+                end=end_s,
+                status="busy" if booked else "free",
+                booking_deep_link=f"{config.booking_base_url}/{loc_id}/{svc.key}?slot={slot_id_value}",
+                booking_phone=phone,
+                capacity=1,
+            )
+            dataset.slots.append(slot)
+            if booked and patient_ids:
+                dataset.appointments.append(
+                    build_appointment_resource(
+                        patient_id=rng.choice(patient_ids),
+                        slot_id=slot_id_value,
+                        location_id=loc_id,
+                        location_display=location["name"],
+                        service_type=svc.coding,
+                        service_category_code=svc.category_code,
+                        service_category_display=svc.category_display,
+                        start=start_s,
+                        end=end_s,
+                        minutes_duration=config.clinician_slot_minutes,
+                        created=created,
+                    )
+                )
+
+
+def _div(text: str) -> dict:
+    from html import escape
+
+    return {"status": "generated", "div": f'<div xmlns="http://www.w3.org/1999/xhtml">{escape(text)}</div>'}
+
+
+def _add_narratives(dataset: SchedulingDataset) -> None:
+    """Short generated narrative on each resource (FHIR dom-6 best practice)."""
+    locations = {f"Location/{l['id']}": l for l in dataset.locations}
+    roles = {f"PractitionerRole/{r['id']}": r for r in dataset.practitioner_roles}
+    names = {}
+    for p in dataset.practitioners:
+        n = p["name"][0]
+        full = " ".join([*n.get("prefix", []), *n.get("given", []), n.get("family", "")]) + ("".join(f", {x}" for x in n.get("suffix", [])))
+        names[f"Practitioner/{p['id']}"] = full
+        p.setdefault("text", _div(f"{full}, NPI {p['identifier'][0]['value']}"))
+    for o in dataset.organizations:
+        o.setdefault("text", _div(o["name"]))
+    for l in dataset.locations:
+        a = l["address"]
+        l.setdefault("text", _div(f"{l['name']}, {', '.join(a.get('line', []))}, {a.get('city')}, {a.get('state')} {a.get('postalCode')}"))
+    for r in dataset.practitioner_roles:
+        loc = locations.get(r.get("location", [{}])[0].get("reference", ""), {})
+        r.setdefault("text", _div(f"{names.get(r['practitioner']['reference'], 'Clinician')}: {r['specialty'][0]['text']} at {loc.get('name', 'clinic')}"))
+    schedules = {}
+    for sc in dataset.schedules:
+        loc = locations.get(sc["actor"][0]["reference"], {})
+        who = ""
+        if len(sc["actor"]) > 1:
+            role = roles.get(sc["actor"][1]["reference"], {})
+            who = f" with {names.get(role.get('practitioner', {}).get('reference', ''), 'a clinician')}"
+        label = f"{sc['serviceType'][0]['text']}{who} at {loc.get('name', 'clinic')}"
+        schedules[f"Schedule/{sc['id']}"] = label
+        sc.setdefault("text", _div(label))
+    for sl in dataset.slots:
+        sl.setdefault("text", _div(f"{sl['status'].capitalize()}: {sl['start']} to {sl['end'][11:]}, {schedules.get(sl['schedule']['reference'], '')}"))

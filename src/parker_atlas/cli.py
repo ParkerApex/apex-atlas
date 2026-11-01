@@ -2120,6 +2120,7 @@ def publish_scheduling(
     base_url: Annotated[str, typer.Option("--base-url", help="Base URL the manifest advertises for its NDJSON output files.")] = "https://example.org/scheduling",
     booking_base_url: Annotated[str, typer.Option("--booking-base-url", help="Base URL used to build per-slot booking deep links.")] = "https://booking.example.org",
     patients: Annotated[Path | None, typer.Option("--patients", help="Patient.ndjson file or cohort dir; when set, booked slots get Appointment resources referencing these patients.")] = None,
+    clinicians: Annotated[bool, typer.Option("--clinicians", help="Publish a bookable clinician per site: Practitioner + PractitionerRole + its own general-practice Schedule (actor: Location, PractitionerRole). NPIs are pinned, NPPES-verified unassigned numbers.")] = False,
 ) -> None:
     """Publish a SMART Scheduling Links (`$bulk-publish`) availability dataset.
 
@@ -2171,6 +2172,7 @@ def publish_scheduling(
         booked_fraction=booked_fraction,
         seed=seed,
         booking_base_url=booking_base_url,
+        clinicians=clinicians,
     )
     try:
         config.validate()

@@ -51,8 +51,19 @@ def build_practitioner_role_resource(
     taxonomy_display: str,
     practitioner_fullurl: str,
     facility_organization_fullurl: str,
+    role_code: str | None = None,
+    role_display: str | None = None,
+    role_snomed: tuple[str, str] | None = None,
+    location_fullurl: str | None = None,
+    telecom: list[dict[str, Any]] | None = None,
+    available_time: list[dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
-    """Build a US Core PractitionerRole tying a Practitioner to a facility Org."""
+    """Build a US Core PractitionerRole tying a Practitioner to a facility Org.
+
+    The optional ``role_code``, ``location_fullurl``, ``telecom`` and
+    ``available_time`` describe a bookable clinician (SMART Scheduling Links);
+    US Core requires telecom or an endpoint (pd-1) for a contactable role.
+    """
     resource: dict[str, Any] = {
         "resourceType": "PractitionerRole",
         "id": practitioner_role_id(
@@ -80,5 +91,22 @@ def build_practitioner_role_resource(
             }
         ],
     }
+    if role_code:
+        resource["code"] = [
+            {
+                # SNOMED occupation first: US Core binds code to Care Team Member Function.
+                "coding": [
+                    *([{"system": "http://snomed.info/sct", "code": role_snomed[0], "display": role_snomed[1]}] if role_snomed else []),
+                    {"system": NUCC_TAXONOMY_SYSTEM, "code": role_code, "display": role_display or role_code},
+                ],
+                "text": role_display or role_code,
+            }
+        ]
+    if location_fullurl:
+        resource["location"] = [{"reference": location_fullurl}]
+    if telecom:
+        resource["telecom"] = telecom
+    if available_time:
+        resource["availableTime"] = available_time
     _PractitionerRole.model_validate(resource)
     return resource

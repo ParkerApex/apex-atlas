@@ -36,7 +36,9 @@ PUBLISH_BASE = (
     "main/samples/cms-connectathon-2026/scheduling"
 )
 # Fixed transaction time keeps re-runs byte-stable (no wall-clock in output).
-TRANSACTION_TIME = "2026-07-12T00:00:00Z"
+TRANSACTION_TIME = "2026-11-01T00:00:00Z"
+# Free slots deep-link into the Parker demo booking portal (Apex Nexus).
+BOOKING_BASE_URL = "https://demo.parkerapex.com/book"
 
 
 def load_patient_ids() -> list[str]:
@@ -53,14 +55,17 @@ def main() -> None:
     config = SchedulingConfig(
         sites=40,
         service_keys=("general-practice", "immunization"),
-        window_start=date(2026, 7, 13),
+        window_start=date(2026, 11, 2),
         weeks=4,
         day_start_hour=8,
         day_end_hour=17,
         slot_minutes=60,
         booked_fraction=0.20,
         seed=20260712,
-        booking_base_url="https://booking.example.org",
+        booking_base_url=BOOKING_BASE_URL,
+        # One bookable clinician per site (Sam Torres, NP in Denver), each with
+        # Practitioner + PractitionerRole and their own Schedule.
+        clinicians=True,
     )
     dataset = generate_scheduling_dataset(
         config, patient_ids=load_patient_ids(), created=TRANSACTION_TIME

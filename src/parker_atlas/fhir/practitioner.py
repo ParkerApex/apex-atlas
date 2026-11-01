@@ -38,11 +38,14 @@ def build_practitioner_resource(
     family: str,
     given: str,
     prefix: str | None = None,
+    suffix: str | None = None,
 ) -> dict[str, Any]:
     """Build a US Core Practitioner resource (one per NPI, shared across patients)."""
     name: dict[str, Any] = {"family": family, "given": [given]}
     if prefix:
         name["prefix"] = [prefix]
+    if suffix:
+        name["suffix"] = [suffix]
 
     resource: dict[str, Any] = {
         "resourceType": "Practitioner",

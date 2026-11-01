@@ -20,6 +20,6 @@ All records below are for a single example clinic — **Apex Atlas Community Cli
 Location  <-actor-  Schedule  <-schedule-  Slot  <-slot-  Appointment  -participant->  Patient (GPX-SYN-...)
 ```
 
-The 4 booked appointments here reference these patients from the population: `GPX-SYN-0000005895-8`, `GPX-SYN-0000011977-6`, `GPX-SYN-0000012487-5`, `GPX-SYN-0000015546-5`.
+The 4 booked appointments here reference these patients from the population: `GPX-SYN-0000003761-4`, `GPX-SYN-0000012487-5`, `GPX-SYN-0000012853-8`, `GPX-SYN-0000015546-5`.
 
 Regenerate with `python scripts/extract_sample_scheduling.py`.
