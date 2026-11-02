@@ -61,7 +61,9 @@ jobs:
             generate: ""
           - key: smart-scheduling
             path: samples/cms-connectathon-2026/scheduling/examples
-            igs: ""
+            # US Core for the clinicians, plus the SMART Scheduling Links
+            # extension definitions (the spec publishes no FHIR package).
+            igs: "hl7.fhir.us.core#6.1.0 src/parker_atlas/scheduling/ig"
             generate: ""
           - key: carin-bb
             path: _carinbb
@@ -119,9 +121,12 @@ jobs:
           REPORT="conformance-${{ matrix.key }}.md"
           LOG="validate-${{ matrix.key }}.log"
           if [ -n "${{ matrix.igs }}" ]; then
+            # matrix.igs is space-separated: one --ig-package per package or folder.
+            IG_ARGS=()
+            for ig in ${{ matrix.igs }}; do IG_ARGS+=(--ig-package "$ig"); done
             atlas validate "${{ matrix.path }}" --ig \
               --validator-jar "$JAR" --ig-report "$REPORT" \
-              --ig-package "${{ matrix.igs }}" | tee "$LOG"
+              "${IG_ARGS[@]}" | tee "$LOG"
           else
             atlas validate "${{ matrix.path }}" --ig \
               --validator-jar "$JAR" --ig-report "$REPORT" | tee "$LOG"

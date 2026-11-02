@@ -135,16 +135,26 @@ bookable appointment slots to consumer scheduling apps.
 | File | Resource | Count | Notes |
 | --- | --- | ---: | --- |
 | `bulk-publish-manifest.json` | — | — | The document a server returns from `$bulk-publish`; its `output[]` links the NDJSON below. |
-| `Location.ndjson` | Location | 40 | Clinic sites across 24 states, with `position` and NPI identifiers. |
-| `Schedule.ndjson` | Schedule | 80 | One per (Location × serviceType); `actor` → Location. |
-| `Slot.ndjson` | Slot | 14,400 | `free`/`busy`, with SMART booking-deep-link, booking-phone, slot-capacity extensions. |
-| `Appointment.ndjson` | Appointment | 2,840 | Booked slots tied to patients from dataset #1 (convenience; not part of SMART Scheduling Links). |
+| `Location.ndjson` | Location | 40 | Clinic sites across 24 states, with `position`, managed by the Organization below. |
+| `Schedule.ndjson` | Schedule | 80 | General Practice: one per clinician (`actor` → Location, then PractitionerRole). Immunization: one per site (`actor` → Location). |
+| `Slot.ndjson` | Slot | 18,400 | `free`/`busy`, with SMART booking-deep-link, booking-phone, slot-capacity extensions. Deep links open the Parker demo booking portal (`https://demo.parkerapex.com/book/…`). |
+| `Organization.ndjson` | Organization | 1 | Apex Atlas Community Health (US Core). |
+| `Practitioner.ndjson` | Practitioner | 40 | One bookable clinician per site (US Core), including **Sam Torres, NP** (Family Nurse Practitioner, Denver, CO). |
+| `PractitionerRole.ndjson` | PractitionerRole | 40 | Clinician at their site: NUCC + SNOMED role, NUCC specialty, telecom, `availableTime` (US Core). |
+| `Appointment.ndjson` | Appointment | 3,636 | Booked slots tied to patients from dataset #1 (convenience; not part of SMART Scheduling Links). |
+
+Organization, Practitioner, and PractitionerRole are listed in the manifest after the
+three spec types; SMART Scheduling Links clients ignore other types, so the
+publication stays conformant while `Schedule.actor` references resolve.
+NPIs are NPPES-verified unassigned synthetic numbers; see [`scheduling/VALIDATION.md`](./scheduling/VALIDATION.md),
+which also has the official HL7 validator results (0 errors, 0 warnings).
 
 **Service types:** General Practice (`124`) and Immunization (`57`) from the
 FHIR `service-type` value set.
 
-**Availability window:** weekdays 2026-07-13 → 2026-08-07, 08:00–17:00 local,
-hourly slots. ~20% of slots are `busy` (booked); the rest are `free`.
+**Availability window:** weekdays 2026-11-02 → 2026-11-27. Clinicians: 09:00–16:00
+local, 30-minute visits. Immunization: 08:00–17:00 local, hourly. ~20% of slots are
+`busy` (booked); the rest are `free`. Offsets follow each site's real time zone.
 
 ### Consuming the manifest
 
@@ -155,7 +165,8 @@ type — a client fetches the manifest, then streams each URL:
 curl -s .../scheduling/bulk-publish-manifest.json | jq -r '.output[].url'
 ```
 
-Referential graph: `Slot.schedule → Schedule`, `Schedule.actor → Location`,
+Referential graph: `Slot.schedule → Schedule`, `Schedule.actor → Location` (+ `PractitionerRole`),
+`PractitionerRole → Practitioner, Organization, Location`,
 `Appointment.slot → Slot`, `Appointment.participant.actor → Patient/GPX-SYN-…`.
 
 This dataset is produced by the built-in **SMART Scheduling Links** feature
@@ -173,8 +184,9 @@ Or directly via the CLI:
 
 ```bash
 atlas publish-scheduling --sites 40 --weeks 4 --slot-minutes 60 --seed 20260712 \
-  --service-types general-practice,immunization \
-  --window-start 2026-07-13 --patients ./samples/cms-connectathon-2026/patients \
+  --service-types general-practice,immunization --clinicians \
+  --booking-base-url https://demo.parkerapex.com/book \
+  --window-start 2026-11-02 --patients ./samples/cms-connectathon-2026/patients \
   --out ./samples/cms-connectathon-2026/scheduling
 ```
 

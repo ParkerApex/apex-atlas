@@ -18,6 +18,10 @@ from parker_atlas.scheduling.links import SchedulingDataset
 # written alongside for convenience but is NOT advertised in the manifest
 # (SMART Scheduling Links publishes availability, not bookings).
 MANIFEST_TYPES = ("Location", "Schedule", "Slot")
+# Who the bookable clinicians are. Listed after the spec types; SMART Scheduling
+# Links clients SHOULD ignore other output types, so this stays conformant while
+# Schedule.actor -> PractitionerRole references resolve within the publication.
+CLINICIAN_TYPES = ("Organization", "Practitioner", "PractitionerRole")
 
 
 def build_manifest(
@@ -36,13 +40,16 @@ def build_manifest(
         "Location": dataset.locations,
         "Schedule": dataset.schedules,
         "Slot": dataset.slots,
+        "Organization": dataset.organizations,
+        "Practitioner": dataset.practitioners,
+        "PractitionerRole": dataset.practitioner_roles,
     }
     return {
         "transactionTime": transaction_time,
         "request": f"{base}/$bulk-publish",
         "output": [
             {"type": t, "url": f"{base}/{t}.ndjson"}
-            for t in MANIFEST_TYPES
+            for t in (*MANIFEST_TYPES, *CLINICIAN_TYPES)
             if present[t]
         ],
         "error": [],
@@ -72,6 +79,9 @@ def write_bulk_publish(
     _write_ndjson(out_dir / "Location.ndjson", dataset.locations)
     _write_ndjson(out_dir / "Schedule.ndjson", dataset.schedules)
     _write_ndjson(out_dir / "Slot.ndjson", dataset.slots)
+    for t, rows in (("Organization", dataset.organizations), ("Practitioner", dataset.practitioners), ("PractitionerRole", dataset.practitioner_roles)):
+        if rows:
+            _write_ndjson(out_dir / f"{t}.ndjson", rows)
     if include_appointments and dataset.appointments:
         _write_ndjson(out_dir / "Appointment.ndjson", dataset.appointments)
 
